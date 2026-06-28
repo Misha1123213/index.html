@@ -172,7 +172,7 @@
         });
     }
 
-    function renderPreview() {
+        function renderPreview() {
         const zone = document.getElementById('preview-zone');
         zone.innerHTML = '';
         if (selectedAnswers.length === 0) {
@@ -183,6 +183,16 @@
             const el = document.createElement('div');
             el.className = 'preview-item';
             el.innerText = item;
+            // Добавляем отмену выбора при клике на сам элемент в верхней зоне
+            el.onclick = () => {
+                // Находим кнопку этого ингредиента снизу и симулируем повторный клик для отмены
+                const buttons = document.querySelectorAll('.ing-btn');
+                buttons.forEach(btn => {
+                    if (btn.innerText === item || btn.innerText === item + " ✅") {
+                        toggleSelect(item, btn);
+                    }
+                });
+            };
             zone.appendChild(el);
         });
     }
