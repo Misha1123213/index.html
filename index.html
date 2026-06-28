@@ -3,49 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ТТК Duolingo — Темная Тема</title>
+    <title>ТТК Duolingo — Premium Dark</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
-        body { background-color: #131f24; color: #f1f7fb; display: flex; justify-content: center; min-height: 100vh; padding: 15px; }
-        .app-container { background: #1b2c34; width: 100%; max-width: 450px; border-radius: 20px; border: 2px solid #37464f; padding: 20px; display: flex; flex-direction: column; position: relative; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+        body { background: radial-gradient(circle at top, #18252c 0%, #0e161a 100%); color: #f1f7fb; display: flex; justify-content: center; min-height: 100vh; padding: 15px; -webkit-tap-highlight-color: transparent; }
         
-        /* Прогресс-бар Duolingo */
-        .progress-container { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-        .close-btn { font-size: 24px; color: #4b5a63; cursor: pointer; border: none; background: none; }
-        .progress-bar { background: #37464f; height: 16px; flex-grow: 1; border-radius: 10px; overflow: hidden; }
-        .progress-fill { background: #58cc02; height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 10px; }
+        .app-container { background: #1b2c34; width: 100%; max-width: 450px; border-radius: 24px; border: 2px solid #2b3d47; padding: 24px; display: flex; flex-direction: column; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.5); overflow: hidden; }
+        
+        /* Прогресс-бар премиум */
+        .progress-container { display: flex; align-items: center; gap: 14px; margin-bottom: 25px; }
+        .close-btn { font-size: 28px; color: #4b5a63; cursor: pointer; border: none; background: none; transition: color 0.2s; line-height: 1; }
+        .close-btn:hover { color: #f1f7fb; }
+        .progress-bar { background: #24353f; height: 18px; flex-grow: 1; border-radius: 12px; overflow: hidden; border: 1px solid #2b3d47; position: relative; }
+        .progress-fill { background: linear-gradient(90deg, #58cc02 0%, #78eb17 100%); height: 100%; width: 0%; transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 12px; position: relative; }
+        .progress-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent); }
+        .progress-text { font-size: 13px; font-weight: 700; color: #647b88; min-width: 45px; text-align: right; }
 
-        .question-title { font-size: 18px; font-weight: 700; color: #afbbca; margin-bottom: 8px; text-align: center; }
-        .dish-name { font-size: 22px; color: #1cb0f6; font-weight: 800; text-align: center; margin-bottom: 25px; }
-        
+        .question-title { font-size: 15px; font-weight: 700; color: #8496a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; }
+        .dish-name { font-size: 24px; color: #1cb0f6; font-weight: 800; text-align: center; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         /* Зона сборки рецепта */
-        .preview-zone { min-height: 100px; border: 2px dashed #4b5a63; border-radius: 15px; padding: 15px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 8px; background: #131f24; align-content: flex-start; }
-        .preview-item { background: #184e68; color: #70d2ff; padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 14px; border: 1px solid #287194; cursor: pointer; }
-        .preview-item:hover { background: #20668a; }
+        .preview-zone { min-height: 110px; border: 2px dashed #3a4e59; border-radius: 18px; padding: 16px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 10px; background: #131f24; align-content: flex-start; box-shadow: inset 0 4px 12px rgba(0,0,0,0.3); transition: min-height 0.3s ease; }
+        .preview-item { background: linear-gradient(180deg, #1cb0f6 0%, #1899d6 100%); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 14px; border-bottom: 4px solid #1482b6; cursor: pointer; box-shadow: 0 4px 10px rgba(28,176,246,0.2); transition: transform 0.1s, border-bottom-width 0.1s; animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .preview-item:active { border-bottom-width: 0px; transform: translateY(4px); box-shadow: none; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* Сетка ингредиентов / вариантов ответов */
-        .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: auto; }
-        .ing-btn { background: #1b2c34; border: 2px solid #37464f; border-bottom: 4px solid #37464f; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: bold; color: #f1f7fb; cursor: pointer; transition: all 0.1s; text-align: center; }
-        .ing-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
-        .ing-btn.selected { background: #24353f; border-color: #4b5a63; color: #4b5a63; border-bottom-width: 2px; transform: translateY(2px); pointer-events: none; opacity: 0.4; }
+        /* Сетка ингредиентов */
+        .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: auto; }
+        .ing-btn { background: #24353f; border: 2px solid #37464f; border-bottom: 5px solid #37464f; border-radius: 16px; padding: 16px 12px; font-size: 14px; font-weight: 700; color: #f1f7fb; cursor: pointer; transition: all 0.1s cubic-bezier(0.25, 0.8, 0.25, 1); text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .ing-btn:active:not(.selected) { border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; }
+        .ing-btn.selected { background: #131f24; border-color: #2b3d47; color: #37464f; border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; opacity: 0.3; pointer-events: none; }
 
-        /* Специальный стиль для кнопок аллергенов */
         .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
 
         /* Нижняя панель */
-        .check-panel { margin-top: 30px; display: flex; gap: 10px; }
-        .main-action-btn { width: 100%; background: #58cc02; border: none; border-bottom: 4px solid #46a302; color: white; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 0.8px; }
-        .main-action-btn:active { border-bottom-width: 0px; transform: translateY(4px); }
-        .main-action-btn:disabled { background: #37464f; border-bottom: 4px solid #24353f; color: #4b5a63; cursor: not-allowed; }
-        .reset-btn { background: #cc2a2a; border-bottom: 4px solid #9e1b1b; max-width: 80px; }
+        .check-panel { margin-top: 30px; display: flex; gap: 14px; }
+        .main-action-btn { width: 100%; background: linear-gradient(180deg, #61e002 0%, #52be02 100%); border: none; border-bottom: 5px solid #3f9201; color: white; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(88,204,2,0.2); transition: all 0.1s; }
+        .main-action-btn:active:not(:disabled) { border-bottom-width: 0px; transform: translateY(5px); box-shadow: none; }
+        .main-action-btn:disabled { background: #24353f; border-bottom: 5px solid #1b2c34; color: #4b5a63; cursor: not-allowed; box-shadow: none; border-color: #2b3d47; }
+        .reset-btn { background: linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%); border-bottom: 5px solid #b71c1c; max-width: 80px; font-size: 20px; box-shadow: 0 6px 16px rgba(255,75,75,0.2); }
+        .reset-btn:disabled { background: #24353f; border-bottom-color: #1b2c34; }
 
-        /* Окно результата */
-        .result-screen { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: #24353f; border-top: 2px solid #37464f; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 25px; box-shadow: 0 -8px 24px rgba(0,0,0,0.3); animation: slideUp 0.2s ease-out; }
+        /* Окно результата премиум (iOS Glassmorphism) */
+        .result-screen { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(36, 53, 63, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 2px solid rgba(255,255,255,0.08); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 30px 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .result-status { font-size: 22px; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-        .result-status.success { color: #58cc02; }
-        .result-status.error { color: #ff4b4b; }
-        .result-details { font-size: 15px; color: #afbbca; margin-bottom: 20px; line-height: 1.5; white-space: pre-line; }
+        .result-status { font-size: 24px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+        .result-status.success { color: #78eb17; text-shadow: 0 0 12px rgba(120,235,23,0.3); }
+        .result-status.error { color: #ff5252; text-shadow: 0 0 12px rgba(255,82,82,0.3); }
+        .result-details { font-size: 15px; color: #afbbca; margin-bottom: 25px; line-height: 1.6; white-space: pre-line; font-weight: 500; }
+        
+        .result-screen .main-action-btn { box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
@@ -54,6 +60,7 @@
     <div class="progress-container">
         <button class="close-btn" onclick="location.reload()">×</button>
         <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+        <div class="progress-text" id="progress-text">0 / 0</div>
     </div>
 
     <div class="question-title" id="question-type-title">Собери состав для:</div>
@@ -63,7 +70,7 @@
     <div class="ingredients-grid" id="ingredients-grid"></div>
 
     <div class="check-panel">
-        <button class="main-action-btn reset-btn" id="reset-btn" onclick="resetCurrentQuestion()">↩</button>
+        <button class="main-action-btn reset-btn" id="reset-btn" disabled onclick="resetCurrentQuestion()">↩</button>
         <button class="main-action-btn" id="action-btn" disabled onclick="checkAnswer()">Проверить</button>
     </div>
 
@@ -78,7 +85,7 @@
     let DISHES_DB = [];
     let currentQuestionIndex = 0;
     let selectedAnswers = [];
-    let buttonMapping = {}; // Карта для поиска кнопок по имени ингредиента
+    let buttonMapping = {};
 
     async function loadDishes() {
         try {
@@ -109,6 +116,7 @@
         
         const progressPercent = (currentQuestionIndex / DISHES_DB.length) * 100;
         document.getElementById('progress').style.width = `${progressPercent}%`;
+        document.getElementById('progress-text').innerText = `${currentQuestionIndex + 1} / ${DISHES_DB.length}`;
 
         const typeTitle = document.getElementById('question-type-title');
         const previewZone = document.getElementById('preview-zone');
@@ -116,17 +124,18 @@
 
         if (currentItem.type === "allergen") {
             typeTitle.innerText = "Какие главные АЛЛЕРГЕНЫ содержит:";
-            previewZone.style.minHeight = "60px";
+            previewZone.style.minHeight = "70px";
             grid.className = "ingredients-grid allergen-mode";
         } else {
             typeTitle.innerText = "Выбери все ингредиенты, входящие в:";
-            previewZone.style.minHeight = "100px";
+            previewZone.style.minHeight = "110px";
             grid.className = "ingredients-grid";
         }
 
         document.getElementById('dish-title').innerText = currentItem.name;
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('action-btn').disabled = true;
+        document.getElementById('reset-btn').disabled = true;
         
         renderPreview();
 
@@ -139,7 +148,7 @@
             btn.innerText = item;
             btn.onclick = () => selectItem(item);
             grid.appendChild(btn);
-            buttonMapping[item] = btn; // Запоминаем кнопку
+            buttonMapping[item] = btn;
         });
     }
 
@@ -149,10 +158,11 @@
         selectedAnswers.push(item);
         if (buttonMapping[item]) {
             buttonMapping[item].classList.add('selected');
-            buttonMapping[item].innerText = item + " ✅";
         }
         
-        document.getElementById('action-btn').disabled = selectedAnswers.length === 0;
+        const keyState = selectedAnswers.length === 0;
+        document.getElementById('action-btn').disabled = keyState;
+        document.getElementById('reset-btn').disabled = keyState;
         renderPreview();
     }
 
@@ -162,9 +172,10 @@
             selectedAnswers.splice(index, 1);
             if (buttonMapping[item]) {
                 buttonMapping[item].classList.remove('selected');
-                buttonMapping[item].innerText = item;
             }
-            document.getElementById('action-btn').disabled = selectedAnswers.length === 0;
+            const keyState = selectedAnswers.length === 0;
+            document.getElementById('action-btn').disabled = keyState;
+            document.getElementById('reset-btn').disabled = keyState;
             renderPreview();
         }
     }
@@ -172,10 +183,10 @@
     function resetCurrentQuestion() {
         selectedAnswers = [];
         document.getElementById('action-btn').disabled = true;
+        document.getElementById('reset-btn').disabled = true;
         renderPreview();
         for (let item in buttonMapping) {
             buttonMapping[item].classList.remove('selected');
-            buttonMapping[item].innerText = item;
         }
     }
 
@@ -183,14 +194,13 @@
         const zone = document.getElementById('preview-zone');
         zone.innerHTML = '';
         if (selectedAnswers.length === 0) {
-            zone.innerHTML = '<span style="color:#4b5a63; text-align:center; font-size:14px; margin:auto;">Нажимай на варианты ниже...</span>';
+            zone.innerHTML = '<span style="color:#4b5a63; text-align:center; font-size:14px; margin:auto; font-weight:600;">Нажимай на варианты ниже...</span>';
             return;
         }
         selectedAnswers.forEach((item) => {
             const el = document.createElement('div');
             el.className = 'preview-item';
             el.innerText = item;
-            // Поштучное удаление по клику прямо на верхнюю плашку
             el.onclick = () => removeItem(item);
             zone.appendChild(el);
         });
@@ -202,55 +212,35 @@
         const sortedSelected = [...selectedAnswers].sort();
         const sortedCorrect = [...currentItem.correct].sort();
         const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedCorrect);
+        
         const screen = document.getElementById('result-screen');
         const status = document.getElementById('result-status');
-const details = document.getElementById('result-details');
+        const details = document.getElementById('result-details');
         const nextBtn = document.getElementById('next-btn');
+
         screen.style.display = 'block';
+
         if (isCorrect) {
             status.className = 'result-status success';
             status.innerText = '🎉 Правильно!';
             details.innerText = currentItem.type === "allergen" ? 'Аллергены определены абсолютно верно.' : 'Состав блюда/полуфабриката выбран верно.';
-            nextBtn.style.background = '#58cc02';
-            nextBtn.style.borderBottom = '4px solid #46a302';
+            nextBtn.style.background = 'linear-gradient(180deg, #61e002 0%, #52be02 100%)';
+            nextBtn.style.borderBottom = '5px solid #3f9201';
             currentQuestionIndex++;
-            } else {
+        } else {
             status.className = 'result-status error';
             status.innerText = '❌ Ошибка!';
             details.innerText = currentItem.info_text;
-            nextBtn.style.background = '#ff4b4b';
-            nextBtn.style.borderBottom = '4px solid #ea2b2b';
-            }
+            nextBtn.style.background = 'linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%)';
+            nextBtn.style.borderBottom = '5px solid #b71c1c';
         }
+    }
+
     function nextQuestion() {
         initQuestion();
-        }
+    }
+
     loadDishes();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
