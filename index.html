@@ -28,7 +28,7 @@
         .ing-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
         .ing-btn.selected { background: #24353f; border-color: #4b5a63; color: #4b5a63; border-bottom-width: 2px; transform: translateY(2px); pointer-events: none; }
 
-        /* Специальный стиль для кнопок аллергенов (один в ряд для удобства чтения) */
+        /* Специальный стиль для кнопок аллергенов */
         .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
 
         /* Нижняя панель */
@@ -78,11 +78,13 @@
     let currentQuestionIndex = 0;
     let selectedAnswers = [];
 
+    // Загрузка вопросов из отдельного файла
     async function loadDishes() {
         try {
-            const response = await fetch('dishes.json');
+            // Точный путь к файлу данных в твоем репозитории
+            const response = await fetch('/index.html/dishes.json');
             DISHES_DB = await response.json();
-            // Перемешиваем весь массив вопросов, чтобы они шли случайно каждую игру
+            // Перемешиваем вопросы случайным образом
             DISHES_DB.sort(() => Math.random() - 0.5);
             initQuestion();
         } catch (error) {
@@ -105,11 +107,10 @@
         const currentItem = DISHES_DB[currentQuestionIndex];
         selectedAnswers = [];
         
-        // Прогресс
+        // Настройка прогресс-бара
         const progressPercent = (currentQuestionIndex / DISHES_DB.length) * 100;
         document.getElementById('progress').style.width = `${progressPercent}%`;
 
-        // Настройка типа вопроса
         const typeTitle = document.getElementById('question-type-title');
         const previewZone = document.getElementById('preview-zone');
         const grid = document.getElementById('ingredients-grid');
@@ -165,7 +166,6 @@
         const buttons = document.querySelectorAll('.ing-btn');
         buttons.forEach(btn => {
             btn.classList.remove('selected');
-            // Убираем галочку из текста
             if (btn.innerText.includes(" ✅")) {
                 btn.innerText = btn.innerText.replace(" ✅", "");
             }
@@ -190,7 +190,6 @@
     function checkAnswer() {
         const currentItem = DISHES_DB[currentQuestionIndex];
         
-        // Логика проверки без учета порядка (сравниваем через сортированные массивы)
         const sortedSelected = [...selectedAnswers].sort();
         const sortedCorrect = [...currentItem.correct].sort();
         const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedCorrect);
@@ -200,26 +199,26 @@
         const details = document.getElementById('result-details');
         const nextBtn = document.getElementById('next-btn');
 
-                if (isCorrect) {
+        screen.style.display = 'block';
+
+        if (isCorrect) {
             status.className = 'result-status success';
             status.innerText = '🎉 Правильно!';
             details.innerText = currentItem.type === "allergen" ? 'Аллергены определены абсолютно верно.' : 'Состав блюда/полуфабриката выбран верно.';
             nextBtn.style.background = '#58cc02';
             nextBtn.style.borderBottom = '4px solid #46a302';
             currentQuestionIndex++;
-        } else {
+            } else {
             status.className = 'result-status error';
             status.innerText = '❌ Ошибка!';
             details.innerText = currentItem.info_text;
             nextBtn.style.background = '#ff4b4b';
             nextBtn.style.borderBottom = '4px solid #ea2b2b';
+            }
         }
-    }
-
     function nextQuestion() {
         initQuestion();
-    }
-
+        }
     loadDishes();
 </script>
 </body>
