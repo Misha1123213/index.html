@@ -31,7 +31,17 @@
         .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: auto; }
         .ing-btn { background: #24353f; border: 2px solid #37464f; border-bottom: 5px solid #37464f; border-radius: 16px; padding: 16px 12px; font-size: 14px; font-weight: 700; color: #f1f7fb; cursor: pointer; transition: all 0.1s cubic-bezier(0.25, 0.8, 0.25, 1); text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .ing-btn:active:not(.selected) { border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; }
+        
+        /* НОВЫЕ СТИЛИ ПОДСВЕТКИ ОШИБОК */
         .ing-btn.selected { background: #131f24; border-color: #2b3d47; color: #37464f; border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; opacity: 0.3; pointer-events: none; }
+        .ing-btn.error-wrong { background: linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%) !important; border-color: #ff5252 !important; border-bottom: 5px solid #b71c1c !important; color: white !important; opacity: 1 !important; pointer-events: none; transform: none !important; animation: shake 0.3s; }
+        .ing-btn.error-missing { background: linear-gradient(180deg, #61e002 0%, #52be02 100%) !important; border-color: #78eb17 !important; border-bottom: 5px solid #3f9201 !important; color: white !important; opacity: 1 !important; pointer-events: none; transform: none !important; box-shadow: 0 0 15px rgba(88,204,2,0.4); }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
 
         .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
 
@@ -80,7 +90,6 @@
         <button class="main-action-btn" id="next-btn" onclick="nextQuestion()">Дальше</button>
     </div>
 </div>
-
 <script>
     let DISHES_DB = [];
     let currentQuestionIndex = 0;
@@ -186,7 +195,7 @@
         document.getElementById('reset-btn').disabled = true;
         renderPreview();
         for (let item in buttonMapping) {
-            buttonMapping[item].classList.remove('selected');
+            buttonMapping[item].className = 'ing-btn';
         }
     }
 
@@ -233,6 +242,28 @@
             details.innerText = currentItem.info_text;
             nextBtn.style.background = 'linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%)';
             nextBtn.style.borderBottom = '5px solid #b71c1c';
+
+            // УМНАЯ ПОДСВЕТКА КНОПОК ПРИ ОШИБКЕ
+            currentItem.pool.forEach(item => {
+                const btn = buttonMapping[item];
+                if (btn) {
+                    const userSelected = selectedAnswers.includes(item);
+                    const shouldBeSelected = currentItem.correct.includes(item);
+
+                    if (userSelected && !shouldBeSelected) {
+                        // Повар выбрал лишнее -> Красный
+                        btn.className = 'ing-btn error-wrong';
+                    } else if (!userSelected && shouldBeSelected) {
+                        // Повар забыл выбрать -> Зеленый
+                        btn.className = 'ing-btn error-missing';
+                    } else {
+                        // Повар угадал правильно или правильно пропустил -> Серый/Обычный
+                        btn.className = 'ing-btn';
+                        btn.style.opacity = '0.4';
+                        btn.style.pointerEvents = 'none';
+                    }
+                }
+            });
         }
     }
 
