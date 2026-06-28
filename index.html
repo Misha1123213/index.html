@@ -21,12 +21,13 @@
         /* Зона сборки рецепта */
         .preview-zone { min-height: 100px; border: 2px dashed #4b5a63; border-radius: 15px; padding: 15px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 8px; background: #131f24; align-content: flex-start; }
         .preview-item { background: #184e68; color: #70d2ff; padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 14px; border: 1px solid #287194; cursor: pointer; }
+        .preview-item:hover { background: #20668a; }
 
         /* Сетка ингредиентов / вариантов ответов */
         .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: auto; }
         .ing-btn { background: #1b2c34; border: 2px solid #37464f; border-bottom: 4px solid #37464f; border-radius: 12px; padding: 14px; font-size: 14px; font-weight: bold; color: #f1f7fb; cursor: pointer; transition: all 0.1s; text-align: center; }
         .ing-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
-        .ing-btn.selected { background: #24353f; border-color: #4b5a63; color: #4b5a63; border-bottom-width: 2px; transform: translateY(2px); pointer-events: none; }
+        .ing-btn.selected { background: #24353f; border-color: #4b5a63; color: #4b5a63; border-bottom-width: 2px; transform: translateY(2px); pointer-events: none; opacity: 0.4; }
 
         /* Специальный стиль для кнопок аллергенов */
         .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
@@ -77,14 +78,12 @@
     let DISHES_DB = [];
     let currentQuestionIndex = 0;
     let selectedAnswers = [];
+    let buttonMapping = {}; // Карта для поиска кнопок по имени ингредиента
 
-    // Загрузка вопросов из отдельного файла
     async function loadDishes() {
         try {
-            // Точный путь к файлу данных в твоем репозитории
             const response = await fetch('/index.html/dishes.json');
             DISHES_DB = await response.json();
-            // Перемешиваем вопросы случайным образом
             DISHES_DB.sort(() => Math.random() - 0.5);
             initQuestion();
         } catch (error) {
@@ -106,8 +105,8 @@
 
         const currentItem = DISHES_DB[currentQuestionIndex];
         selectedAnswers = [];
+        buttonMapping = {};
         
-        // Настройка прогресс-бара
         const progressPercent = (currentQuestionIndex / DISHES_DB.length) * 100;
         document.getElementById('progress').style.width = `${progressPercent}%`;
 
@@ -138,41 +137,49 @@
             const btn = document.createElement('button');
             btn.className = 'ing-btn';
             btn.innerText = item;
-            btn.onclick = () => toggleSelect(item, btn);
+            btn.onclick = () => selectItem(item);
             grid.appendChild(btn);
+            buttonMapping[item] = btn; // Запоминаем кнопку
         });
     }
 
-    function toggleSelect(item, btn) {
-        const index = selectedAnswers.indexOf(item);
-        if (index > -1) {
-            selectedAnswers.splice(index, 1);
-            btn.classList.remove('selected');
-            btn.innerText = item;
-        } else {
-            selectedAnswers.push(item);
-            btn.classList.add('selected');
-            btn.innerText += " ✅";
+    function selectItem(item) {
+        if (selectedAnswers.includes(item)) return;
+        
+        selectedAnswers.push(item);
+        if (buttonMapping[item]) {
+            buttonMapping[item].classList.add('selected');
+            buttonMapping[item].innerText = item + " ✅";
         }
         
         document.getElementById('action-btn').disabled = selectedAnswers.length === 0;
         renderPreview();
     }
 
+    function removeItem(item) {
+        const index = selectedAnswers.indexOf(item);
+        if (index > -1) {
+            selectedAnswers.splice(index, 1);
+            if (buttonMapping[item]) {
+                buttonMapping[item].classList.remove('selected');
+                buttonMapping[item].innerText = item;
+            }
+            document.getElementById('action-btn').disabled = selectedAnswers.length === 0;
+            renderPreview();
+        }
+    }
+
     function resetCurrentQuestion() {
         selectedAnswers = [];
         document.getElementById('action-btn').disabled = true;
         renderPreview();
-        const buttons = document.querySelectorAll('.ing-btn');
-        buttons.forEach(btn => {
-            btn.classList.remove('selected');
-            if (btn.innerText.includes(" ✅")) {
-                btn.innerText = btn.innerText.replace(" ✅", "");
-            }
-        });
+        for (let item in buttonMapping) {
+            buttonMapping[item].classList.remove('selected');
+            buttonMapping[item].innerText = item;
+        }
     }
 
-        function renderPreview() {
+    function renderPreview() {
         const zone = document.getElementById('preview-zone');
         zone.innerHTML = '';
         if (selectedAnswers.length === 0) {
@@ -183,16 +190,8 @@
             const el = document.createElement('div');
             el.className = 'preview-item';
             el.innerText = item;
-            // Добавляем отмену выбора при клике на сам элемент в верхней зоне
-            el.onclick = () => {
-                // Находим кнопку этого ингредиента снизу и симулируем повторный клик для отмены
-                const buttons = document.querySelectorAll('.ing-btn');
-                buttons.forEach(btn => {
-                    if (btn.innerText === item || btn.innerText === item + " ✅") {
-                        toggleSelect(item, btn);
-                    }
-                });
-            };
+            // Поштучное удаление по клику прямо на верхнюю плашку
+            el.onclick = () => removeItem(item);
             zone.appendChild(el);
         });
     }
@@ -203,14 +202,11 @@
         const sortedSelected = [...selectedAnswers].sort();
         const sortedCorrect = [...currentItem.correct].sort();
         const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedCorrect);
-        
         const screen = document.getElementById('result-screen');
         const status = document.getElementById('result-status');
-        const details = document.getElementById('result-details');
+const details = document.getElementById('result-details');
         const nextBtn = document.getElementById('next-btn');
-
         screen.style.display = 'block';
-
         if (isCorrect) {
             status.className = 'result-status success';
             status.innerText = '🎉 Правильно!';
@@ -233,3 +229,28 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
