@@ -58,29 +58,28 @@
 </div>
 
 <script>
-    const DISHES_DB = [
-        {
-            name: "Овсяная каша с вишневым вареньем 🍒",
-            correct: ["Овсянка база", "Сливки 22%", "Масло сливочное", "Лепестки миндаля", "Варенье вишневое"],
-            pool: ["Овсянка база", "Сливки 22%", "Масло сливочное", "Лепестки миндаля", "Варенье вишневое", "Соус финик", "Крамбл грецкий орех", "Банан fresh"],
-            recipe_text: "💡 Правильный состав по ТТК:\n1. Овсянка база — 0.270 кг\n2. Сливки 22% — 0.030 кг\n3. Масло сливочное — 0.005 кг\n4. Лепестки миндаля — 0.025 кг\n5. Варенье вишневое — 0.030 кг"
-        },
-        {
-            name: "Овсяная каша с финиковым соусом 🌴",
-            correct: ["Овсянка база", "Сливки 22%", "Масло сливочное", "Крамбл из грецкого ореха", "Соус финик"],
-            pool: ["Овсянка база", "Сливки 22%", "Масло сливочное", "Крамбл из грецкого ореха", "Соус финик", "Варенье вишневое", "Лепестки миндаля", "Голубика fresh"],
-            recipe_text: "💡 Правильный состав по ТТК:\n1. Овсянка база — 0.270 кг\n2. Сливки 22% — 0.030 кг\n3. Масло сливочное — 0.005 кг\n4. Крамбл из грецкого ореха — 0.040 кг\n5. Соус финик — 0.030 кг"
-        }
-    ];
-
+    let DISHES_DB = [];
     let currentQuestionIndex = 0;
     let selectedIngredients = [];
+
+    // Загрузка вопросов из отдельного файла
+    async function loadDishes() {
+        try {
+            const response = await fetch('dishes.json');
+            DISHES_DB = await response.json();
+            initQuestion();
+        } catch (error) {
+            document.getElementById('dish-title').innerText = "Ошибка загрузки ТТК 😢";
+            console.error(error);
+        }
+    }
 
     function shuffle(array) {
         return array.sort(() => Math.random() - 0.5);
     }
 
     function initQuestion() {
+        if (!DISHES_DB.length) return;
         if (currentQuestionIndex >= DISHES_DB.length) {
             currentQuestionIndex = 0;
         }
@@ -163,7 +162,8 @@
         initQuestion();
     }
 
-    initQuestion();
+    // Запуск
+    loadDishes();
 </script>
 </body>
 </html>
