@@ -32,7 +32,7 @@
         .ing-btn { background: #24353f; border: 2px solid #37464f; border-bottom: 5px solid #37464f; border-radius: 16px; padding: 16px 12px; font-size: 14px; font-weight: 700; color: #f1f7fb; cursor: pointer; transition: all 0.1s cubic-bezier(0.25, 0.8, 0.25, 1); text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .ing-btn:active:not(.selected) { border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; }
         
-        /* НОВЫЕ СТИЛИ ПОДСВЕТКИ ОШИБОК */
+        /* Стили подсветки ошибок */
         .ing-btn.selected { background: #131f24; border-color: #2b3d47; color: #37464f; border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; opacity: 0.3; pointer-events: none; }
         .ing-btn.error-wrong { background: linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%) !important; border-color: #ff5252 !important; border-bottom: 5px solid #b71c1c !important; color: white !important; opacity: 1 !important; pointer-events: none; transform: none !important; animation: shake 0.3s; }
         .ing-btn.error-missing { background: linear-gradient(180deg, #61e002 0%, #52be02 100%) !important; border-color: #78eb17 !important; border-bottom: 5px solid #3f9201 !important; color: white !important; opacity: 1 !important; pointer-events: none; transform: none !important; box-shadow: 0 0 15px rgba(88,204,2,0.4); }
@@ -46,22 +46,19 @@
         .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
 
         /* Нижняя панель */
-        .check-panel { margin-top: 30px; display: flex; gap: 14px; }
+        .check-panel { margin-top: 20px; display: flex; gap: 14px; flex-direction: column; }
+        .buttons-row { display: flex; gap: 14px; width: 100%; }
         .main-action-btn { width: 100%; background: linear-gradient(180deg, #61e002 0%, #52be02 100%); border: none; border-bottom: 5px solid #3f9201; color: white; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(88,204,2,0.2); transition: all 0.1s; }
         .main-action-btn:active:not(:disabled) { border-bottom-width: 0px; transform: translateY(5px); box-shadow: none; }
         .main-action-btn:disabled { background: #24353f; border-bottom: 5px solid #1b2c34; color: #4b5a63; cursor: not-allowed; box-shadow: none; border-color: #2b3d47; }
         .reset-btn { background: linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%); border-bottom: 5px solid #b71c1c; max-width: 80px; font-size: 20px; box-shadow: 0 6px 16px rgba(255,75,75,0.2); }
         .reset-btn:disabled { background: #24353f; border-bottom-color: #1b2c34; }
 
-        /* Окно результата премиум (iOS Glassmorphism) */
-        .result-screen { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(36, 53, 63, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 2px solid rgba(255,255,255,0.08); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 30px 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .result-status { font-size: 24px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
-        .result-status.success { color: #78eb17; text-shadow: 0 0 12px rgba(120,235,23,0.3); }
-        .result-status.error { color: #ff5252; text-shadow: 0 0 12px rgba(255,82,82,0.3); }
-        .result-details { font-size: 15px; color: #afbbca; margin-bottom: 25px; line-height: 1.6; white-space: pre-line; font-weight: 500; }
-        
-        .result-screen .main-action-btn { box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        /* Изящная плашка подсказки снизу */
+        .hint-toast { display: none; background: rgba(36, 53, 63, 0.95); border: 1px solid #3a4e59; border-radius: 14px; padding: 12px 16px; font-size: 14px; font-weight: 600; line-height: 1.5; text-align: left; animation: popToast 0.2s ease-out; }
+        @keyframes popToast { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .hint-toast.success { border-color: #58cc02; color: #78eb17; }
+        .hint-toast.error { border-color: #ff4b4b; color: #ff5252; }
     </style>
 </head>
 <body>
@@ -80,14 +77,11 @@
     <div class="ingredients-grid" id="ingredients-grid"></div>
 
     <div class="check-panel">
-        <button class="main-action-btn reset-btn" id="reset-btn" disabled onclick="resetCurrentQuestion()">↩</button>
-        <button class="main-action-btn" id="action-btn" disabled onclick="checkAnswer()">Проверить</button>
-    </div>
-
-    <div class="result-screen" id="result-screen">
-        <div class="result-status" id="result-status"></div>
-        <div class="result-details" id="result-details"></div>
-        <button class="main-action-btn" id="next-btn" onclick="nextQuestion()">Дальше</button>
+        <div class="hint-toast" id="hint-toast"></div>
+        <div class="buttons-row">
+            <button class="main-action-btn reset-btn" id="reset-btn" disabled onclick="resetCurrentQuestion()">↩</button>
+            <button class="main-action-btn" id="action-btn" disabled onclick="checkAnswer()">Проверить</button>
+        </div>
     </div>
 </div>
 <script>
@@ -95,6 +89,7 @@
     let currentQuestionIndex = 0;
     let selectedAnswers = [];
     let buttonMapping = {};
+    let isCheckedMode = false; // Режим просмотра ошибок
 
     async function loadDishes() {
         try {
@@ -122,6 +117,7 @@
         const currentItem = DISHES_DB[currentQuestionIndex];
         selectedAnswers = [];
         buttonMapping = {};
+        isCheckedMode = false;
         
         const progressPercent = (currentQuestionIndex / DISHES_DB.length) * 100;
         document.getElementById('progress').style.width = `${progressPercent}%`;
@@ -130,6 +126,13 @@
         const typeTitle = document.getElementById('question-type-title');
         const previewZone = document.getElementById('preview-zone');
         const grid = document.getElementById('ingredients-grid');
+        const toast = document.getElementById('hint-toast');
+        const actionBtn = document.getElementById('action-btn');
+
+        toast.style.display = 'none';
+        actionBtn.innerText = "Проверить";
+        actionBtn.style.background = 'linear-gradient(180deg, #61e002 0%, #52be02 100%)';
+        actionBtn.style.borderBottom = '5px solid #3f9201';
 
         if (currentItem.type === "allergen") {
             typeTitle.innerText = "Какие главные АЛЛЕРГЕНЫ содержит:";
@@ -142,7 +145,6 @@
         }
 
         document.getElementById('dish-title').innerText = currentItem.name;
-        document.getElementById('result-screen').style.display = 'none';
         document.getElementById('action-btn').disabled = true;
         document.getElementById('reset-btn').disabled = true;
         
@@ -162,7 +164,7 @@
     }
 
     function selectItem(item) {
-        if (selectedAnswers.includes(item)) return;
+        if (isCheckedMode || selectedAnswers.includes(item)) return;
         
         selectedAnswers.push(item);
         if (buttonMapping[item]) {
@@ -176,6 +178,7 @@
     }
 
     function removeItem(item) {
+        if (isCheckedMode) return;
         const index = selectedAnswers.indexOf(item);
         if (index > -1) {
             selectedAnswers.splice(index, 1);
@@ -190,6 +193,7 @@
     }
 
     function resetCurrentQuestion() {
+        if (isCheckedMode) return;
         selectedAnswers = [];
         document.getElementById('action-btn').disabled = true;
         document.getElementById('reset-btn').disabled = true;
@@ -216,34 +220,38 @@
     }
 
     function checkAnswer() {
-        const currentItem = DISHES_DB[currentQuestionIndex];
+        const actionBtn = document.getElementById('action-btn');
         
+        // Если уже проверили и нажали кнопку повторно — идем дальше
+        if (isCheckedMode) {
+            currentQuestionIndex++;
+            initQuestion();
+            return;
+        }
+
+        const currentItem = DISHES_DB[currentQuestionIndex];
         const sortedSelected = [...selectedAnswers].sort();
         const sortedCorrect = [...currentItem.correct].sort();
         const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedCorrect);
         
-        const screen = document.getElementById('result-screen');
-        const status = document.getElementById('result-status');
-        const details = document.getElementById('result-details');
-        const nextBtn = document.getElementById('next-btn');
-
-        screen.style.display = 'block';
+        const toast = document.getElementById('hint-toast');
+        toast.style.display = 'block';
+        isCheckedMode = true;
+        document.getElementById('reset-btn').disabled = true;
 
         if (isCorrect) {
-            status.className = 'result-status success';
-            status.innerText = '🎉 Правильно!';
-            details.innerText = currentItem.type === "allergen" ? 'Аллергены определены абсолютно верно.' : 'Состав блюда/полуфабриката выбран верно.';
-            nextBtn.style.background = 'linear-gradient(180deg, #61e002 0%, #52be02 100%)';
-            nextBtn.style.borderBottom = '5px solid #3f9201';
-            currentQuestionIndex++;
+            toast.className = 'hint-toast success';
+            toast.innerText = currentItem.type === "allergen" ? '🎉 Правильно! Аллергены определены верно.' : '🎉 Правильно! Состав выбран верно.';
+            actionBtn.innerText = "Дальше";
         } else {
-            status.className = 'result-status error';
-            status.innerText = '❌ Ошибка!';
-            details.innerText = currentItem.info_text;
-            nextBtn.style.background = 'linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%)';
-            nextBtn.style.borderBottom = '5px solid #b71c1c';
+            toast.className = 'hint-toast error';
+            toast.innerText = currentItem.info_text;
+            
+            actionBtn.innerText = "Дальше";
+            actionBtn.style.background = 'linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%)';
+            actionBtn.style.borderBottom = '5px solid #b71c1c';
 
-            // УМНАЯ ПОДСВЕТКА КНОПОК ПРИ ОШИБКЕ
+            // Подсветка кнопок ошибок
             currentItem.pool.forEach(item => {
                 const btn = buttonMapping[item];
                 if (btn) {
@@ -251,13 +259,10 @@
                     const shouldBeSelected = currentItem.correct.includes(item);
 
                     if (userSelected && !shouldBeSelected) {
-                        // Повар выбрал лишнее -> Красный
                         btn.className = 'ing-btn error-wrong';
                     } else if (!userSelected && shouldBeSelected) {
-                        // Повар забыл выбрать -> Зеленый
                         btn.className = 'ing-btn error-missing';
                     } else {
-                        // Повар угадал правильно или правильно пропустил -> Серый/Обычный
                         btn.className = 'ing-btn';
                         btn.style.opacity = '0.4';
                         btn.style.pointerEvents = 'none';
@@ -265,10 +270,6 @@
                 }
             });
         }
-    }
-
-    function nextQuestion() {
-        initQuestion();
     }
 
     loadDishes();
