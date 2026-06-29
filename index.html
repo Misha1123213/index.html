@@ -3,65 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ТТК Duolingo — Premium Dark</title>
+    <title>ТТК Тренажёр — Premium Dark</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
-        body { background: radial-gradient(circle at top, #18252c 0%, #0e161a 100%); color: #f1f7fb; display: flex; justify-content: center; min-height: 100vh; padding: 15px; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; min-height: 100vh; padding: 20px; -webkit-tap-highlight-color: transparent; }
         
-        .app-container { background: #1b2c34; width: 100%; max-width: 450px; border-radius: 24px; border: 2px solid #2b3d47; padding: 24px; display: flex; flex-direction: column; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.5); overflow: hidden; }
+        .app-container { background: #1e293b; width: 100%; max-width: 440px; border-radius: 20px; border: 1px solid #334155; padding: 24px; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,0,0,0.3); overflow: hidden; }
         
-        /* Прогресс-бар */
+        /* Прогресс-бар премиум */
         .progress-container { display: flex; align-items: center; gap: 14px; margin-bottom: 25px; }
-        .close-btn { font-size: 28px; color: #4b5a63; cursor: pointer; border: none; background: none; transition: color 0.2s; line-height: 1; }
-        .close-btn:hover { color: #f1f7fb; }
-        .progress-bar { background: #24353f; height: 18px; flex-grow: 1; border-radius: 12px; overflow: hidden; border: 1px solid #2b3d47; position: relative; }
-        .progress-fill { background: linear-gradient(90deg, #58cc02 0%, #78eb17 100%); height: 100%; width: 0%; transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 12px; position: relative; }
-        .progress-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent); }
-        .progress-text { font-size: 13px; font-weight: 700; color: #647b88; min-width: 45px; text-align: right; }
+        .close-btn { font-size: 24px; color: #64748b; cursor: pointer; border: none; background: none; transition: color 0.2s; line-height: 1; }
+        .close-btn:hover { color: #f8fafc; }
+        .progress-bar { background: #334155; height: 10px; flex-grow: 1; border-radius: 9999px; overflow: hidden; position: relative; }
+        .progress-fill { background: linear-gradient(90deg, #10b981 0%, #059669 100%); height: 100%; width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 9999px; }
+        .progress-text { font-size: 13px; font-weight: 600; color: #94a3b8; min-width: 45px; text-align: right; }
 
-        .question-title { font-size: 15px; font-weight: 700; color: #8496a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: center; }
-        .dish-name { font-size: 24px; color: #1cb0f6; font-weight: 800; text-align: center; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .question-title { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; text-align: center; }
+        .dish-name { font-size: 22px; color: #38bdf8; font-weight: 700; text-align: center; margin-bottom: 25px; }
+        /* Зона сборки рецепта (компактная) */
+        .preview-zone { min-height: 90px; border: 1px dashed #475569; border-radius: 14px; padding: 12px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 8px; background: #0f172a; align-content: flex-start; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1); }
+        .preview-item { background: #0284c7; color: #ffffff; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid #0369a1; transition: all 0.15s ease; animation: popIn 0.2s ease-out; }
+        .preview-item:hover { background: #0369a1; }
         
-        /* Зона сборки рецепта */
-        .preview-zone { min-height: 110px; border: 2px dashed #3a4e59; border-radius: 18px; padding: 16px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 10px; background: #131f24; align-content: flex-start; box-shadow: inset 0 4px 12px rgba(0,0,0,0.3); transition: min-height 0.3s ease; }
-        .preview-item { background: linear-gradient(180deg, #1cb0f6 0%, #1899d6 100%); color: #fff; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 14px; border-bottom: 4px solid #1482b6; cursor: pointer; box-shadow: 0 4px 10px rgba(28,176,246,0.2); transition: transform 0.1s, border-bottom-width 0.1s; animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .preview-item:active { border-bottom-width: 0px; transform: translateY(4px); box-shadow: none; }
-        
-        /* КРАСНАЯ ПОДСВЕТКА ДЛЯ ОШИБОК В ВЕРХНЕМ ОКНЕ */
-        .preview-item.wrong-item { background: linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%) !important; border-bottom-color: #b71c1c !important; box-shadow: 0 4px 10px rgba(255,75,75,0.3) !important; animation: shake 0.3s; }
+        /* СТРОГАЯ ТЕМНО-КРАСНАЯ ПОДСВЕТКА ДЛЯ ОШИБОК */
+        .preview-item.wrong-item { background: #991b1b !important; border-color: #7f1d1d !important; color: #fee2e2 !important; box-shadow: 0 2px 8px rgba(153,27,27,0.2) !important; animation: shake 0.3s; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
+            20%, 60% { transform: translateX(-4px); }
+            40%, 80% { transform: translateX(4px); }
         }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        /* Сетка ингредиентов */
-        .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: auto; }
-        .ing-btn { background: #24353f; border: 2px solid #37464f; border-bottom: 5px solid #37464f; border-radius: 16px; padding: 16px 12px; font-size: 14px; font-weight: 700; color: #f1f7fb; cursor: pointer; transition: all 0.1s cubic-bezier(0.25, 0.8, 0.25, 1); text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .ing-btn:active:not(.selected) { border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; }
+        @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Компактная сетка ингредиентов */
+        .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: auto; }
+        .ing-btn { background: #334155; border: 1px solid #475569; border-radius: 12px; padding: 12px 10px; font-size: 13px; font-weight: 600; color: #f8fafc; cursor: pointer; transition: all 0.15s ease; text-align: center; }
+        .ing-btn:hover { background: #475569; border-color: #64748b; }
         
-        /* ЗЕЛЁНАЯ ПОДСВЕТКА ДЛЯ ЗАБЫТЫХ ИНГРЕДИЕНТОВ В НИЖНЕЙ СЕТКЕ */
-        .ing-btn.selected { background: #131f24; border-color: #2b3d47; color: #37464f; border-bottom-width: 2px; transform: translateY(3px); box-shadow: none; opacity: 0.3; pointer-events: none; }
-        .ing-btn.error-missing { background: linear-gradient(180deg, #61e002 0%, #52be02 100%) !important; border-color: #78eb17 !important; border-bottom: 5px solid #3f9201 !important; color: white !important; opacity: 1 !important; pointer-events: none; transform: none !important; box-shadow: 0 0 15px rgba(88,204,2,0.4); }
+        /* ПРИГЛУШЕННАЯ ИЗУМРУДНАЯ ПОДСВЕТКА ДЛЯ ЗАБЫТЫХ ВАРИАНТОВ */
+        .ing-btn.selected { background: #0f172a; border-color: #1e293b; color: #475569; opacity: 0.25; pointer-events: none; }
+        .ing-btn.error-missing { background: #065f46 !important; border-color: #047857 !important; color: #a7f3d0 !important; pointer-events: none; box-shadow: 0 4px 12px rgba(6,95,70,0.2); }
         
         .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
 
-        /* Нижняя панель */
-        .check-panel { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
-        .buttons-row { display: flex; gap: 14px; width: 100%; }
+        /* Компактная нижняя панель */
+        .check-panel { margin-top: 25px; display: flex; flex-direction: column; gap: 12px; }
+        .buttons-row { display: flex; gap: 12px; width: 100%; }
         
-        .main-action-btn { width: 100%; background: linear-gradient(180deg, #61e002 0%, #52be02 100%); border: none; border-bottom: 5px solid #3f9201; color: white; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 6px 16px rgba(88,204,2,0.2); transition: all 0.1s; }
-        .main-action-btn:active:not(:disabled) { border-bottom-width: 0px; transform: translateY(5px); box-shadow: none; }
-        .main-action-btn:disabled { background: #24353f; border-bottom: 5px solid #1b2c34; color: #4b5a63; cursor: not-allowed; box-shadow: none; border-color: #2b3d47; }
+        .main-action-btn { width: 100%; background: #059669; border: 1px solid #047857; color: white; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.15s ease; }
+        .main-action-btn:hover:not(:disabled) { background: #047857; }
+        .main-action-btn:disabled { background: #334155; border-color: #1e293b; color: #64748b; cursor: not-allowed; }
         
-        .reset-btn { background: linear-gradient(180deg, #ff4b4b 0%, #ea2b2b 100%); border-bottom: 5px solid #b71c1c; max-width: 80px; font-size: 20px; box-shadow: 0 6px 16px rgba(255,75,75,0.2); }
-        .reset-btn:disabled { background: #24353f; border-bottom-color: #1b2c34; }
+        .reset-btn { background: #dc2626; border-color: #b91c1c; max-width: 65px; font-size: 16px; }
+        .reset-btn:hover:not(:disabled) { background: #b91c1c; }
 
-        /* Двойные кнопки после проверки */
-        .after-check-row { display: none; gap: 14px; width: 100%; animation: popIn 0.2s ease-out; }
-        .retry-btn { background: linear-gradient(180deg, #ff9600 0%, #e68500 100%); border-bottom: 5px solid #b36700; box-shadow: 0 6px 16px rgba(255,150,0,0.2); }
-        .next-btn { background: linear-gradient(180deg, #61e002 0%, #52be02 100%); border-bottom: 5px solid #3f9201; box-shadow: 0 6px 16px rgba(88,204,2,0.2); }
+        /* Строгие благородные кнопки после проверки */
+        .after-check-row { display: none; gap: 12px; width: 100%; animation: popIn 0.2s ease-out; }
+        .retry-btn { background: #d97706; border-color: #b45309; }
+        .retry-btn:hover { background: #b45309; }
+        .next-btn { background: #0284c7; border-color: #0369a1; }
+        .next-btn:hover { background: #0369a1; }
     </style>
 </head>
 <body>
@@ -80,12 +81,10 @@
     <div class="ingredients-grid" id="ingredients-grid"></div>
 
     <div class="check-panel">
-        <!-- Обычные кнопки управления -->
         <div class="buttons-row" id="normal-actions-row">
             <button class="main-action-btn reset-btn" id="reset-btn" disabled onclick="resetCurrentQuestion()">↩</button>
             <button class="main-action-btn" id="action-btn" disabled onclick="checkAnswer()">Проверить</button>
         </div>
-        <!-- Новые двойные кнопки после клика -->
         <div class="after-check-row" id="after-check-row">
             <button class="main-action-btn retry-btn" onclick="retryQuestion()">🔁 Заново</button>
             <button class="main-action-btn next-btn" onclick="nextQuestion()">Дальше ➡️</button>
@@ -135,17 +134,16 @@
         const previewZone = document.getElementById('preview-zone');
         const grid = document.getElementById('ingredients-grid');
 
-        // Переключение видимости рядов кнопок в дефолт
         document.getElementById('normal-actions-row').style.display = 'flex';
         document.getElementById('after-check-row').style.display = 'none';
 
         if (currentItem.type === "allergen") {
             typeTitle.innerText = "Какие главные АЛЛЕРГЕНЫ содержит:";
-            previewZone.style.minHeight = "70px";
+            previewZone.style.minHeight = "60px";
             grid.className = "ingredients-grid allergen-mode";
         } else {
             typeTitle.innerText = "Выбери все ингредиенты, входящие в:";
-            previewZone.style.minHeight = "110px";
+            previewZone.style.minHeight = "90px";
             grid.className = "ingredients-grid";
         }
 
@@ -212,12 +210,11 @@
         const zone = document.getElementById('preview-zone');
         zone.innerHTML = '';
         if (selectedAnswers.length === 0) {
-            zone.innerHTML = '<span style="color:#4b5a63; text-align:center; font-size:14px; margin:auto; font-weight:600;">Нажимай на варианты ниже...</span>';
+            zone.innerHTML = '<span style="color:#64748b; text-align:center; font-size:13px; margin:auto; font-weight:600;">Нажимай на варианты ниже...</span>';
             return;
         }
         selectedAnswers.forEach((item) => {
             const el = document.createElement('div');
-            // Если ингредиент лишний — вешаем класс wrong-item (красный цвет)
             if (wrongItemsList.includes(item)) {
                 el.className = 'preview-item wrong-item';
             } else {
@@ -238,7 +235,6 @@
         isCheckedMode = true;
         document.getElementById('reset-btn').disabled = true;
 
-        // Прячем старый ряд кнопок, выкатываем новый двойной ряд
         document.getElementById('normal-actions-row').style.display = 'none';
         document.getElementById('after-check-row').style.display = 'flex';
 
@@ -247,43 +243,36 @@
         if (isCorrect) {
             currentQuestionIndex++;
         } else {
-            // Подсчет ошибок и перекрашивание интерфейса
             currentItem.pool.forEach(item => {
                 const btn = buttonMapping[item];
                 const userSelected = selectedAnswers.includes(item);
                 const shouldBeSelected = currentItem.correct.includes(item);
 
                 if (userSelected && !shouldBeSelected) {
-                    // Лишний выбранный ингредиент (пойдет в список красных для верхнего окна)
                     wrongSelectedItems.push(item);
                     if (btn) {
-                        btn.style.opacity = '0.3';
+                        btn.style.opacity = '0.2';
                         btn.style.pointerEvents = 'none';
                     }
                 } else if (!userSelected && shouldBeSelected) {
-                    // Забытый ингредиент в нижней сетке -> Зеленый
                     if (btn) btn.className = 'ing-btn error-missing';
                 } else {
-                    // Правильно угаданные или правильно пропущенные
                     if (btn) {
-                        btn.style.opacity = '0.3';
+                        btn.style.opacity = '0.2';
                         btn.style.pointerEvents = 'none';
                     }
                 }
             });
         }
         
-        // Перерисовываем верхнее окно превью с подсветкой ошибок красным
         renderPreview(wrongSelectedItems);
     }
 
     function retryQuestion() {
-        // Перезапуск текущего вопроса заново для работы над ошибками
         initQuestion();
     }
 
     function nextQuestion() {
-        // Если повар ответил правильно, индекс уже увеличен. Если ошибся — сдвигаем индекс принудительно
         const currentItem = DISHES_DB[currentQuestionIndex];
         const sortedSelected = [...selectedAnswers].sort();
         const sortedCorrect = [...currentItem.correct].sort();
