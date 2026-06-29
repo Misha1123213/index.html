@@ -98,6 +98,68 @@
     let buttonMapping = {};
     let isCheckedMode = false;
 
+    // ЗВУКОВОЙ ДВИЖОК (WEB AUDIO API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playClickSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    function playSuccessSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        
+        // Нота 1 (До)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(523.25, now); // C5
+        gain1.gain.setValueAtTime(0.15, now);
+        gain1.gain.linearRampToValueAtTime(0, now + 0.1);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.1);
+
+        // Нота 2 (Ми - чуть позже и выше)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        gain2.gain.setValueAtTime(0.15, now + 0.08);
+        gain2.gain.linearRampToValueAtTime(0, now + 0.3);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.08);
+        osc2.stop(now + 0.3);
+    }
+
+    function playErrorSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(90, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+    }
+
     async function loadDishes() {
         try {
             const response = await fetch('/index.html/dishes.json');
@@ -169,6 +231,7 @@
     function selectItem(item) {
         if (isCheckedMode || selectedAnswers.includes(item)) return;
         
+        playClickSound(); // Звук клика по ингредиенту
         selectedAnswers.push(item);
         if (buttonMapping[item]) {
             buttonMapping[item].classList.add('selected');
@@ -182,6 +245,7 @@
 
     function removeItem(item) {
         if (isCheckedMode) return;
+        playClickSound(); // Звук удаления из превью
         const index = selectedAnswers.indexOf(item);
         if (index > -1) {
             selectedAnswers.splice(index, 1);
@@ -197,6 +261,7 @@
 
     function resetCurrentQuestion() {
         if (isCheckedMode) return;
+        playClickSound();
         selectedAnswers = [];
         document.getElementById('action-btn').disabled = true;
         document.getElementById('reset-btn').disabled = true;
@@ -241,8 +306,10 @@
         const wrongSelectedItems = [];
 
         if (isCorrect) {
+            playSuccessSound(); // Победный аккорд
             currentQuestionIndex++;
         } else {
+            playErrorSound(); // Звук ошибки
             currentItem.pool.forEach(item => {
                 const btn = buttonMapping[item];
                 const userSelected = selectedAnswers.includes(item);
@@ -269,10 +336,12 @@
     }
 
     function retryQuestion() {
+        playClickSound();
         initQuestion();
     }
 
     function nextQuestion() {
+        playClickSound();
         const currentItem = DISHES_DB[currentQuestionIndex];
         const sortedSelected = [...selectedAnswers].sort();
         const sortedCorrect = [...currentItem.correct].sort();
