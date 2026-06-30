@@ -2,54 +2,88 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ТТК Тренажёр — Кухня</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТТК Академия</title>
     <style>
-        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
         .app-container { background: #1e293b; width: 100%; max-width: 440px; border-radius: 20px; padding: 24px; }
-        .menu-title { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 20px; }
-        .level-btn { 
-            width: 100%; background: #334155; color: white; border: none; 
-            padding: 15px; margin-bottom: 10px; border-radius: 10px; 
-            cursor: pointer; text-align: left; font-weight: bold;
-        }
-        .level-btn:hover { background: #475569; }
+        .hidden { display: none; }
+        .level-btn { width: 100%; background: #334155; color: white; border: none; padding: 15px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; text-align: left; }
+        .ing-btn { background: #475569; border: none; color: white; padding: 10px; margin: 5px; border-radius: 8px; cursor: pointer; }
+        .ing-btn.selected { background: #38bdf8; }
+        #check-btn { width: 100%; background: #10b981; border: none; padding: 15px; border-radius: 10px; margin-top: 20px; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="menu-title">ТТК Академия 🦉</div>
-    <div id="path-kitchen">Загрузка...</div>
+<div class="app-container" id="app">
+    <div id="menu-screen">
+        <h2 style="text-align:center;">ТТК Академия 🦉</h2>
+        <div id="levels-container"></div>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <h3 id="dish-name">Название</h3>
+        <div id="ingredients-container"></div>
+        <button id="check-btn">Проверить</button>
+    </div>
 </div>
 
 <script>
+    let data = [];
+    let currentLevel = [];
+    let currentIndex = 0;
+    let selected = [];
+
     async function init() {
-        try {
-            // Загружаем файл
-            const response = await fetch('dishes.json');
-            const allQuestions = await response.json();
-            
-            const container = document.getElementById('path-kitchen');
-            container.innerHTML = ''; // Очищаем "Загрузка..."
-            
-            // Создаем кнопки (по 10 вопросов на уровень)
-            const QUESTIONS_PER_LEVEL = 10;
-            const totalLevels = Math.ceil(allQuestions.length / QUESTIONS_PER_LEVEL);
-            
-            for (let i = 0; i < totalLevels; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'level-btn';
-                btn.innerText = `Уровень ${i + 1} (${allQuestions.length} позиций)`;
-                btn.onclick = () => alert("Уровень " + (i + 1) + " выбран!");
-                container.appendChild(btn);
-            }
-        } catch (error) {
-            document.getElementById('path-kitchen').innerText = "Ошибка: " + error.message;
-            console.error(error);
+        const res = await fetch('dishes.json');
+        data = await res.json();
+        const container = document.getElementById('levels-container');
+        const levels = Math.ceil(data.length / 10);
+        for(let i=0; i<levels; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'level-btn';
+            btn.innerText = `Уровень ${i+1}`;
+            btn.onclick = () => startLevel(i);
+            container.appendChild(btn);
         }
     }
+
+    function startLevel(idx) {
+        currentLevel = data.slice(idx * 10, idx * 10 + 10);
+        currentIndex = 0;
+        document.getElementById('menu-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = currentLevel[currentIndex];
+        selected = [];
+        document.getElementById('dish-name').innerText = q.name;
+        const cont = document.getElementById('ingredients-container');
+        cont.innerHTML = '';
+        q.pool.forEach(ing => {
+            const btn = document.createElement('button');
+            btn.className = 'ing-btn';
+            btn.innerText = ing;
+            btn.onclick = () => {
+                btn.classList.toggle('selected');
+                selected.includes(ing) ? selected.splice(selected.indexOf(ing), 1) : selected.push(ing);
+            };
+            cont.appendChild(btn);
+        });
+    }
+
+    document.getElementById('check-btn').onclick = () => {
+        const correct = currentLevel[currentIndex].correct;
+        const isWin = correct.length === selected.length && correct.every(i => selected.includes(i));
+        alert(isWin ? "Правильно!" : "Ошибка! Состав: " + correct.join(', '));
+        currentIndex++;
+        currentIndex < currentLevel.length ? showQuestion() : location.reload();
+    };
+
     init();
 </script>
-
 </body>
 </html>
