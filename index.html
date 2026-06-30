@@ -237,21 +237,30 @@
         }
     }
 
-    // Рендер кнопок уровней в меню
+   // Рендер кнопок уровней в меню
     function renderLevels() {
-        pathKitchen.innerHTML = '';
+        const pathKitchen = document.getElementById('path-kitchen');
+        pathKitchen.innerHTML = ''; // Очищаем контейнер
+        
+        // Делим 858 позиций на уровни по 10 штук
         const totalLevels = Math.ceil(allQuestions.length / QUESTIONS_PER_LEVEL);
         
         for (let i = 0; i < totalLevels; i++) {
             const btn = document.createElement('button');
             btn.className = 'level-btn';
             
-            // Расчет позиций для красивого отображения (например: Уровень 1 (Позиции 1-10))
             const startPos = i * QUESTIONS_PER_LEVEL + 1;
             const endPos = Math.min((i + 1) * QUESTIONS_PER_LEVEL, allQuestions.length);
             
-            btn.innerHTML = `Уровень ${i + 1} <span style="float:right; color:#94a3b8; font-size:12px; margin-top:2px;">${startPos}-${endPos}</span>`;
+            btn.innerHTML = `Уровень ${i + 1} 
+                <span style="float:right; color:#94a3b8; font-size:12px; margin-top:2px;">
+                    ${startPos} - ${endPos}
+                </span>`;
+            
+            // Назначаем действие
             btn.onclick = () => startLevel(i);
+            
+            // ВАЖНО: Добавляем кнопку в DOM
             pathKitchen.appendChild(btn);
         }
     }
