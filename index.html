@@ -5,17 +5,22 @@
     <title>ТТК Академия 🦉</title>
     <style>
         body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .app-container { background: #1e293b; width: 100%; max-width: 440px; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .app-container { background: #1e293b; width: 100%; max-width: 440px; border-radius: 20px; padding: 24px; }
         .hidden { display: none; }
         
-        /* Стили для игры */
         .progress-bar { width: 100%; height: 8px; background: #334155; border-radius: 4px; margin-bottom: 20px; }
         .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.3s; }
-        .dish-name { font-size: 20px; font-weight: 800; margin-bottom: 20px; text-align: center; }
-        .ing-btn { background: #334155; border: 2px solid transparent; color: white; padding: 12px; margin: 5px; border-radius: 10px; cursor: pointer; }
+        
+        .dish-name { font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+        .ing-btn { background: #334155; border: 2px solid #475569; color: white; padding: 10px; margin: 4px; border-radius: 8px; cursor: pointer; }
         .ing-btn.selected { border-color: #38bdf8; background: #0ea5e9; }
         
-        #check-btn { width: 100%; background: #38bdf8; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        /* Стили для встроенного результата */
+        #result-box { margin-top: 20px; padding: 15px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        .success { background: #064e3b; border: 1px solid #10b981; color: #34d399; }
+        .error { background: #7f1d1d; border: 1px solid #ef4444; color: #fca5a5; }
+        
+        .action-btn { width: 100%; background: #38bdf8; border: none; padding: 14px; border-radius: 10px; font-weight: bold; margin-top: 15px; cursor: pointer; }
         .level-btn { width: 100%; background: #334155; color: white; border: none; padding: 15px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; }
     </style>
 </head>
@@ -31,7 +36,10 @@
         <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
         <div id="dish-name" class="dish-name"></div>
         <div id="ingredients-container"></div>
-        <button id="check-btn">Проверить</button>
+        <button id="check-btn" class="action-btn">Проверить</button>
+        
+        <div id="result-box" class="hidden"></div>
+        <button id="next-btn" class="action-btn hidden">Дальше</button>
     </div>
 </div>
 
@@ -60,8 +68,12 @@
     }
 
     function showQuestion() {
-        const q = currentLevel[currentIndex];
         selected = [];
+        document.getElementById('result-box').classList.add('hidden');
+        document.getElementById('next-btn').classList.add('hidden');
+        document.getElementById('check-btn').classList.remove('hidden');
+        
+        const q = currentLevel[currentIndex];
         document.getElementById('dish-name').innerText = q.name;
         document.getElementById('progress-fill').style.width = (currentIndex/currentLevel.length*100) + '%';
         const cont = document.getElementById('ingredients-container');
@@ -81,7 +93,17 @@
     document.getElementById('check-btn').onclick = () => {
         const q = currentLevel[currentIndex];
         const isWin = q.correct.length === selected.length && q.correct.every(i => selected.includes(i));
-        alert(isWin ? "Верно!" : "Ошибка. Состав: " + q.correct.join(', '));
+        const resBox = document.getElementById('result-box');
+        
+        resBox.innerHTML = isWin ? "✅ Верно!" : "❌ Ошибка. Правильно:<br>" + q.correct.join(', ');
+        resBox.className = isWin ? "success" : "error";
+        resBox.classList.remove('hidden');
+        
+        document.getElementById('check-btn').classList.add('hidden');
+        document.getElementById('next-btn').classList.remove('hidden');
+    };
+
+    document.getElementById('next-btn').onclick = () => {
         currentIndex++;
         currentIndex < currentLevel.length ? showQuestion() : location.reload();
     };
