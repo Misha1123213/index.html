@@ -4,6 +4,77 @@
     <meta charset="UTF-8">
     <title>ТТК Академия 🦉</title>
     <style>
+        .levels-path {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+.level-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #334155;
+    border: 4px solid #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+}
+        /* Контейнер пути */
+.levels-path {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Стиль уровня-кружочка */
+.level-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #334155;
+    border: 4px solid #475569;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.level-circle.active { background: #58cc02; border-color: #46a302; }
+.level-circle.locked { opacity: 0.5; pointer-events: none; }
+
+/* Иконки сундуков или декора */
+.path-item { position: relative; }
+        /* Стиль карточек-ингредиентов (как в Duolingo) */
+.ingredients-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 20px 0; }
+.ing-btn { 
+    background: #ffffff; 
+    border: 2px solid #e5e7eb; 
+    border-bottom: 4px solid #e5e7eb; /* Эффект объема */
+    color: #4b5563; 
+    padding: 12px 18px; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: all 0.1s;
+}
+.ing-btn.selected { 
+    background: #ddf4ff; 
+    border-color: #38bdf8; 
+    border-bottom-color: #38bdf8;
+    color: #0369a1;
+}
+/* Верхняя полоска жизней и прогресса */
+.game-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.lives { color: #f43f5e; font-weight: bold; font-size: 18px; }
         body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
         .app-container { background: #1e293b; width: 100%; max-width: 440px; border-radius: 20px; padding: 24px; }
         .hidden { display: none; }
@@ -31,34 +102,60 @@
         <h2 style="text-align:center;">ТТК Академия 🦉</h2>
         <div id="levels-container"></div>
     </div>
-
-    <div id="game-screen" class="hidden">
-        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-        <div id="dish-name" class="dish-name"></div>
-        <div id="ingredients-container"></div>
-        <button id="check-btn" class="action-btn">Проверить</button>
-        
-        <div id="result-box" class="hidden"></div>
-        <button id="next-btn" class="action-btn hidden">Дальше</button>
+    
+   <div id="game-screen" class="hidden">
+    <div class="game-header">
+        <div style="flex-grow: 1; height: 12px; background: #e5e7eb; border-radius: 6px;">
+            <div id="progress-fill" style="height: 100%; background: #58cc02; width: 0%; border-radius: 6px;"></div>
+        </div>
+        <div class="lives" id="lives-display">❤️ 3</div>
     </div>
+
+    <div id="dish-name" style="font-size: 22px; font-weight: 800; margin: 20px 0;"></div>
+    <div id="ingredients-container" class="ingredients-container"></div>
+    
+    <button id="check-btn" class="action-btn">Проверить</button>
+    <div id="result-box" class="hidden"></div>
+    <button id="next-btn" class="action-btn hidden">Продолжить</button>
+</div>
+    
 </div>
 
 <script>
     let data = [], currentLevel = [], currentIndex = 0, selected = [];
 
+    // 1. Инициализация: загружаем данные и рисуем стартовую кнопку "Кухня"
     async function init() {
         const res = await fetch('dishes.json');
         data = await res.json();
         const container = document.getElementById('levels-container');
-        for(let i=0; i<Math.ceil(data.length/10); i++) {
-            const btn = document.createElement('button');
-            btn.className = 'level-btn';
-            btn.innerText = `Уровень ${i+1}`;
-            btn.onclick = () => startLevel(i);
-            container.appendChild(btn);
+        container.innerHTML = '';
+        
+        // Кнопка для входа в список уровней
+        const btn = document.createElement('button');
+        btn.className = 'level-btn';
+        btn.innerText = `🔍 КУХНЯ (${data.length} позиций)`;
+        btn.onclick = () => renderLevelMap(); // При клике рисуем карту уровней
+        container.appendChild(btn);
+    }
+
+    // 2. Рисуем карту уровней (как в Дуолинго)
+    function renderLevelMap() {
+        const container = document.getElementById('levels-container');
+        container.innerHTML = '';
+        container.className = 'levels-path'; // Добавим этот класс в CSS для вертикальной змейки
+        
+        const totalLevels = Math.ceil(data.length / 10);
+        for(let i = 0; i < totalLevels; i++) {
+            const circle = document.createElement('div');
+            circle.className = 'level-circle';
+            circle.innerText = i + 1;
+            circle.onclick = () => startLevel(i);
+            container.appendChild(circle);
         }
     }
 
+    // 3. Запуск конкретного уровня
     function startLevel(idx) {
         currentLevel = data.slice(idx * 10, idx * 10 + 10);
         currentIndex = 0;
@@ -67,47 +164,9 @@
         showQuestion();
     }
 
-    function showQuestion() {
-        selected = [];
-        document.getElementById('result-box').classList.add('hidden');
-        document.getElementById('next-btn').classList.add('hidden');
-        document.getElementById('check-btn').classList.remove('hidden');
-        
-        const q = currentLevel[currentIndex];
-        document.getElementById('dish-name').innerText = q.name;
-        document.getElementById('progress-fill').style.width = (currentIndex/currentLevel.length*100) + '%';
-        const cont = document.getElementById('ingredients-container');
-        cont.innerHTML = '';
-        q.pool.forEach(ing => {
-            const btn = document.createElement('button');
-            btn.className = 'ing-btn';
-            btn.innerText = ing;
-            btn.onclick = () => {
-                btn.classList.toggle('selected');
-                selected.includes(ing) ? selected.splice(selected.indexOf(ing), 1) : selected.push(ing);
-            };
-            cont.appendChild(btn);
-        });
-    }
-
-    document.getElementById('check-btn').onclick = () => {
-        const q = currentLevel[currentIndex];
-        const isWin = q.correct.length === selected.length && q.correct.every(i => selected.includes(i));
-        const resBox = document.getElementById('result-box');
-        
-        resBox.innerHTML = isWin ? "✅ Верно!" : "❌ Ошибка. Правильно:<br>" + q.correct.join(', ');
-        resBox.className = isWin ? "success" : "error";
-        resBox.classList.remove('hidden');
-        
-        document.getElementById('check-btn').classList.add('hidden');
-        document.getElementById('next-btn').classList.remove('hidden');
-    };
-
-    document.getElementById('next-btn').onclick = () => {
-        currentIndex++;
-        currentIndex < currentLevel.length ? showQuestion() : location.reload();
-    };
-
+    // 4. Логика вопросов (showQuestion и проверка)
+    // ... здесь оставь свой текущий код для showQuestion и проверки ответов ...
+    
     init();
 </script>
 </body>
