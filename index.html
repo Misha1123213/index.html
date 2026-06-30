@@ -2,368 +2,372 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ТТК Тренажёр — Premium Dark</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ТТК Тренажёр — Кухня</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; min-height: 100vh; padding: 20px; -webkit-tap-highlight-color: transparent; }
-        
-        .app-container { background: #1e293b; width: 100%; max-width: 440px; border-radius: 20px; border: 1px solid #334155; padding: 24px; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,0,0,0.3); overflow: hidden; }
-        
-        /* Прогресс-бар премиум */
-        .progress-container { display: flex; align-items: center; gap: 14px; margin-bottom: 25px; }
-        .close-btn { font-size: 24px; color: #64748b; cursor: pointer; border: none; background: none; transition: color 0.2s; line-height: 1; }
-        .close-btn:hover { color: #f8fafc; }
-        .progress-bar { background: #334155; height: 10px; flex-grow: 1; border-radius: 9999px; overflow: hidden; position: relative; }
-        .progress-fill { background: linear-gradient(90deg, #10b981 0%, #059669 100%); height: 100%; width: 0%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 9999px; }
-        .progress-text { font-size: 13px; font-weight: 600; color: #94a3b8; min-width: 45px; text-align: right; }
-
-        .question-title { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; text-align: center; }
-        .dish-name { font-size: 22px; color: #38bdf8; font-weight: 700; text-align: center; margin-bottom: 25px; }
-        /* Зона сборки рецепта (компактная) */
-        .preview-zone { min-height: 90px; border: 1px dashed #475569; border-radius: 14px; padding: 12px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 8px; background: #0f172a; align-content: flex-start; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1); }
-        .preview-item { background: #0284c7; color: #ffffff; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; border: 1px solid #0369a1; transition: all 0.15s ease; animation: popIn 0.2s ease-out; }
-        .preview-item:hover { background: #0369a1; }
-        
-        /* СТРОГАЯ ТЕМНО-КРАСНАЯ ПОДСВЕТКА ДЛЯ ОШИБОК */
-        .preview-item.wrong-item { background: #991b1b !important; border-color: #7f1d1d !important; color: #fee2e2 !important; box-shadow: 0 2px 8px rgba(153,27,27,0.2) !important; animation: shake 0.3s; }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-4px); }
-            40%, 80% { transform: translateX(4px); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background: #0f172a; 
+            color: #f8fafc; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh; 
         }
-        @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .app-container { 
+            background: #1e293b; 
+            width: 100%; 
+            max-width: 440px; 
+            border-radius: 20px; 
+            padding: 24px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.3s ease; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Компактная сетка ингредиентов */
-        .ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: auto; }
-        .ing-btn { background: #334155; border: 1px solid #475569; border-radius: 12px; padding: 12px 10px; font-size: 13px; font-weight: 600; color: #f8fafc; cursor: pointer; transition: all 0.15s ease; text-align: center; }
-        .ing-btn:hover { background: #475569; border-color: #64748b; }
-        
-        /* ПРИГЛУШЕННАЯ ИЗУМРУДНАЯ ПОДСВЕТКА ДЛЯ ЗАБЫТЫХ ВАРИАНТОВ */
-        .ing-btn.selected { background: #0f172a; border-color: #1e293b; color: #475569; opacity: 0.25; pointer-events: none; }
-        .ing-btn.error-missing { background: #065f46 !important; border-color: #047857 !important; color: #a7f3d0 !important; pointer-events: none; box-shadow: 0 4px 12px rgba(6,95,70,0.2); }
-        
-        .ingredients-grid.allergen-mode { grid-template-columns: 1fr; }
-
-        /* Компактная нижняя панель */
-        .check-panel { margin-top: 25px; display: flex; flex-direction: column; gap: 12px; }
-        .buttons-row { display: flex; gap: 12px; width: 100%; }
-        
-        .main-action-btn { width: 100%; background: #059669; border: 1px solid #047857; color: white; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.15s ease; }
-        .main-action-btn:hover:not(:disabled) { background: #047857; }
-        .main-action-btn:disabled { background: #334155; border-color: #1e293b; color: #64748b; cursor: not-allowed; }
-        
-        .reset-btn { background: #dc2626; border-color: #b91c1c; max-width: 65px; font-size: 16px; }
-        .reset-btn:hover:not(:disabled) { background: #b91c1c; }
-
-        /* Строгие благородные кнопки после проверки */
-        .after-check-row { display: none; gap: 12px; width: 100%; animation: popIn 0.2s ease-out; }
-        .retry-btn { background: #d97706; border-color: #b45309; }
-        .retry-btn:hover { background: #b45309; }
-        .next-btn { background: #0284c7; border-color: #0369a1; }
-        .next-btn:hover { background: #0369a1; }
+        /* Стили меню */
+        .menu-title { 
+            font-size: 24px; 
+            font-weight: 800; 
+            text-align: center; 
+            margin-bottom: 24px; 
+            color: #ffffff;
+        }
+        .category-section { 
+            margin-bottom: 25px; 
+            background: #0f172a; 
+            padding: 20px; 
+            border-radius: 16px; 
+            border: 1px solid #334155;
+        }
+        .category-title { 
+            color: #38bdf8; 
+            text-transform: uppercase; 
+            margin-bottom: 16px; 
+            font-weight: 700; 
+            font-size: 14px; 
+            letter-spacing: 1px; 
+        }
+        .levels-path { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
     </style>
 </head>
 <body>
-
 <div class="app-container">
-    <div class="progress-container">
-        <button class="close-btn" onclick="location.reload()">×</button>
-        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
-        <div class="progress-text" id="progress-text">0 / 0</div>
-    </div>
-
-    <div class="question-title" id="question-type-title">Собери состав для:</div>
-    <div class="dish-name" id="dish-title">Загрузка...</div>
-
-    <div class="preview-zone" id="preview-zone"></div>
-    <div class="ingredients-grid" id="ingredients-grid"></div>
-
-    <div class="check-panel">
-        <div class="buttons-row" id="normal-actions-row">
-            <button class="main-action-btn reset-btn" id="reset-btn" disabled onclick="resetCurrentQuestion()">↩</button>
-            <button class="main-action-btn" id="action-btn" disabled onclick="checkAnswer()">Проверить</button>
-        </div>
-        <div class="after-check-row" id="after-check-row">
-            <button class="main-action-btn retry-btn" onclick="retryQuestion()">🔁 Заново</button>
-            <button class="main-action-btn next-btn" onclick="nextQuestion()">Дальше ➡️</button>
-        </div>
-    </div>
-</div>
-<script>
-    let DISHES_DB = [];
-    let currentQuestionIndex = 0;
-    let selectedAnswers = [];
-    let buttonMapping = {};
-    let isCheckedMode = false;
-
-    // ЗВУКОВОЙ ДВИЖОК (WEB AUDIO API)
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Функция принудительного включения звука на смартфонах
-    function unlockAudio() {
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        // Убираем слушатели, так как звук уже успешно разблокирован
-        window.removeEventListener('click', unlockAudio);
-        window.removeEventListener('touchstart', unlockAudio);
-    }
-    // Вешаем глобальные слушатели на первый тап по экрану смартфона
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
-
-    function playClickSound() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.05);
-    }
-
-    function playSuccessSound() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const now = audioCtx.currentTime;
+    
+    <!-- Главный экран меню -->
+    <div class="screen active" id="menu-screen">
+        <div class="menu-title">ТТК Академия 🦉</div>
         
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(523.25, now);
-        gain1.gain.setValueAtTime(0.15, now);
-        gain1.gain.linearRampToValueAtTime(0, now + 0.1);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.1);
+        <div class="category-section">
+            <div class="category-title">🍳 Кухня (858 позиций)</div>
+            <div class="levels-path" id="path-kitchen">
+                <!-- Сюда JS будет рендерить кнопки уровней (включая полуфабрикаты) -->
+            </div>
+        </div>
+    </div>
+    <!-- Экран вопроса (Тренажер) -->
+    <div class="screen" id="game-screen">
+        <div class="header">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="stats">
+                <span id="level-indicator">Уровень 1</span>
+                <span class="hearts" id="lives-counter">❤️❤️❤️</span>
+            </div>
+        </div>
 
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(659.25, now + 0.08);
-        gain2.gain.setValueAtTime(0.15, now + 0.08);
-        gain2.gain.linearRampToValueAtTime(0, now + 0.3);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.start(now + 0.08);
-        osc2.stop(now + 0.3);
-    }
+        <div class="question-container">
+            <div class="question-type" id="question-type">Состав</div>
+            <h2 class="dish-name" id="dish-name">Название блюда</h2>
+        </div>
 
-    function playErrorSound() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(90, audioCtx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.25);
+        <!-- Сетка кнопок с ингредиентами -->
+        <div class="ingredients-grid" id="ingredients-pool">
+            <!-- Сюда JS будет рендерить варианты ответов -->
+        </div>
+
+        <button class="check-btn" id="check-btn" disabled>Проверить</button>
+    </div>
+
+    <!-- Модальное окно результата (Правильно/Ошибка) -->
+    <div class="overlay" id="result-overlay"></div>
+    <div class="modal" id="result-modal">
+        <h3 class="modal-title" id="modal-title">Результат</h3>
+        <p class="modal-info" id="modal-info">Информация о блюде (ТТК)</p>
+        <button class="next-btn" id="next-btn">Дальше</button>
+    </div>
+</div> <!-- Закрываем .app-container -->
+
+<style>
+    /* Стили экрана игры */
+    .header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .progress-bar { width: 100%; height: 8px; background: #334155; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.3s ease; }
+    .stats { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: #94a3b8; }
+    .hearts { color: #ef4444; letter-spacing: 2px; }
+    
+    .question-container { text-align: center; margin-bottom: 30px; }
+    .question-type { color: #8b5cf6; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 8px; }
+    .dish-name { font-size: 20px; line-height: 1.4; color: #ffffff; }
+    
+    /* Сетка ингредиентов */
+    .ingredients-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 30px; }
+    .ingredient-btn { 
+        background: #334155; 
+        border: 2px solid transparent; 
+        color: #e2e8f0; 
+        padding: 10px 16px; 
+        border-radius: 12px; 
+        font-size: 14px; 
+        font-weight: 500; 
+        cursor: pointer; 
+        transition: all 0.2s; 
+        user-select: none; 
     }
-    async function loadDishes() {
+    .ingredient-btn.selected { 
+        background: #0ea5e9; 
+        border-color: #38bdf8; 
+        color: #fff; 
+        transform: translateY(-2px); 
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); 
+    }
+    .ingredient-btn.correct { background: #10b981; border-color: #34d399; color: #fff; }
+    .ingredient-btn.wrong { background: #ef4444; border-color: #f87171; color: #fff; }
+    
+    /* Основные кнопки */
+    .check-btn, .next-btn { 
+        width: 100%; 
+        background: #38bdf8; 
+        color: #0f172a; 
+        border: none; 
+        padding: 16px; 
+        border-radius: 14px; 
+        font-size: 16px; 
+        font-weight: 700; 
+        cursor: pointer; 
+        transition: opacity 0.2s; 
+    }
+    .check-btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+    
+    /* Кнопки уровней в меню */
+    .level-btn { 
+        width: 100%;
+        background: #1e293b; 
+        color: #f8fafc; 
+        border: 1px solid #334155; 
+        text-align: left; 
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .level-btn:hover { background: #334155; }
+    .level-btn.completed { border-color: #10b981; color: #10b981; }
+    
+    /* Модальное окно */
+    .overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); z-index: 10; }
+    .modal { 
+        display: none; 
+        position: absolute; 
+        bottom: 0; left: 0; right: 0; 
+        background: #1e293b; 
+        padding: 30px 24px; 
+        border-radius: 24px 24px 0 0; 
+        z-index: 20; 
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5); 
+        animation: slideUp 0.3s ease; 
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    
+    .modal-title { font-size: 22px; margin-bottom: 12px; }
+    .modal-info { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 24px; white-space: pre-wrap; }
+    .title-success { color: #10b981; }
+    .title-error { color: #ef4444; }
+</style>
+<script>
+    // Состояние игры
+    let allQuestions = [];
+    let currentLevelQuestions = [];
+    let currentQuestionIndex = 0;
+    let selectedIngredients = [];
+    let lives = 3;
+    const QUESTIONS_PER_LEVEL = 10;
+
+    // DOM Элементы
+    const menuScreen = document.getElementById('menu-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const pathKitchen = document.getElementById('path-kitchen');
+    
+    const dishNameEl = document.getElementById('dish-name');
+    const questionTypeEl = document.getElementById('question-type');
+    const ingredientsPoolEl = document.getElementById('ingredients-pool');
+    const checkBtn = document.getElementById('check-btn');
+    
+    const progressFill = document.getElementById('progress-fill');
+    const levelIndicator = document.getElementById('level-indicator');
+    const livesCounter = document.getElementById('lives-counter');
+    
+    const resultOverlay = document.getElementById('result-overlay');
+    const resultModal = document.getElementById('result-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalInfo = document.getElementById('modal-info');
+    const nextBtn = document.getElementById('next-btn');
+
+    // Инициализация: загрузка JSON
+    async function init() {
         try {
-            const response = await fetch('/index.html/dishes.json');
-            DISHES_DB = await response.json();
-            DISHES_DB.sort(() => Math.random() - 0.5);
-            initQuestion();
+            const response = await fetch('dishes.json');
+            if (!response.ok) throw new Error('Файл не найден');
+            allQuestions = await response.json();
+            renderLevels();
         } catch (error) {
-            document.getElementById('dish-title').innerText = "Ошибка загрузки данных 😢";
+            pathKitchen.innerHTML = '<div style="color:#ef4444; padding:15px;">⚠️ Ошибка загрузки dishes.json. Проверьте, что файл лежит в той же папке.</div>';
             console.error(error);
         }
     }
 
-    function shuffle(array) {
-        return array.sort(() => Math.random() - 0.5);
-    }
-
-    function initQuestion() {
-        if (!DISHES_DB.length) return;
-        if (currentQuestionIndex >= DISHES_DB.length) {
-            currentQuestionIndex = 0;
-            DISHES_DB.sort(() => Math.random() - 0.5);
-        }
-
-        const currentItem = DISHES_DB[currentQuestionIndex];
-        selectedAnswers = [];
-        buttonMapping = {};
-        isCheckedMode = false;
+    // Рендер кнопок уровней в меню
+    function renderLevels() {
+        pathKitchen.innerHTML = '';
+        const totalLevels = Math.ceil(allQuestions.length / QUESTIONS_PER_LEVEL);
         
-        const progressPercent = (currentQuestionIndex / DISHES_DB.length) * 100;
-        document.getElementById('progress').style.width = `${progressPercent}%`;
-        document.getElementById('progress-text').innerText = `${currentQuestionIndex + 1} / ${DISHES_DB.length}`;
-
-        const typeTitle = document.getElementById('question-type-title');
-        const previewZone = document.getElementById('preview-zone');
-        const grid = document.getElementById('ingredients-grid');
-
-        document.getElementById('normal-actions-row').style.display = 'flex';
-        document.getElementById('after-check-row').style.display = 'none';
-
-        if (currentItem.type === "allergen") {
-            typeTitle.innerText = "Какие главные АЛЛЕРГЕНЫ содержит:";
-            previewZone.style.minHeight = "60px";
-            grid.className = "ingredients-grid allergen-mode";
-        } else {
-            typeTitle.innerText = "Выбери все ингредиенты, входящие в:";
-            previewZone.style.minHeight = "90px";
-            grid.className = "ingredients-grid";
-        }
-
-        document.getElementById('dish-title').innerText = currentItem.name;
-        document.getElementById('action-btn').disabled = true;
-        document.getElementById('reset-btn').disabled = true;
-        
-        renderPreview();
-
-        grid.innerHTML = '';
-        const shuffledPool = shuffle([...currentItem.pool]);
-        
-        shuffledPool.forEach(item => {
+        for (let i = 0; i < totalLevels; i++) {
             const btn = document.createElement('button');
-            btn.className = 'ing-btn';
-            btn.innerText = item;
-            btn.onclick = () => selectItem(item);
-            grid.appendChild(btn);
-            buttonMapping[item] = btn;
-        });
+            btn.className = 'level-btn';
+            
+            // Расчет позиций для красивого отображения (например: Уровень 1 (Позиции 1-10))
+            const startPos = i * QUESTIONS_PER_LEVEL + 1;
+            const endPos = Math.min((i + 1) * QUESTIONS_PER_LEVEL, allQuestions.length);
+            
+            btn.innerHTML = `Уровень ${i + 1} <span style="float:right; color:#94a3b8; font-size:12px; margin-top:2px;">${startPos}-${endPos}</span>`;
+            btn.onclick = () => startLevel(i);
+            pathKitchen.appendChild(btn);
+        }
     }
 
-    function selectItem(item) {
-        if (isCheckedMode || selectedAnswers.includes(item)) return;
+    // Запуск уровня
+    function startLevel(levelIndex) {
+        const startIndex = levelIndex * QUESTIONS_PER_LEVEL;
+        currentLevelQuestions = allQuestions.slice(startIndex, startIndex + QUESTIONS_PER_LEVEL);
         
-        playClickSound(); 
-        selectedAnswers.push(item);
-        if (buttonMapping[item]) {
-            buttonMapping[item].classList.add('selected');
-        }
+        currentQuestionIndex = 0;
+        lives = 3;
+        levelIndicator.textContent = `Уровень ${levelIndex + 1}`;
+        updateLives();
         
-        const keyState = selectedAnswers.length === 0;
-        document.getElementById('action-btn').disabled = keyState;
-        document.getElementById('reset-btn').disabled = keyState;
-        renderPreview();
-    }
-
-    function removeItem(item) {
-        if (isCheckedMode) return;
-        playClickSound(); 
-        const index = selectedAnswers.indexOf(item);
-        if (index > -1) {
-            selectedAnswers.splice(index, 1);
-            if (buttonMapping[item]) {
-                buttonMapping[item].classList.remove('selected');
-            }
-            const keyState = selectedAnswers.length === 0;
-            document.getElementById('action-btn').disabled = keyState;
-            document.getElementById('reset-btn').disabled = keyState;
-            renderPreview();
-        }
-    }
-
-    function resetCurrentQuestion() {
-        if (isCheckedMode) return;
-        playClickSound();
-        selectedAnswers = [];
-        document.getElementById('action-btn').disabled = true;
-        document.getElementById('reset-btn').disabled = true;
-        renderPreview();
-        for (let item in buttonMapping) {
-            buttonMapping[item].className = 'ing-btn';
-        }
-    }
-
-    function renderPreview(wrongItemsList = []) {
-        const zone = document.getElementById('preview-zone');
-        zone.innerHTML = '';
-        if (selectedAnswers.length === 0) {
-            zone.innerHTML = '<span style="color:#64748b; text-align:center; font-size:13px; margin:auto; font-weight:600;">Нажимай на варианты ниже...</span>';
-            return;
-        }
-        selectedAnswers.forEach((item) => {
-            const el = document.createElement('div');
-            if (wrongItemsList.includes(item)) {
-                el.className = 'preview-item wrong-item';
-            } else {
-                el.className = 'preview-item';
-            }
-            el.innerText = item;
-            el.onclick = () => removeItem(item);
-            zone.appendChild(el);
-        });
-    }
-
-    function checkAnswer() {
-        const currentItem = DISHES_DB[currentQuestionIndex];
-        const sortedSelected = [...selectedAnswers].sort();
-        const sortedCorrect = [...currentItem.correct].sort();
-        const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedCorrect);
+        menuScreen.classList.remove('active');
+        gameScreen.classList.add('active');
         
-        isCheckedMode = true;
-        document.getElementById('reset-btn').disabled = true;
+        renderQuestion();
+    }
 
-        document.getElementById('normal-actions-row').style.display = 'none';
-        document.getElementById('after-check-row').style.display = 'flex';
+    function updateLives() {
+        livesCounter.textContent = '❤️'.repeat(lives);
+    }
 
-        const wrongSelectedItems = [];
-
-        if (isCorrect) {
-            playSuccessSound(); 
-            currentQuestionIndex++;
+    // Отрисовка текущего вопроса
+    function renderQuestion() {
+        selectedIngredients = [];
+        checkBtn.disabled = true;
+        
+        const q = currentLevelQuestions[currentQuestionIndex];
+        dishNameEl.textContent = q.name;
+        
+        // Меняем цвет бейджа в зависимости от типа вопроса
+        if (q.type === 'allergen') {
+            questionTypeEl.textContent = 'Аллергены';
+            questionTypeEl.style.color = '#f43f5e'; // розово-красный
         } else {
-            playErrorSound(); 
-            currentItem.pool.forEach(item => {
-                const btn = buttonMapping[item];
-                const userSelected = selectedAnswers.includes(item);
-                const shouldBeSelected = currentItem.correct.includes(item);
-
-                if (userSelected && !shouldBeSelected) {
-                    wrongSelectedItems.push(item);
-                    if (btn) {
-                        btn.style.opacity = '0.2';
-                        btn.style.pointerEvents = 'none';
-                    }
-                } else if (!userSelected && shouldBeSelected) {
-                    if (btn) btn.className = 'ing-btn error-missing';
-                } else {
-                    if (btn) {
-                        btn.style.opacity = '0.2';
-                        btn.style.pointerEvents = 'none';
-                    }
-                }
-            });
+            questionTypeEl.textContent = 'Состав';
+            questionTypeEl.style.color = '#38bdf8'; // голубой
         }
+
+        // Обновление прогресс-бара
+        const progress = (currentQuestionIndex / currentLevelQuestions.length) * 100;
+        progressFill.style.width = `${progress}%`;
+
+        // Перемешиваем пул ингредиентов (Fisher-Yates)
+        const shuffledPool = [...q.pool].sort(() => Math.random() - 0.5);
         
-        renderPreview(wrongSelectedItems);
+        ingredientsPoolEl.innerHTML = '';
+        shuffledPool.forEach(ingredient => {
+            const btn = document.createElement('button');
+            btn.className = 'ingredient-btn';
+            btn.textContent = ingredient;
+            btn.onclick = () => toggleIngredient(btn, ingredient);
+            ingredientsPoolEl.appendChild(btn);
+        });
     }
 
-    function retryQuestion() {
-        playClickSound();
-        initQuestion();
-    }
-
-    function nextQuestion() {
-        playClickSound();
-        const currentItem = DISHES_DB[currentQuestionIndex];
-        const sortedSelected = [...selectedAnswers].sort();
-        const sortedCorrect = [...currentItem.correct].sort();
-        const wasCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedCorrect);
-        
-        if (!wasCorrect) {
-            currentQuestionIndex++;
+    // Выбор/отмена выбора ингредиента
+    function toggleIngredient(btn, ingredient) {
+        if (selectedIngredients.includes(ingredient)) {
+            selectedIngredients = selectedIngredients.filter(i => i !== ingredient);
+            btn.classList.removeNormally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
+                else {
+            selectedNormally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
+                selectedIngredients.push(ingredient);
+            btn.classList.add('selected');
         }
-        initQuestion();
+        checkBtn.disabled = selectedIngredients.length === 0;
     }
 
-    loadDishes();
+    // Проверка ответа
+    checkBtn.onclick = () => {
+        const q = currentLevelQuestions[currentQuestionIndex];
+        const isCorrect = q.correct.length === selectedIngredients.length && 
+                          q.correct.every(ing => selectedIngredients.includes(ing));
+
+        if (!isCorrect) {
+            lives--;
+            updateLives();
+            modalTitle.textContent = 'Ошибка! ❌';
+            modalTitle.className = 'modal-title title-error';
+        } else {
+            modalTitle.textContent = 'Верно! ✅';
+            modalTitle.className = 'modal-title title-success';
+        }
+
+        modalInfo.textContent = q.info_text;
+        resultOverlay.style.display = 'block';
+        resultModal.style.display = 'block';
+        checkBtn.disabled = true;
+
+        if (lives <= 0) {
+            nextBtn.textContent = 'В меню';
+            nextBtn.onclick = () => location.reload();
+        } else {
+            nextBtn.textContent = 'Дальше';
+            nextBtn.onclick = proceedNext;
+        }
+    };
+
+    function proceedNext() {
+        resultOverlay.style.display = 'none';
+        resultModal.style.display = 'none';
+        currentQuestionIndex++;
+        
+        if (currentQuestionIndex < currentLevelQuestions.length) {
+            renderQuestion();
+        } else {
+            alert('Уровень завершен!');
+            location.reload();
+        }
+    }
+
+    // Запуск приложения
+    init();
 </script>
 </body>
 </html>
