@@ -882,7 +882,10 @@ function loadProgress() {
     try {
         const raw = localStorage.getItem(APP_KEY);
         return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+    } catch (e) {
+        console.error('Failed to load progress from localStorage:', e);
+        return {};
+    }
 }
 function saveProgress(data) {
     const current = loadProgress();
@@ -1084,16 +1087,23 @@ async function selectSection(section) {
     const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
     try {
         const response = await fetch(fileName);
-        if (!response.ok) throw new Error('File not found');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         state.allData = await response.json();
+        if (!Array.isArray(state.allData) || state.allData.length === 0) {
+            throw new Error('Данные пусты или имеют неверный формат');
+        }
         buildLessons();
         state.screen = 'path';
         render();
     } catch (e) {
+        console.error(`Ошибка загрузки ${fileName}:`, e);
         app.innerHTML = `
             <div class="loading-screen">
                 <span style="font-size:60px">😔</span>
-                <p>Файл ${fileName} не найден</p>
+                <p>Ошибка загрузки ${fileName}</p>
+                <p style="color:var(--red);font-size:14px;margin-top:8px">${e.message}</p>
                 <button class="result-btn secondary" style="margin-top:20px;max-width:280px" onclick="goHome()">Назад</button>
             </div>
         `;
@@ -1204,6 +1214,12 @@ function startLesson(idx) {
     state.currentLessonIdx = idx;
     state.isPractice = false;
     const lessonData = state.lessons[idx];
+    if (!lessonData || lessonData.length === 0) {
+        console.error(`Урок ${idx + 1} пуст — нет данных`);
+        state.screen = 'path';
+        render();
+        return;
+    }
     state.questions = generateQuestions(lessonData);
     state.currentQIdx = 0;
     state.hearts = 5;
@@ -1422,6 +1438,10 @@ function selectChoice(idx) {
 // ====================== ANSWER CHECKING ======================
 function checkSelectAnswer() {
     const q = state.questions[state.currentQIdx];
+    if (!q || !q.item || !Array.isArray(q.item.correct)) {
+        console.error('checkSelectAnswer: вопрос или данные отсутствуют', q);
+        return;
+    }
     const selectedItems = [...state.selectedOptions].map(i => q.pool[i]);
     const correctSet = new Set(q.item.correct);
     const selectedSet = new Set(selectedItems);
@@ -1432,6 +1452,10 @@ function checkSelectAnswer() {
 
 function checkMissingAnswer() {
     const q = state.questions[state.currentQIdx];
+    if (!q || !q.choices || state.selectedChoice === null) {
+        console.error('checkMissingAnswer: вопрос или выбор отсутствуют', q);
+        return;
+    }
     const selected = q.choices[state.selectedChoice];
     const isCorrect = selected === q.missing;
 
@@ -1440,6 +1464,10 @@ function checkMissingAnswer() {
 
 function checkTFAnswer(userAnswer) {
     const q = state.questions[state.currentQIdx];
+    if (!q) {
+        console.error('checkTFAnswer: вопрос отсутствует');
+        return;
+    }
     const isCorrect = userAnswer === q.answer;
 
     processAnswer(isCorrect, q.item);
