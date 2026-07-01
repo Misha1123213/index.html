@@ -963,6 +963,70 @@ function getWeakItems(section) {
 }
 
 // ====================== UTILITIES ======================
+function topBarHTML(stats) {
+    return `
+        <div class="top-bar">
+            <div class="top-bar-stat">
+                <span class="icon">🔥</span>
+                <span class="streak-count">${stats.streak}</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">⚡</span>
+                <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">${state.screen === 'home' ? '📚' : '❤️'}</span>
+                <span ${state.screen === 'home' ? 'style="color:var(--purple)"' : 'class="hearts-count"'}>${state.screen === 'home' ? stats.totalLessons : '5'}</span>
+            </div>
+        </div>
+    `;
+}
+
+function lessonHeaderHTML() {
+    const progress = ((state.currentQIdx + (state.feedbackShown ? 1 : 0)) / state.questions.length) * 100;
+    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+    return `
+        <div class="lesson-header">
+            <button class="close-btn" onclick="confirmQuit()">✕</button>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width:${progress}%"></div>
+            </div>
+            <div class="hearts-display" id="hearts-display">${heartsStr}</div>
+        </div>
+    `;
+}
+
+function checkButtonHTML(isActive, handler) {
+    return `
+        <div class="bottom-area">
+            <button class="check-btn ${isActive ? 'active' : 'disabled'}"
+                    onclick="${isActive ? handler : ''}">
+                Проверить
+            </button>
+        </div>
+    `;
+}
+
+function initSession(questions) {
+    state.questions = questions;
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.screen = 'lesson';
+    render();
+}
+
+function resetSelection() {
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+}
+
 function shuffle(arr) {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -1012,20 +1076,7 @@ function render() {
 function renderHome() {
     const stats = getGlobalStats();
     app.innerHTML = `
-        <div class="top-bar">
-            <div class="top-bar-stat">
-                <span class="icon">🔥</span>
-                <span class="streak-count">${stats.streak}</span>
-            </div>
-            <div class="top-bar-stat">
-                <span class="icon">⚡</span>
-                <span class="xp-count">${stats.totalXP} XP</span>
-            </div>
-            <div class="top-bar-stat">
-                <span class="icon">📚</span>
-                <span style="color:var(--purple)">${stats.totalLessons}</span>
-            </div>
-        </div>
+        ${topBarHTML(stats)}
         <div class="home-screen">
             <div class="mascot-area">
                 <span class="mascot">🦉</span>
@@ -1166,20 +1217,7 @@ function renderPath() {
     ` : '';
 
     app.innerHTML = `
-        <div class="top-bar">
-            <div class="top-bar-stat">
-                <span class="icon">🔥</span>
-                <span class="streak-count">${stats.streak}</span>
-            </div>
-            <div class="top-bar-stat">
-                <span class="icon">⚡</span>
-                <span class="xp-count">${stats.totalXP} XP</span>
-            </div>
-            <div class="top-bar-stat">
-                <span class="icon">❤️</span>
-                <span class="hearts-count">5</span>
-            </div>
-        </div>
+        ${topBarHTML(stats)}
         <div class="path-screen">
             <div class="path-header">
                 <button class="back-btn" onclick="goHome()">←</button>
@@ -1203,19 +1241,7 @@ function goHome() {
 function startLesson(idx) {
     state.currentLessonIdx = idx;
     state.isPractice = false;
-    const lessonData = state.lessons[idx];
-    state.questions = generateQuestions(lessonData);
-    state.currentQIdx = 0;
-    state.hearts = 5;
-    state.sessionXP = 0;
-    state.sessionCorrect = 0;
-    state.sessionTotal = 0;
-    state.mistakeIds = [];
-    state.feedbackShown = false;
-    state.selectedOptions = new Set();
-    state.selectedChoice = null;
-    state.screen = 'lesson';
-    render();
+    initSession(generateQuestions(state.lessons[idx]));
 }
 
 function startPractice() {
@@ -1223,19 +1249,7 @@ function startPractice() {
     if (weakItems.length === 0) return;
     state.isPractice = true;
     state.currentLessonIdx = -1;
-    const practiceData = weakItems.slice(0, 15);
-    state.questions = generateQuestions(practiceData);
-    state.currentQIdx = 0;
-    state.hearts = 5;
-    state.sessionXP = 0;
-    state.sessionCorrect = 0;
-    state.sessionTotal = 0;
-    state.mistakeIds = [];
-    state.feedbackShown = false;
-    state.selectedOptions = new Set();
-    state.selectedChoice = null;
-    state.screen = 'lesson';
-    render();
+    initSession(generateQuestions(weakItems.slice(0, 15)));
 }
 
 function generateQuestions(items) {
@@ -1311,9 +1325,6 @@ function renderLesson() {
         return;
     }
 
-    const progress = (state.currentQIdx / state.questions.length) * 100;
-    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
-
     let questionHTML = '';
 
     if (q.type === 'select') {
@@ -1332,12 +1343,7 @@ function renderLesson() {
                 </div>
                 <div class="options-grid">${optionsHTML}</div>
             </div>
-            <div class="bottom-area">
-                <button class="check-btn ${state.selectedOptions.size > 0 ? 'active' : 'disabled'}"
-                        onclick="${state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : ''}">
-                    Проверить
-                </button>
-            </div>
+            ${checkButtonHTML(state.selectedOptions.size > 0, 'checkSelectAnswer()')}
         `;
     } else if (q.type === 'missing') {
         const typeLabel = 'Найди пропущенное';
@@ -1361,12 +1367,7 @@ function renderLesson() {
                 <div class="missing-list">${shownHTML}</div>
                 <div class="choice-grid">${choicesHTML}</div>
             </div>
-            <div class="bottom-area">
-                <button class="check-btn ${state.selectedChoice !== null ? 'active' : 'disabled'}"
-                        onclick="${state.selectedChoice !== null ? 'checkMissingAnswer()' : ''}">
-                    Проверить
-                </button>
-            </div>
+            ${checkButtonHTML(state.selectedChoice !== null, 'checkMissingAnswer()')}
         `;
     } else if (q.type === 'truefalse') {
         const typeLabel = q.item.type === 'allergen' ? 'Верно или нет?' : 'Верно или нет?';
@@ -1391,13 +1392,7 @@ function renderLesson() {
 
     app.innerHTML = `
         <div class="lesson-screen">
-            <div class="lesson-header">
-                <button class="close-btn" onclick="confirmQuit()">✕</button>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" style="width:${progress}%"></div>
-                </div>
-                <div class="hearts-display" id="hearts-display">${heartsStr}</div>
-            </div>
+            ${lessonHeaderHTML()}
             ${questionHTML}
         </div>
     `;
@@ -1476,9 +1471,6 @@ function renderFeedback() {
     const q = state.questions[state.currentQIdx];
     const item = state._lastItem;
     const isCorrect = state._lastCorrect;
-    const progress = ((state.currentQIdx + 1) / state.questions.length) * 100;
-    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
-
     const feedbackClass = isCorrect ? 'correct' : 'wrong';
     const icon = isCorrect ? '🎉' : '😞';
     const text = isCorrect ? 'Отлично!' : 'Неправильно';
@@ -1493,13 +1485,7 @@ function renderFeedback() {
 
     app.innerHTML = `
         <div class="lesson-screen">
-            <div class="lesson-header">
-                <button class="close-btn" onclick="confirmQuit()">✕</button>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" style="width:${progress}%"></div>
-                </div>
-                <div class="hearts-display" id="hearts-display">${heartsStr}</div>
-            </div>
+            ${lessonHeaderHTML()}
             <div class="question-area" style="flex:1;overflow-y:auto;">
                 <div style="flex:1"></div>
             </div>
@@ -1528,8 +1514,7 @@ function nextQuestion() {
 
     state.currentQIdx++;
     state.feedbackShown = false;
-    state.selectedOptions = new Set();
-    state.selectedChoice = null;
+    resetSelection();
 
     if (state.currentQIdx >= state.questions.length) {
         finishLesson();
@@ -1616,18 +1601,7 @@ function retryMistakes() {
         return;
     }
     state.isPractice = true;
-    state.questions = generateQuestions(mistakeItems);
-    state.currentQIdx = 0;
-    state.hearts = 5;
-    state.sessionXP = 0;
-    state.sessionCorrect = 0;
-    state.sessionTotal = 0;
-    state.mistakeIds = [];
-    state.feedbackShown = false;
-    state.selectedOptions = new Set();
-    state.selectedChoice = null;
-    state.screen = 'lesson';
-    render();
+    initSession(generateQuestions(mistakeItems));
 }
 
 // ====================== QUIT CONFIRMATION ======================
