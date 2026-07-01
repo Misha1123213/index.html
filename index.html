@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self';">
     <title>ТТК Академия 🦉</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -858,6 +859,18 @@
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v2';
 
+const VALID_SECTIONS = {
+    kitchen: { file: 'dishes.json', label: '🍳 Кухня' },
+    desserts: { file: 'desserts.json', label: '🍰 Десерты' },
+    drinks: { file: 'drinks.json', label: '🍹 Напитки' }
+};
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(str)));
+    return div.innerHTML;
+}
+
 let state = {
     screen: 'home',
     section: null,
@@ -1075,13 +1088,14 @@ function renderHome() {
 }
 
 async function selectSection(section) {
+    const sectionInfo = VALID_SECTIONS[section];
+    if (!sectionInfo) return;
     state.section = section;
-    const labels = { kitchen: '🍳 Кухня', desserts: '🍰 Десерты', drinks: '🍹 Напитки' };
-    state.sectionLabel = labels[section] || section;
+    state.sectionLabel = sectionInfo.label;
 
     app.innerHTML = `<div class="loading-screen"><div class="loader"></div><p>Загрузка...</p></div>`;
 
-    const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
+    const fileName = sectionInfo.file;
     try {
         const response = await fetch(fileName);
         if (!response.ok) throw new Error('File not found');
@@ -1093,7 +1107,7 @@ async function selectSection(section) {
         app.innerHTML = `
             <div class="loading-screen">
                 <span style="font-size:60px">😔</span>
-                <p>Файл ${fileName} не найден</p>
+                <p>Файл ${escapeHtml(fileName)} не найден</p>
                 <button class="result-btn secondary" style="margin-top:20px;max-width:280px" onclick="goHome()">Назад</button>
             </div>
         `;
@@ -1183,7 +1197,7 @@ function renderPath() {
         <div class="path-screen">
             <div class="path-header">
                 <button class="back-btn" onclick="goHome()">←</button>
-                <div class="path-title">${state.sectionLabel}</div>
+                <div class="path-title">${escapeHtml(state.sectionLabel)}</div>
             </div>
             ${practiceHTML}
             <div class="path-container">
@@ -1318,10 +1332,10 @@ function renderLesson() {
 
     if (q.type === 'select') {
         const typeLabel = q.item.type === 'allergen' ? 'Выбери аллергены' : 'Выбери состав';
-        const dishName = q.item.name;
+        const dishName = escapeHtml(q.item.name);
         let optionsHTML = q.pool.map((ing, idx) => `
             <button class="option-btn ${state.selectedOptions.has(idx) ? 'selected' : ''}"
-                    onclick="toggleOption(${idx})">${ing}</button>
+                    onclick="toggleOption(${idx})">${escapeHtml(ing)}</button>
         `).join('');
 
         questionHTML = `
@@ -1341,15 +1355,15 @@ function renderLesson() {
         `;
     } else if (q.type === 'missing') {
         const typeLabel = 'Найди пропущенное';
-        const dishName = q.item.name;
+        const dishName = escapeHtml(q.item.name);
 
         const shownHTML = q.shown.map(ing =>
-            `<span class="missing-item">${ing}</span>`
+            `<span class="missing-item">${escapeHtml(ing)}</span>`
         ).join('') + `<span class="missing-slot">❓</span>`;
 
         const choicesHTML = q.choices.map((c, idx) => `
             <button class="choice-btn ${state.selectedChoice === idx ? 'selected' : ''}"
-                    onclick="selectChoice(${idx})">${c}</button>
+                    onclick="selectChoice(${idx})">${escapeHtml(c)}</button>
         `).join('');
 
         questionHTML = `
@@ -1371,13 +1385,13 @@ function renderLesson() {
     } else if (q.type === 'truefalse') {
         const typeLabel = q.item.type === 'allergen' ? 'Верно или нет?' : 'Верно или нет?';
         const verb = q.item.type === 'allergen' ? 'содержит аллерген' : 'входит в состав';
-        const dishName = q.item.name;
+        const dishName = escapeHtml(q.item.name);
 
         questionHTML = `
             <div class="question-area">
                 <div class="question-type-label">${typeLabel}</div>
                 <div class="question-title">
-                    <span class="question-dish-name">${q.ingredient}</span>
+                    <span class="question-dish-name">${escapeHtml(q.ingredient)}</span>
                     <br>${verb}
                     <br><span class="question-dish-name">${dishName}</span>?
                 </div>
@@ -1483,11 +1497,11 @@ function renderFeedback() {
     const icon = isCorrect ? '🎉' : '😞';
     const text = isCorrect ? 'Отлично!' : 'Неправильно';
     const infoText = item.info_text || '';
-    const correctList = item.correct.join(', ');
+    const correctList = escapeHtml(item.correct.join(', '));
 
     const detailHTML = isCorrect
-        ? `<div class="info-box">${infoText}</div>`
-        : `<div class="feedback-detail">Правильный ответ: ${correctList}</div><div class="info-box">${infoText}</div>`;
+        ? `<div class="info-box">${escapeHtml(infoText)}</div>`
+        : `<div class="feedback-detail">Правильный ответ: ${correctList}</div><div class="info-box">${escapeHtml(infoText)}</div>`;
 
     const btnText = state.hearts <= 0 ? 'Результаты' : 'Продолжить';
 
