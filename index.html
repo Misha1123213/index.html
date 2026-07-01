@@ -2,91 +2,138 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ТТК Академия 🦉</title>
     <style>
-        .levels-grid { 
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 20px 0; 
-}
-.level-node { 
-    width: 60px; height: 60px; border-radius: 50%; 
-    background: #334155; border: 4px solid #475569; 
-    display: flex; align-items: center; justify-content: center; 
-    font-weight: bold; cursor: pointer; color: #94a3b8; 
-}
-.level-node.unlocked { background: #58cc02; border-color: #46a302; color: white; }
-
-        body { background: #131924; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .app-container { width: 100%; max-width: 400px; text-align: center; }
-        .section-btn { 
-            display: block; width: 100%; padding: 20px; margin: 15px 0; 
-            background: #334155; border: 4px solid #475569; border-radius: 16px; 
-            color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s;
-        }
+        body { background-color: #131924; color: white; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px; }
+        .app-container { width: 100%; max-width: 450px; text-align: center; }
+        .section-btn { display: block; width: 100%; padding: 20px; margin: 15px 0; background: #334155; border: 4px solid #475569; border-radius: 16px; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .section-btn:hover { background: #475569; transform: translateY(-3px); }
+        .levels-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
+        .level-node { width: 60px; height: 60px; border-radius: 50%; background: #334155; border: 4px solid #475569; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; color: #94a3b8; }
+        .level-node.unlocked { background: #58cc02; border-color: #46a302; color: white; }
+        .ing-btn { background: #334155; color: white; border: 2px solid #475569; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin: 5px; }
+        .ing-btn.selected { background: #38bdf8; border-color: #38bdf8; }
+        #progress-bar-bg { width: 100%; height: 10px; background: #334155; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
+        #progress-bar { height: 100%; background: #58cc02; width: 0%; transition: width 0.5s; }
     </style>
 </head>
 <body>
-
-<div class="app-container" id="main-menu">
+<div class="app-container" id="app">
     <h2>Выбери направление:</h2>
     <button class="section-btn" onclick="selectSection('kitchen')">🍳 Кухня</button>
     <button class="section-btn" onclick="selectSection('desserts')">🍰 Десерты</button>
     <button class="section-btn" onclick="selectSection('drinks')">🍹 Напитки</button>
 </div>
-
 <script>
+    let allData = [];
+    let currentLevel = [];
+    let currentIndex = 0;
+    let mistakes = [];
+    let lives = 3;
+
     async function selectSection(section) {
-    // Если пользователь выбрал "Кухня", мы грузим 'dishes.json'
-    // Если выберет другое — можно будет дописать логику для других файлов
-    const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
-
-    document.getElementById('main-menu').innerHTML = "<h2>Загрузка данных...</h2>";
-
-    try {
-        const response = await fetch(fileName);
-        const data = await response.json();
-        
-        console.log("Данные загружены из", fileName);
-        renderLevels(data, section);
-    } catch (error) {
-        console.error("Ошибка:", error);
-        document.getElementById('main-menu').innerHTML = `
-            <h2>Ошибка: файл ${fileName} не найден!</h2>
-            <button class="section-btn" onclick="location.reload()">Назад</button>
-        `;
-    }
-}
-
-            // Здесь будет переход к отрисовке уровней этой главы
-            renderLevels(data, section);
-        } catch (error) {
-            console.error("Ошибка:", error);
-            document.getElementById('main-menu').innerHTML = 
-                `<h2>Ошибка загрузки!</h2>
-                <button class="section-btn" onclick="location.reload()">Назад</button>`;
+        const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
+        document.getElementById('app').innerHTML = "<h2>Загрузка...</h2>";
+        try {
+            const response = await fetch(fileName);
+            allData = await response.json();
+            renderLevels(section);
+        } catch (e) {
+            document.getElementById('app').innerHTML = `<h2>Ошибка загрузки ${fileName}</h2><button class="section-btn" onclick="location.reload()">Назад</button>`;
         }
     }
 
-    function renderLevels(data, sectionName) {
-    const container = document.getElementById('main-menu');
-    container.innerHTML = `
-        <h2>${sectionName.toUpperCase()}</h2>
-        <div class="levels-grid" id="levels-container"></div>
-        <button class="section-btn" style="background:#475569" onclick="location.reload()">Назад</button>
-    `;
-
-    const levelsContainer = document.getElementById('levels-container');
-    const totalLevels = Math.ceil(data.length / 10); // По 10 вопросов на уровень
-
-    for (let i = 0; i < totalLevels; i++) {
-        const div = document.createElement('div');
-        div.className = 'level-node unlocked';
-        div.innerText = i + 1;
-        div.onclick = () => alert("Запуск уровня " + (i + 1)); // Скоро заменим на старт игры
-        levelsContainer.appendChild(div);
+    function renderLevels(sectionName) {
+        const app = document.getElementById('app');
+        app.innerHTML = `<h2>${sectionName.toUpperCase()}</h2><div class="levels-grid" id="levels-container"></div><button class="section-btn" onclick="location.reload()">Назад</button>`;
+        const container = document.getElementById('levels-container');
+        const total = Math.ceil(allData.length / 10);
+        for (let i = 0; i < total; i++) {
+            const div = document.createElement('div');
+            div.className = 'level-node unlocked';
+            div.innerText = i + 1;
+            div.onclick = () => startLevel(i);
+            container.appendChild(div);
+        }
     }
-}
 
+    function startLevel(idx) {
+        currentLevel = allData.slice(idx * 10, idx * 10 + 10);
+        currentIndex = 0;
+        lives = 3;
+        showQuestion();
+    }
+    function showQuestion() {
+        const q = currentLevel[currentIndex];
+        const progress = ((currentIndex) / currentLevel.length) * 100;
+        const app = document.getElementById('app');
+        
+        app.innerHTML = `
+            <div id="lives-display" style="color: #f43f5e; font-weight: bold; margin-bottom: 10px;">${"❤️".repeat(lives)}</div>
+            <div id="progress-bar-bg"><div id="progress-bar" style="width: ${progress}%"></div></div>
+            <h3 style="color:white;">${q.name}</h3>
+            <div id="ing-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
+            <button onclick="checkAnswer()" style="margin-top:20px; width:100%; padding:15px; border-radius:10px; background:#58cc02; border:none; color:white; font-weight:bold; cursor:pointer;">Проверить</button>
+        `;
+
+        const container = document.getElementById('ing-container');
+        q.pool.forEach(ing => {
+            const btn = document.createElement('button');
+            btn.innerText = ing;
+            btn.className = 'ing-btn';
+            btn.onclick = () => btn.classList.toggle('selected');
+            container.appendChild(btn);
+        });
+    }
+
+    function checkAnswer() {
+        const q = currentLevel[currentIndex];
+        const selected = Array.from(document.querySelectorAll('.ing-btn.selected')).map(b => b.innerText);
+        const isCorrect = q.correct.length === selected.length && q.correct.every(val => selected.includes(val));
+
+        if (!isCorrect) {
+            lives--;
+            if (!mistakes.includes(q.id)) mistakes.push(q.id);
+            if (lives <= 0) {
+                alert("Жизни кончились!");
+                location.reload();
+                return;
+            }
+        } else {
+            mistakes = mistakes.filter(id => id !== q.id);
+        }
+
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <h3>${isCorrect ? "✅ Верно!" : "❌ Ошибка!"}</h3>
+            <p>Правильно: ${q.correct.join(', ')}</p>
+            <button onclick="nextQuestion()" style="width:100%; padding:15px; border-radius:10px; background:#58cc02; border:none; color:white; font-weight:bold; cursor:pointer;">Дальше</button>
+        `;
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < currentLevel.length) {
+            showQuestion();
+        } else {
+            finishLevel();
+        }
+    }
+
+    function finishLevel() {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <h3>Уровень пройден!</h3>
+            ${mistakes.length > 0 ? `<button onclick="startMistakes()" class="section-btn" style="background:#f43f5e">Закрепить ошибки (${mistakes.length})</button>` : ""}
+            <button class="section-btn" onclick="location.reload()">В главное меню</button>
+        `;
+    }
+
+    function startMistakes() {
+        currentLevel = allData.filter(q => mistakes.includes(q.id));
+        currentIndex = 0;
+        mistakes = [];
+        showQuestion();
+    }
 </script>
-</body>
-</html>
