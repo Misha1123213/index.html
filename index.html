@@ -36,16 +36,27 @@
 
 <script>
     async function selectSection(section) {
-        // Показываем индикатор загрузки
-        document.getElementById('main-menu').innerHTML = "<h2>Загрузка...</h2>";
+    // Если пользователь выбрал "Кухня", мы грузим 'dishes.json'
+    // Если выберет другое — можно будет дописать логику для других файлов
+    const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
 
-        try {
-            // Загружаем файл (предполагаем, что файлы называются kitchen.json, desserts.json, drinks.json)
-            const response = await fetch(`${section}.json`);
-            const data = await response.json();
-            
-            console.log("Данные для", section, "загружены:", data.length, "позиций");
-            
+    document.getElementById('main-menu').innerHTML = "<h2>Загрузка данных...</h2>";
+
+    try {
+        const response = await fetch(fileName);
+        const data = await response.json();
+        
+        console.log("Данные загружены из", fileName);
+        renderLevels(data, section);
+    } catch (error) {
+        console.error("Ошибка:", error);
+        document.getElementById('main-menu').innerHTML = `
+            <h2>Ошибка: файл ${fileName} не найден!</h2>
+            <button class="section-btn" onclick="location.reload()">Назад</button>
+        `;
+    }
+}
+
             // Здесь будет переход к отрисовке уровней этой главы
             renderLevels(data, section);
         } catch (error) {
