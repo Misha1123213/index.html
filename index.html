@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ТТК Академия 🦉</title>
+    <title>MET Академия ☕</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --green: #58CC02;
-            --green-dark: #46A302;
-            --green-light: #7ED321;
-            --blue: #1CB0F6;
-            --blue-dark: #1899D6;
-            --red: #FF4B4B;
-            --red-dark: #EA2B2B;
-            --gold: #FFC800;
-            --gold-dark: #E5B300;
-            --purple: #CE82FF;
-            --orange: #FF9600;
-            --bg-dark: #131F24;
-            --bg-card: #1A2B35;
-            --bg-card-hover: #233845;
-            --bg-modal: #1E3A47;
-            --text-primary: #FFFFFF;
-            --text-secondary: #94A3B8;
-            --text-dim: #56707C;
-            --border: #37464F;
-            --border-light: #4A6370;
-            --shadow: rgba(0,0,0,0.3);
+            --green: #4CAF50;
+            --green-dark: #388E3C;
+            --green-light: #66BB6A;
+            --blue: #78909C;
+            --blue-dark: #546E7A;
+            --red: #E53935;
+            --red-dark: #C62828;
+            --gold: #FFC107;
+            --gold-dark: #FFA000;
+            --purple: #9E9E9E;
+            --orange: #FF9800;
+            --bg-dark: #1a1a1a;
+            --bg-card: rgba(38,38,38,0.92);
+            --bg-card-hover: rgba(50,50,50,0.95);
+            --bg-modal: #2a2a2a;
+            --text-primary: #FAFAFA;
+            --text-secondary: #B0B0B0;
+            --text-dim: #707070;
+            --border: rgba(255,255,255,0.12);
+            --border-light: rgba(255,255,255,0.2);
+            --shadow: rgba(0,0,0,0.5);
+            --concrete: #3a3a3a;
+            --concrete-light: #4a4a4a;
+            --concrete-border: rgba(255,255,255,0.08);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,6 +42,17 @@
             font-family: 'Nunito', sans-serif;
             min-height: 100dvh;
             overflow-x: hidden;
+            background-image: url('img/bg-cafe.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(20,20,20,0.82);
+            z-index: 0;
         }
 
         #app {
@@ -46,6 +60,7 @@
             margin: 0 auto;
             min-height: 100dvh;
             position: relative;
+            z-index: 1;
         }
 
         /* Header bar */
@@ -54,8 +69,9 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 16px;
-            background: var(--bg-card);
-            border-bottom: 2px solid var(--border);
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -69,7 +85,7 @@
         }
         .top-bar-stat .icon { font-size: 20px; }
         .streak-count { color: var(--gold); }
-        .xp-count { color: var(--blue); }
+        .xp-count { color: var(--text-primary); }
         .hearts-count { color: var(--red); }
 
         /* Home screen */
@@ -90,8 +106,9 @@
         .app-title {
             font-size: 28px;
             font-weight: 900;
-            color: var(--green);
+            color: var(--text-primary);
             margin: 10px 0 4px;
+            letter-spacing: -0.5px;
         }
         .app-subtitle {
             font-size: 14px;
@@ -99,50 +116,59 @@
             margin-bottom: 30px;
         }
 
-        /* Section cards */
+        /* Section cards - concrete/microcement style */
         .section-card {
             display: flex;
             align-items: center;
             gap: 16px;
             width: 100%;
-            padding: 20px;
-            margin-bottom: 14px;
-            background: var(--bg-card);
-            border: 3px solid var(--border);
-            border-bottom-width: 5px;
+            padding: 0;
+            margin-bottom: 16px;
+            background: var(--concrete);
+            border: 1px solid var(--concrete-border);
             border-radius: 16px;
             color: var(--text-primary);
             font-size: 18px;
             font-weight: 800;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.2s;
             text-align: left;
             font-family: inherit;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
         }
-        .section-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); }
-        .section-card:active { transform: translateY(1px); border-bottom-width: 3px; }
-        .section-card .card-icon {
-            width: 50px; height: 50px;
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
+        .section-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
+        .section-card:active { transform: translateY(0px); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        .section-card .card-img {
+            width: 90px; height: 90px;
+            object-fit: cover;
             flex-shrink: 0;
+            border-radius: 14px 0 0 14px;
         }
-        .section-card .card-info { flex: 1; }
+        .section-card .card-info {
+            flex: 1;
+            padding: 18px 0;
+        }
         .section-card .card-info small {
             display: block;
             font-size: 12px;
             font-weight: 600;
             color: var(--text-secondary);
-            margin-top: 2px;
+            margin-top: 3px;
         }
         .section-card .card-arrow {
             color: var(--text-dim);
-            font-size: 20px;
+            font-size: 22px;
+            padding-right: 16px;
         }
-        .card-kitchen .card-icon { background: rgba(88,204,2,0.15); }
-        .card-desserts .card-icon { background: rgba(255,150,0,0.15); }
-        .card-drinks .card-icon { background: rgba(28,176,246,0.15); }
+        .section-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
 
         /* Daily stats bar */
         .daily-stats {
@@ -152,11 +178,12 @@
         }
         .daily-stat-card {
             flex: 1;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
+            background: var(--concrete);
+            border: 1px solid var(--concrete-border);
             border-radius: 12px;
             padding: 14px 10px;
             text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         .daily-stat-card .stat-value {
             font-size: 22px;
@@ -181,16 +208,17 @@
         .back-btn {
             width: 40px; height: 40px;
             border-radius: 50%;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
+            background: var(--concrete);
+            border: 1px solid var(--concrete-border);
             color: var(--text-primary);
             font-size: 20px;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             transition: 0.15s;
             font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
-        .back-btn:hover { background: var(--bg-card-hover); }
+        .back-btn:hover { background: var(--concrete-light); }
         .path-title {
             font-size: 22px;
             font-weight: 900;
@@ -211,12 +239,12 @@
             position: relative;
         }
         .path-connector {
-            width: 4px;
+            width: 3px;
             height: 30px;
-            background: var(--border);
+            background: var(--concrete-light);
             margin: 0 auto;
         }
-        .path-connector.completed { background: var(--green); }
+        .path-connector.completed { background: rgba(76,175,80,0.5); }
 
         .lesson-node {
             width: 70px; height: 70px;
@@ -238,40 +266,44 @@
             opacity: 0.8;
         }
         .lesson-node.locked {
-            background: var(--bg-card);
-            border-color: var(--border);
+            background: var(--concrete);
+            border-color: var(--concrete-border);
             color: var(--text-dim);
             cursor: default;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
         .lesson-node.available {
-            background: var(--green);
-            border-color: var(--green-dark);
-            box-shadow: 0 4px 0 var(--green-dark);
+            background: var(--text-primary);
+            border-color: rgba(255,255,255,0.3);
+            color: #1a1a1a;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.15);
             animation: nodePulse 2s ease-in-out infinite;
         }
         .lesson-node.available:hover { transform: translateY(-3px); }
         .lesson-node.available:active {
             transform: translateY(2px);
-            box-shadow: 0 1px 0 var(--green-dark);
+            box-shadow: 0 1px 4px rgba(255,255,255,0.1);
         }
         @keyframes nodePulse {
-            0%, 100% { box-shadow: 0 4px 0 var(--green-dark), 0 0 0 0 rgba(88,204,2,0.4); }
-            50% { box-shadow: 0 4px 0 var(--green-dark), 0 0 0 8px rgba(88,204,2,0); }
+            0%, 100% { box-shadow: 0 4px 12px rgba(255,255,255,0.15), 0 0 0 0 rgba(255,255,255,0.3); }
+            50% { box-shadow: 0 4px 12px rgba(255,255,255,0.15), 0 0 0 8px rgba(255,255,255,0); }
         }
         .lesson-node.completed {
-            background: var(--green);
-            border-color: var(--green-dark);
-            box-shadow: 0 4px 0 var(--green-dark);
+            background: var(--concrete-light);
+            border-color: var(--green);
+            color: var(--green);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
         .lesson-node.completed:hover { transform: translateY(-3px); }
         .lesson-node.completed:active {
             transform: translateY(2px);
-            box-shadow: 0 1px 0 var(--green-dark);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
         .lesson-node.practice {
-            background: var(--gold);
-            border-color: var(--gold-dark);
-            box-shadow: 0 4px 0 var(--gold-dark);
+            background: var(--concrete);
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
         .lesson-node.practice:hover { transform: translateY(-3px); }
 
@@ -298,9 +330,8 @@
             width: 100%;
             padding: 16px;
             margin-top: 20px;
-            background: var(--bg-card);
-            border: 3px solid var(--gold);
-            border-bottom-width: 5px;
+            background: var(--concrete);
+            border: 1px solid rgba(255,193,7,0.3);
             border-radius: 14px;
             color: var(--gold);
             font-size: 16px;
@@ -308,8 +339,9 @@
             cursor: pointer;
             transition: 0.15s;
             font-family: inherit;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
-        .practice-btn:hover { background: rgba(255,200,0,0.08); }
+        .practice-btn:hover { background: var(--concrete-light); }
 
         /* Lesson screen */
         .lesson-screen {
@@ -322,8 +354,9 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            background: var(--bg-card);
-            border-bottom: 2px solid var(--border);
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
         }
         .close-btn {
             width: 36px; height: 36px;
@@ -340,15 +373,16 @@
 
         .progress-bar-container {
             flex: 1;
-            height: 16px;
-            background: var(--border);
-            border-radius: 8px;
+            height: 14px;
+            background: var(--concrete);
+            border-radius: 7px;
             overflow: hidden;
+            border: 1px solid var(--concrete-border);
         }
         .progress-bar-fill {
             height: 100%;
-            background: var(--green);
-            border-radius: 8px;
+            background: linear-gradient(90deg, #FAFAFA, #E0E0E0);
+            border-radius: 7px;
             transition: width 0.5s ease;
         }
 
@@ -383,10 +417,11 @@
             margin-bottom: 16px;
         }
         .question-dish-name {
-            color: var(--blue);
+            color: var(--text-primary);
+            font-style: italic;
         }
 
-        /* Ingredient buttons grid */
+        /* Ingredient buttons grid - concrete chip style */
         .options-grid {
             display: flex;
             flex-wrap: wrap;
@@ -395,10 +430,9 @@
         }
         .option-btn {
             padding: 10px 16px;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-bottom-width: 4px;
-            border-radius: 12px;
+            background: var(--concrete);
+            border: 1px solid var(--concrete-border);
+            border-radius: 10px;
             color: var(--text-primary);
             font-size: 15px;
             font-weight: 700;
@@ -406,21 +440,23 @@
             transition: all 0.12s;
             font-family: inherit;
             user-select: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
         }
-        .option-btn:hover { background: var(--bg-card-hover); }
-        .option-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
+        .option-btn:hover { background: var(--concrete-light); box-shadow: 0 3px 8px rgba(0,0,0,0.4); }
+        .option-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         .option-btn.selected {
-            background: rgba(28,176,246,0.15);
-            border-color: var(--blue);
-            color: var(--blue);
+            background: rgba(255,255,255,0.12);
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(255,255,255,0.1);
         }
         .option-btn.correct-reveal {
-            background: rgba(88,204,2,0.15);
+            background: rgba(76,175,80,0.15);
             border-color: var(--green);
             color: var(--green);
         }
         .option-btn.wrong-reveal {
-            background: rgba(255,75,75,0.15);
+            background: rgba(229,57,53,0.15);
             border-color: var(--red);
             color: var(--red);
         }
@@ -439,24 +475,24 @@
             font-weight: 800;
             cursor: pointer;
             transition: 0.15s;
-            border-width: 3px;
+            border-width: 1px;
             border-style: solid;
-            border-bottom-width: 5px;
             font-family: inherit;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
-        .tf-btn:active { border-bottom-width: 3px; transform: translateY(2px); }
+        .tf-btn:active { transform: translateY(2px); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
         .tf-btn.tf-yes {
-            background: rgba(88,204,2,0.1);
-            border-color: var(--green);
+            background: var(--concrete);
+            border-color: rgba(76,175,80,0.4);
             color: var(--green);
         }
-        .tf-btn.tf-yes:hover { background: rgba(88,204,2,0.2); }
+        .tf-btn.tf-yes:hover { background: rgba(76,175,80,0.12); }
         .tf-btn.tf-no {
-            background: rgba(255,75,75,0.1);
-            border-color: var(--red);
+            background: var(--concrete);
+            border-color: rgba(229,57,53,0.4);
             color: var(--red);
         }
-        .tf-btn.tf-no:hover { background: rgba(255,75,75,0.2); }
+        .tf-btn.tf-no:hover { background: rgba(229,57,53,0.12); }
 
         /* Missing ingredient choices */
         .missing-list {
@@ -467,19 +503,19 @@
         }
         .missing-item {
             padding: 8px 14px;
-            background: rgba(88,204,2,0.1);
-            border: 2px solid var(--green);
+            background: var(--concrete);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 10px;
-            color: var(--green);
+            color: var(--text-primary);
             font-size: 14px;
             font-weight: 700;
         }
         .missing-slot {
             padding: 8px 14px;
-            background: rgba(255,200,0,0.1);
-            border: 2px dashed var(--gold);
+            background: rgba(255,255,255,0.05);
+            border: 1px dashed rgba(255,255,255,0.4);
             border-radius: 10px;
-            color: var(--gold);
+            color: var(--text-secondary);
             font-size: 14px;
             font-weight: 700;
             animation: slotPulse 1.5s ease-in-out infinite;
@@ -496,9 +532,8 @@
         .choice-btn {
             width: 100%;
             padding: 14px 18px;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-bottom-width: 4px;
+            background: var(--concrete);
+            border: 1px solid var(--concrete-border);
             border-radius: 12px;
             color: var(--text-primary);
             font-size: 16px;
@@ -507,43 +542,44 @@
             transition: 0.12s;
             text-align: left;
             font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
         }
-        .choice-btn:hover { background: var(--bg-card-hover); }
-        .choice-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
-        .choice-btn.selected { background: rgba(28,176,246,0.15); border-color: var(--blue); color: var(--blue); }
+        .choice-btn:hover { background: var(--concrete-light); }
+        .choice-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .choice-btn.selected { background: rgba(255,255,255,0.12); border-color: var(--text-primary); color: var(--text-primary); }
 
         /* Check button */
         .bottom-area {
             padding: 16px;
-            background: var(--bg-dark);
-            border-top: 2px solid var(--border);
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
         }
         .check-btn {
             width: 100%;
             padding: 16px;
-            border-radius: 14px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 800;
             cursor: pointer;
             transition: 0.15s;
             border: none;
-            border-bottom: 4px solid;
             font-family: inherit;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .check-btn.active {
-            background: var(--green);
-            border-bottom-color: var(--green-dark);
-            color: white;
+            background: #FAFAFA;
+            color: #1a1a1a;
+            box-shadow: 0 3px 12px rgba(255,255,255,0.2);
         }
-        .check-btn.active:hover { background: var(--green-light); }
-        .check-btn.active:active { border-bottom-width: 2px; transform: translateY(2px); }
+        .check-btn.active:hover { background: #FFFFFF; box-shadow: 0 4px 16px rgba(255,255,255,0.25); }
+        .check-btn.active:active { transform: translateY(1px); box-shadow: 0 1px 6px rgba(255,255,255,0.15); }
         .check-btn.disabled {
-            background: var(--bg-card);
-            border-bottom-color: var(--border);
+            background: var(--concrete);
             color: var(--text-dim);
             cursor: default;
+            box-shadow: none;
         }
 
         /* Inline feedback result strip */
@@ -552,18 +588,18 @@
             align-items: center;
             gap: 10px;
             padding: 10px 16px;
-            border-radius: 12px;
+            border-radius: 10px;
             margin-bottom: 12px;
             font-weight: 800;
             font-size: 15px;
             animation: fadeIn 0.2s ease;
         }
         .inline-result.correct {
-            background: rgba(88,204,2,0.12);
+            background: rgba(76,175,80,0.15);
             color: var(--green);
         }
         .inline-result.wrong {
-            background: rgba(255,75,75,0.12);
+            background: rgba(229,57,53,0.15);
             color: var(--red);
         }
         .inline-result .result-icon { font-size: 22px; }
@@ -581,13 +617,13 @@
         }
 
         .tf-btn.tf-correct {
-            background: rgba(88,204,2,0.25);
+            background: rgba(76,175,80,0.2);
             border-color: var(--green);
             color: var(--green);
             opacity: 1 !important;
         }
         .tf-btn.tf-wrong {
-            background: rgba(255,75,75,0.25);
+            background: rgba(229,57,53,0.2);
             border-color: var(--red);
             color: var(--red);
             opacity: 1 !important;
@@ -651,26 +687,25 @@
             width: 100%;
             max-width: 340px;
             padding: 16px;
-            border-radius: 14px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 800;
             cursor: pointer;
             border: none;
-            border-bottom: 4px solid;
             font-family: inherit;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: white;
+            color: #1a1a1a;
             margin-bottom: 12px;
         }
         .result-btn.primary {
-            background: var(--green);
-            border-bottom-color: var(--green-dark);
+            background: #FAFAFA;
+            box-shadow: 0 3px 12px rgba(255,255,255,0.2);
         }
         .result-btn.secondary {
-            background: var(--bg-card);
-            border-bottom-color: var(--border);
+            background: var(--concrete);
             color: var(--text-secondary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         /* Modal overlay */
@@ -690,12 +725,14 @@
             to { opacity: 1; }
         }
         .modal-content {
-            background: var(--bg-modal);
+            background: var(--concrete);
+            border: 1px solid var(--concrete-border);
             border-radius: 20px;
             padding: 28px 24px;
             max-width: 400px;
             width: 100%;
             animation: modalPop 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
         @keyframes modalPop {
             from { transform: scale(0.9); opacity: 0; }
@@ -720,25 +757,23 @@
             font-weight: 800;
             cursor: pointer;
             border: none;
-            border-bottom: 4px solid;
             font-family: inherit;
             margin-bottom: 10px;
         }
         .modal-btn.primary {
-            background: var(--green);
-            border-bottom-color: var(--green-dark);
-            color: white;
+            background: #FAFAFA;
+            color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(255,255,255,0.15);
         }
         .modal-btn.secondary {
-            background: var(--bg-card);
-            border-bottom-color: var(--border);
+            background: var(--concrete-light);
             color: var(--text-secondary);
         }
 
         /* Info tooltip */
         .info-box {
-            background: rgba(28,176,246,0.08);
-            border: 2px solid var(--blue);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--concrete-border);
             border-radius: 12px;
             padding: 14px 16px;
             margin-top: 12px;
@@ -810,14 +845,14 @@
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-dark); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
 
         /* Loading spinner */
         .loader {
             width: 50px; height: 50px;
-            border: 5px solid var(--border);
-            border-top-color: var(--green);
+            border: 3px solid var(--concrete-border);
+            border-top-color: var(--text-primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin: 40px auto;
@@ -1014,9 +1049,9 @@ function renderHome() {
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot">🦉</span>
-                <div class="app-title">ТТК Академия</div>
-                <div class="app-subtitle">Выучи составы блюд как в Duolingo!</div>
+                <span class="mascot">☕</span>
+                <div class="app-title">MET Академия</div>
+                <div class="app-subtitle">Изучай составы блюд</div>
             </div>
             <div class="daily-stats">
                 <div class="daily-stat-card">
@@ -1032,27 +1067,27 @@ function renderHome() {
                     <div class="stat-label">Уроков</div>
                 </div>
             </div>
-            <button class="section-card card-kitchen" onclick="selectSection('kitchen')">
-                <div class="card-icon">🍳</div>
+            <button class="section-card" onclick="selectSection('kitchen')">
+                <img class="card-img" src="img/shakshuka.jpg" alt="Кухня">
                 <div class="card-info">
                     Кухня
-                    <small>Завтраки, супы, салаты, пасты</small>
+                    <small>Завтраки, супы, салаты, сэндвичи</small>
                 </div>
                 <div class="card-arrow">›</div>
             </button>
-            <button class="section-card card-desserts" onclick="selectSection('desserts')">
-                <div class="card-icon">🍰</div>
+            <button class="section-card" onclick="selectSection('desserts')">
+                <img class="card-img" src="img/tart.jpg" alt="Десерты">
                 <div class="card-info">
                     Десерты
-                    <small>Сладкие блюда и выпечка</small>
+                    <small>Выпечка, кексы, печенье</small>
                 </div>
                 <div class="card-arrow">›</div>
             </button>
-            <button class="section-card card-drinks" onclick="selectSection('drinks')">
-                <div class="card-icon">🍹</div>
+            <button class="section-card" onclick="selectSection('drinks')">
+                <img class="card-img" src="img/cappuccino.jpg" alt="Напитки">
                 <div class="card-info">
                     Напитки
-                    <small>Кофе, коктейли, лимонады</small>
+                    <small>Кофе, лимонады, чай</small>
                 </div>
                 <div class="card-arrow">›</div>
             </button>
@@ -1228,23 +1263,41 @@ function generateQuestions(items) {
     const questions = [];
     const shuffled = shuffle(items);
 
+    // Collect all ingredients across all loaded data for fallback distractors
+    const allIngredientsSet = new Set();
+    (state.allData || []).forEach(d => {
+        (d.correct || []).forEach(i => allIngredientsSet.add(i));
+        (d.pool || []).forEach(i => allIngredientsSet.add(i));
+    });
+    const allIngredients = [...allIngredientsSet];
+
     for (const item of shuffled) {
+        const correctSet = new Set(item.correct);
+        let wrongPool = item.pool.filter(p => !correctSet.has(p));
+
+        // If not enough wrong options, supplement from global pool
+        if (wrongPool.length < 4) {
+            const extra = allIngredients.filter(i => !correctSet.has(i) && !wrongPool.includes(i));
+            wrongPool = wrongPool.concat(shuffle(extra).slice(0, 5 - wrongPool.length));
+        }
+
         const rand = Math.random();
 
-        if (rand < 0.5) {
-            // Type 1: Select correct items
+        if (rand < 0.4 && wrongPool.length >= 3) {
+            // Type 1: Select correct items — ensure pool has mix of correct + wrong
+            const displayPool = shuffle([...item.correct, ...shuffle(wrongPool).slice(0, Math.max(4, Math.ceil(item.correct.length * 0.6)))]);
             questions.push({
                 type: 'select',
                 item: item,
-                pool: shuffle(item.pool),
+                pool: displayPool,
             });
-        } else if (rand < 0.75 && item.correct.length > 2) {
+        } else if (rand < 0.7 && item.correct.length > 2 && wrongPool.length >= 2) {
             // Type 2: Missing ingredient
             const missingIdx = Math.floor(Math.random() * item.correct.length);
             const missingIng = item.correct[missingIdx];
             const shown = item.correct.filter((_, i) => i !== missingIdx);
-            const distractors = item.pool.filter(p => !item.correct.includes(p));
-            const choices = shuffle([missingIng, ...shuffle(distractors).slice(0, 3)]);
+            const distractors = shuffle(wrongPool).slice(0, 3);
+            const choices = shuffle([missingIng, ...distractors]);
 
             questions.push({
                 type: 'missing',
@@ -1253,30 +1306,27 @@ function generateQuestions(items) {
                 missing: missingIng,
                 choices: choices,
             });
-        } else {
+        } else if (wrongPool.length >= 1) {
             // Type 3: True/False
             const isTrue = Math.random() > 0.5;
             let ingredient;
             if (isTrue) {
                 ingredient = item.correct[Math.floor(Math.random() * item.correct.length)];
             } else {
-                const wrong = item.pool.filter(p => !item.correct.includes(p));
-                if (wrong.length === 0) {
-                    // Fallback to select
-                    questions.push({
-                        type: 'select',
-                        item: item,
-                        pool: shuffle(item.pool),
-                    });
-                    continue;
-                }
-                ingredient = wrong[Math.floor(Math.random() * wrong.length)];
+                ingredient = wrongPool[Math.floor(Math.random() * wrongPool.length)];
             }
             questions.push({
                 type: 'truefalse',
                 item: item,
                 ingredient: ingredient,
                 answer: isTrue,
+            });
+        } else {
+            // Last fallback: select type with original pool
+            questions.push({
+                type: 'select',
+                item: item,
+                pool: shuffle(item.pool),
             });
         }
     }
