@@ -16,6 +16,7 @@
         .ing-btn.selected { background: #38bdf8; border-color: #38bdf8; }
         #progress-bar-bg { width: 100%; height: 10px; background: #334155; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
         #progress-bar { height: 100%; background: #58cc02; width: 0%; transition: width 0.5s; }
+        .action-btn { width: 100%; padding: 15px; border-radius: 10px; background: #58cc02; border: none; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -32,21 +33,58 @@
     let mistakes = [];
     let lives = 3;
 
+    function getApp() {
+        return document.getElementById('app');
+    }
+
+    function renderScreen(html) {
+        getApp().innerHTML = html;
+    }
+
+    function goHome() {
+        location.reload();
+    }
+
+    function backButton(label = 'Назад') {
+        return `<button class="section-btn" onclick="goHome()">${label}</button>`;
+    }
+
+    function actionButton(text, onclick) {
+        return `<button onclick="${onclick}" class="action-btn">${text}</button>`;
+    }
+
+    function createIngredientButton(label) {
+        const btn = document.createElement('button');
+        btn.innerText = label;
+        btn.className = 'ing-btn';
+        btn.onclick = () => btn.classList.toggle('selected');
+        return btn;
+    }
+
+    function getSelectedIngredients() {
+        return Array.from(document.querySelectorAll('.ing-btn.selected')).map(b => b.innerText);
+    }
+
+    function initLevel(questions) {
+        currentLevel = questions;
+        currentIndex = 0;
+        showQuestion();
+    }
+
     async function selectSection(section) {
         const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
-        document.getElementById('app').innerHTML = "<h2>Загрузка...</h2>";
+        renderScreen("<h2>Загрузка...</h2>");
         try {
             const response = await fetch(fileName);
             allData = await response.json();
             renderLevels(section);
         } catch (e) {
-            document.getElementById('app').innerHTML = `<h2>Ошибка загрузки ${fileName}</h2><button class="section-btn" onclick="location.reload()">Назад</button>`;
+            renderScreen(`<h2>Ошибка загрузки ${fileName}</h2>${backButton()}`);
         }
     }
 
     function renderLevels(sectionName) {
-        const app = document.getElementById('app');
-        app.innerHTML = `<h2>${sectionName.toUpperCase()}</h2><div class="levels-grid" id="levels-container"></div><button class="section-btn" onclick="location.reload()">Назад</button>`;
+        renderScreen(`<h2>${sectionName.toUpperCase()}</h2><div class="levels-grid" id="levels-container"></div>${backButton()}`);
         const container = document.getElementById('levels-container');
         const total = Math.ceil(allData.length / 10);
         for (let i = 0; i < total; i++) {
@@ -59,37 +97,29 @@
     }
 
     function startLevel(idx) {
-        currentLevel = allData.slice(idx * 10, idx * 10 + 10);
-        currentIndex = 0;
         lives = 3;
-        showQuestion();
+        initLevel(allData.slice(idx * 10, idx * 10 + 10));
     }
+
     function showQuestion() {
         const q = currentLevel[currentIndex];
-        const progress = ((currentIndex) / currentLevel.length) * 100;
-        const app = document.getElementById('app');
-        
-        app.innerHTML = `
+        const progress = (currentIndex / currentLevel.length) * 100;
+
+        renderScreen(`
             <div id="lives-display" style="color: #f43f5e; font-weight: bold; margin-bottom: 10px;">${"❤️".repeat(lives)}</div>
             <div id="progress-bar-bg"><div id="progress-bar" style="width: ${progress}%"></div></div>
             <h3 style="color:white;">${q.name}</h3>
             <div id="ing-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
-            <button onclick="checkAnswer()" style="margin-top:20px; width:100%; padding:15px; border-radius:10px; background:#58cc02; border:none; color:white; font-weight:bold; cursor:pointer;">Проверить</button>
-        `;
+            ${actionButton('Проверить', 'checkAnswer()')}
+        `);
 
         const container = document.getElementById('ing-container');
-        q.pool.forEach(ing => {
-            const btn = document.createElement('button');
-            btn.innerText = ing;
-            btn.className = 'ing-btn';
-            btn.onclick = () => btn.classList.toggle('selected');
-            container.appendChild(btn);
-        });
+        q.pool.forEach(ing => container.appendChild(createIngredientButton(ing)));
     }
 
     function checkAnswer() {
         const q = currentLevel[currentIndex];
-        const selected = Array.from(document.querySelectorAll('.ing-btn.selected')).map(b => b.innerText);
+        const selected = getSelectedIngredients();
         const isCorrect = q.correct.length === selected.length && q.correct.every(val => selected.includes(val));
 
         if (!isCorrect) {
@@ -97,19 +127,18 @@
             if (!mistakes.includes(q.id)) mistakes.push(q.id);
             if (lives <= 0) {
                 alert("Жизни кончились!");
-                location.reload();
+                goHome();
                 return;
             }
         } else {
             mistakes = mistakes.filter(id => id !== q.id);
         }
 
-        const app = document.getElementById('app');
-        app.innerHTML = `
+        renderScreen(`
             <h3>${isCorrect ? "✅ Верно!" : "❌ Ошибка!"}</h3>
             <p>Правильно: ${q.correct.join(', ')}</p>
-            <button onclick="nextQuestion()" style="width:100%; padding:15px; border-radius:10px; background:#58cc02; border:none; color:white; font-weight:bold; cursor:pointer;">Дальше</button>
-        `;
+            ${actionButton('Дальше', 'nextQuestion()')}
+        `);
     }
 
     function nextQuestion() {
@@ -122,18 +151,16 @@
     }
 
     function finishLevel() {
-        const app = document.getElementById('app');
-        app.innerHTML = `
+        renderScreen(`
             <h3>Уровень пройден!</h3>
             ${mistakes.length > 0 ? `<button onclick="startMistakes()" class="section-btn" style="background:#f43f5e">Закрепить ошибки (${mistakes.length})</button>` : ""}
-            <button class="section-btn" onclick="location.reload()">В главное меню</button>
-        `;
+            ${backButton('В главное меню')}
+        `);
     }
 
     function startMistakes() {
-        currentLevel = allData.filter(q => mistakes.includes(q.id));
-        currentIndex = 0;
+        const mistakeQuestions = allData.filter(q => mistakes.includes(q.id));
         mistakes = [];
-        showQuestion();
+        initLevel(mistakeQuestions);
     }
 </script>
