@@ -2,138 +2,1657 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ТТК Академия 🦉</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #131924; color: white; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px; }
-        .app-container { width: 100%; max-width: 450px; text-align: center; }
-        .section-btn { display: block; width: 100%; padding: 20px; margin: 15px 0; background: #334155; border: 4px solid #475569; border-radius: 16px; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .section-btn:hover { background: #475569; transform: translateY(-3px); }
-        .levels-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
-        .level-node { width: 60px; height: 60px; border-radius: 50%; background: #334155; border: 4px solid #475569; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; color: #94a3b8; }
-        .level-node.unlocked { background: #58cc02; border-color: #46a302; color: white; }
-        .ing-btn { background: #334155; color: white; border: 2px solid #475569; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin: 5px; }
-        .ing-btn.selected { background: #38bdf8; border-color: #38bdf8; }
-        #progress-bar-bg { width: 100%; height: 10px; background: #334155; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
-        #progress-bar { height: 100%; background: #58cc02; width: 0%; transition: width 0.5s; }
+        :root {
+            --green: #58CC02;
+            --green-dark: #46A302;
+            --green-light: #7ED321;
+            --blue: #1CB0F6;
+            --blue-dark: #1899D6;
+            --red: #FF4B4B;
+            --red-dark: #EA2B2B;
+            --gold: #FFC800;
+            --gold-dark: #E5B300;
+            --purple: #CE82FF;
+            --orange: #FF9600;
+            --bg-dark: #131F24;
+            --bg-card: #1A2B35;
+            --bg-card-hover: #233845;
+            --bg-modal: #1E3A47;
+            --text-primary: #FFFFFF;
+            --text-secondary: #94A3B8;
+            --text-dim: #56707C;
+            --border: #37464F;
+            --border-light: #4A6370;
+            --shadow: rgba(0,0,0,0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Nunito', sans-serif;
+            min-height: 100dvh;
+            overflow-x: hidden;
+        }
+
+        #app {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            position: relative;
+        }
+
+        /* Header bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-bar-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .top-bar-stat .icon { font-size: 20px; }
+        .streak-count { color: var(--gold); }
+        .xp-count { color: var(--blue); }
+        .hearts-count { color: var(--red); }
+
+        /* Home screen */
+        .home-screen { padding: 20px 16px 40px; }
+        .mascot-area {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+        .mascot {
+            font-size: 80px;
+            display: block;
+            animation: mascotBounce 2s ease-in-out infinite;
+        }
+        @keyframes mascotBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .app-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--green);
+            margin: 10px 0 4px;
+        }
+        .app-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        /* Section cards */
+        .section-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 14px;
+            background: var(--bg-card);
+            border: 3px solid var(--border);
+            border-bottom-width: 5px;
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: left;
+            font-family: inherit;
+        }
+        .section-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); }
+        .section-card:active { transform: translateY(1px); border-bottom-width: 3px; }
+        .section-card .card-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        .section-card .card-info { flex: 1; }
+        .section-card .card-info small {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .section-card .card-arrow {
+            color: var(--text-dim);
+            font-size: 20px;
+        }
+        .card-kitchen .card-icon { background: rgba(88,204,2,0.15); }
+        .card-desserts .card-icon { background: rgba(255,150,0,0.15); }
+        .card-drinks .card-icon { background: rgba(28,176,246,0.15); }
+
+        /* Daily stats bar */
+        .daily-stats {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .daily-stat-card {
+            flex: 1;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+        .daily-stat-card .stat-value {
+            font-size: 22px;
+            font-weight: 900;
+        }
+        .daily-stat-card .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Path screen */
+        .path-screen { padding: 20px 16px 100px; }
+        .path-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .back-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.15s;
+            font-family: inherit;
+        }
+        .back-btn:hover { background: var(--bg-card-hover); }
+        .path-title {
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        /* Lesson path nodes */
+        .path-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            position: relative;
+        }
+        .path-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+        .path-connector {
+            width: 4px;
+            height: 30px;
+            background: var(--border);
+            margin: 0 auto;
+        }
+        .path-connector.completed { background: var(--green); }
+
+        .lesson-node {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-weight: 900;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            border: 4px solid;
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+        .lesson-node .node-sub {
+            font-size: 9px;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+        .lesson-node.locked {
+            background: var(--bg-card);
+            border-color: var(--border);
+            color: var(--text-dim);
+            cursor: default;
+        }
+        .lesson-node.available {
+            background: var(--green);
+            border-color: var(--green-dark);
+            box-shadow: 0 4px 0 var(--green-dark);
+            animation: nodePulse 2s ease-in-out infinite;
+        }
+        .lesson-node.available:hover { transform: translateY(-3px); }
+        .lesson-node.available:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 var(--green-dark);
+        }
+        @keyframes nodePulse {
+            0%, 100% { box-shadow: 0 4px 0 var(--green-dark), 0 0 0 0 rgba(88,204,2,0.4); }
+            50% { box-shadow: 0 4px 0 var(--green-dark), 0 0 0 8px rgba(88,204,2,0); }
+        }
+        .lesson-node.completed {
+            background: var(--green);
+            border-color: var(--green-dark);
+            box-shadow: 0 4px 0 var(--green-dark);
+        }
+        .lesson-node.completed:hover { transform: translateY(-3px); }
+        .lesson-node.completed:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 var(--green-dark);
+        }
+        .lesson-node.practice {
+            background: var(--gold);
+            border-color: var(--gold-dark);
+            box-shadow: 0 4px 0 var(--gold-dark);
+        }
+        .lesson-node.practice:hover { transform: translateY(-3px); }
+
+        /* Crown badges */
+        .crown-badge {
+            position: absolute;
+            top: -8px; right: -8px;
+            background: var(--gold);
+            color: #333;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--gold-dark);
+        }
+
+        /* Practice button */
+        .practice-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            background: var(--bg-card);
+            border: 3px solid var(--gold);
+            border-bottom-width: 5px;
+            border-radius: 14px;
+            color: var(--gold);
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: inherit;
+        }
+        .practice-btn:hover { background: rgba(255,200,0,0.08); }
+
+        /* Lesson screen */
+        .lesson-screen {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+        .lesson-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            border-bottom: 2px solid var(--border);
+        }
+        .close-btn {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: none;
+            border: 2px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-family: inherit;
+        }
+        .close-btn:hover { border-color: var(--text-secondary); }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 16px;
+            background: var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--green);
+            border-radius: 8px;
+            transition: width 0.5s ease;
+        }
+
+        .hearts-display {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 800;
+            font-size: 16px;
+            color: var(--red);
+        }
+
+        /* Question area */
+        .question-area {
+            flex: 1;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .question-type-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .question-title {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.3;
+            margin-bottom: 24px;
+        }
+        .question-dish-name {
+            color: var(--blue);
+        }
+
+        /* Ingredient buttons grid */
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option-btn {
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-bottom-width: 4px;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.12s;
+            font-family: inherit;
+            user-select: none;
+        }
+        .option-btn:hover { background: var(--bg-card-hover); }
+        .option-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
+        .option-btn.selected {
+            background: rgba(28,176,246,0.15);
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+        .option-btn.correct-reveal {
+            background: rgba(88,204,2,0.15);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .option-btn.wrong-reveal {
+            background: rgba(255,75,75,0.15);
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* True/False buttons */
+        .tf-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .tf-btn {
+            flex: 1;
+            padding: 20px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.15s;
+            border-width: 3px;
+            border-style: solid;
+            border-bottom-width: 5px;
+            font-family: inherit;
+        }
+        .tf-btn:active { border-bottom-width: 3px; transform: translateY(2px); }
+        .tf-btn.tf-yes {
+            background: rgba(88,204,2,0.1);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .tf-btn.tf-yes:hover { background: rgba(88,204,2,0.2); }
+        .tf-btn.tf-no {
+            background: rgba(255,75,75,0.1);
+            border-color: var(--red);
+            color: var(--red);
+        }
+        .tf-btn.tf-no:hover { background: rgba(255,75,75,0.2); }
+
+        /* Missing ingredient choices */
+        .missing-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .missing-item {
+            padding: 8px 14px;
+            background: rgba(88,204,2,0.1);
+            border: 2px solid var(--green);
+            border-radius: 10px;
+            color: var(--green);
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .missing-slot {
+            padding: 8px 14px;
+            background: rgba(255,200,0,0.1);
+            border: 2px dashed var(--gold);
+            border-radius: 10px;
+            color: var(--gold);
+            font-size: 14px;
+            font-weight: 700;
+            animation: slotPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes slotPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .choice-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .choice-btn {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-bottom-width: 4px;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.12s;
+            text-align: left;
+            font-family: inherit;
+        }
+        .choice-btn:hover { background: var(--bg-card-hover); }
+        .choice-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
+        .choice-btn.selected { background: rgba(28,176,246,0.15); border-color: var(--blue); color: var(--blue); }
+
+        /* Check button */
+        .bottom-area {
+            padding: 16px;
+            background: var(--bg-dark);
+            border-top: 2px solid var(--border);
+        }
+        .check-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.15s;
+            border: none;
+            border-bottom: 4px solid;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .check-btn.active {
+            background: var(--green);
+            border-bottom-color: var(--green-dark);
+            color: white;
+        }
+        .check-btn.active:hover { background: var(--green-light); }
+        .check-btn.active:active { border-bottom-width: 2px; transform: translateY(2px); }
+        .check-btn.disabled {
+            background: var(--bg-card);
+            border-bottom-color: var(--border);
+            color: var(--text-dim);
+            cursor: default;
+        }
+
+        /* Feedback banner */
+        .feedback-banner {
+            padding: 20px 16px;
+            border-top: 2px solid;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .feedback-banner.correct {
+            background: rgba(88,204,2,0.12);
+            border-color: var(--green);
+        }
+        .feedback-banner.wrong {
+            background: rgba(255,75,75,0.12);
+            border-color: var(--red);
+        }
+        .feedback-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .feedback-icon { font-size: 28px; }
+        .feedback-text {
+            font-size: 20px;
+            font-weight: 800;
+        }
+        .feedback-banner.correct .feedback-text { color: var(--green); }
+        .feedback-banner.wrong .feedback-text { color: var(--red); }
+        .feedback-detail {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 14px;
+            white-space: pre-line;
+        }
+        .feedback-continue-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            border-bottom: 4px solid;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+        }
+        .feedback-banner.correct .feedback-continue-btn {
+            background: var(--green);
+            border-bottom-color: var(--green-dark);
+        }
+        .feedback-banner.wrong .feedback-continue-btn {
+            background: var(--red);
+            border-bottom-color: var(--red-dark);
+        }
+
+        /* Result screen */
+        .result-screen {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .result-mascot { font-size: 80px; margin-bottom: 16px; }
+        .result-title {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .result-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .result-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .result-stat {
+            text-align: center;
+        }
+        .result-stat-value {
+            font-size: 32px;
+            font-weight: 900;
+        }
+        .result-stat-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        .result-accuracy-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 12px;
+            background: var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        .result-accuracy-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 1s ease;
+        }
+
+        .result-btn {
+            width: 100%;
+            max-width: 340px;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            border-bottom: 4px solid;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+            margin-bottom: 12px;
+        }
+        .result-btn.primary {
+            background: var(--green);
+            border-bottom-color: var(--green-dark);
+        }
+        .result-btn.secondary {
+            background: var(--bg-card);
+            border-bottom-color: var(--border);
+            color: var(--text-secondary);
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s;
+            padding: 20px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background: var(--bg-modal);
+            border-radius: 20px;
+            padding: 28px 24px;
+            max-width: 400px;
+            width: 100%;
+            animation: modalPop 0.3s ease;
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .modal-text {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            border-bottom: 4px solid;
+            font-family: inherit;
+            margin-bottom: 10px;
+        }
+        .modal-btn.primary {
+            background: var(--green);
+            border-bottom-color: var(--green-dark);
+            color: white;
+        }
+        .modal-btn.secondary {
+            background: var(--bg-card);
+            border-bottom-color: var(--border);
+            color: var(--text-secondary);
+        }
+
+        /* Info tooltip */
+        .info-box {
+            background: rgba(28,176,246,0.08);
+            border: 2px solid var(--blue);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* XP popup */
+        .xp-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 4px 20px rgba(255,200,0,0.5);
+            animation: xpPop 1.5s ease forwards;
+            z-index: 9998;
+            pointer-events: none;
+        }
+        @keyframes xpPop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
+        }
+
+        /* Shake animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        .shake { animation: shake 0.4s ease; }
+
+        /* Heart break */
+        @keyframes heartBreak {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.4); }
+            50% { transform: scale(0.8); }
+            100% { transform: scale(1); }
+        }
+        .heart-break { animation: heartBreak 0.5s ease; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Loading spinner */
+        .loader {
+            width: 50px; height: 50px;
+            border: 5px solid var(--border);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 40px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+        }
+        .loading-screen p {
+            color: var(--text-secondary);
+            margin-top: 16px;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
-<div class="app-container" id="app">
-    <h2>Выбери направление:</h2>
-    <button class="section-btn" onclick="selectSection('kitchen')">🍳 Кухня</button>
-    <button class="section-btn" onclick="selectSection('desserts')">🍰 Десерты</button>
-    <button class="section-btn" onclick="selectSection('drinks')">🍹 Напитки</button>
-</div>
+<div id="app"></div>
 <script>
-    let allData = [];
-    let currentLevel = [];
-    let currentIndex = 0;
-    let mistakes = [];
-    let lives = 3;
+// ====================== STATE ======================
+const APP_KEY = 'ttk_academy_v2';
 
-    async function selectSection(section) {
-        const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
-        document.getElementById('app').innerHTML = "<h2>Загрузка...</h2>";
-        try {
-            const response = await fetch(fileName);
-            allData = await response.json();
-            renderLevels(section);
-        } catch (e) {
-            document.getElementById('app').innerHTML = `<h2>Ошибка загрузки ${fileName}</h2><button class="section-btn" onclick="location.reload()">Назад</button>`;
+let state = {
+    screen: 'home',
+    section: null,
+    sectionLabel: '',
+    allData: [],
+    lessons: [],
+    currentLessonIdx: null,
+    questions: [],
+    currentQIdx: 0,
+    hearts: 5,
+    sessionXP: 0,
+    sessionCorrect: 0,
+    sessionTotal: 0,
+    mistakeIds: [],
+    feedbackShown: false,
+    selectedOptions: new Set(),
+    selectedChoice: null,
+    isPractice: false,
+};
+
+function loadProgress() {
+    try {
+        const raw = localStorage.getItem(APP_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
+function saveProgress(data) {
+    const current = loadProgress();
+    Object.assign(current, data);
+    localStorage.setItem(APP_KEY, JSON.stringify(current));
+}
+function getProgress() { return loadProgress(); }
+
+function getSectionProgress(section) {
+    const p = getProgress();
+    return p[section] || {};
+}
+function saveLessonComplete(section, lessonIdx, score, total) {
+    const p = getProgress();
+    if (!p[section]) p[section] = {};
+    const key = `lesson_${lessonIdx}`;
+    const prev = p[section][key] || { completed: false, crowns: 0, bestScore: 0 };
+    prev.completed = true;
+    prev.crowns = Math.min(5, prev.crowns + 1);
+    prev.bestScore = Math.max(prev.bestScore, score);
+    p[section][key] = prev;
+    saveProgress(p);
+}
+function getGlobalStats() {
+    const p = getProgress();
+    return {
+        totalXP: p.totalXP || 0,
+        streak: p.streak || 0,
+        lastDate: p.lastDate || null,
+        totalLessons: p.totalLessons || 0,
+    };
+}
+function addXP(amount) {
+    const p = getProgress();
+    p.totalXP = (p.totalXP || 0) + amount;
+    const today = new Date().toDateString();
+    if (p.lastDate !== today) {
+        if (p.lastDate === new Date(Date.now() - 86400000).toDateString()) {
+            p.streak = (p.streak || 0) + 1;
+        } else if (p.lastDate !== today) {
+            p.streak = 1;
         }
+        p.lastDate = today;
     }
+    p.totalLessons = (p.totalLessons || 0) + 1;
+    saveProgress(p);
+}
 
-    function renderLevels(sectionName) {
-        const app = document.getElementById('app');
-        app.innerHTML = `<h2>${sectionName.toUpperCase()}</h2><div class="levels-grid" id="levels-container"></div><button class="section-btn" onclick="location.reload()">Назад</button>`;
-        const container = document.getElementById('levels-container');
-        const total = Math.ceil(allData.length / 10);
-        for (let i = 0; i < total; i++) {
-            const div = document.createElement('div');
-            div.className = 'level-node unlocked';
-            div.innerText = i + 1;
-            div.onclick = () => startLevel(i);
-            container.appendChild(div);
-        }
+// Track weak items for spaced repetition
+function recordAnswer(itemName, correct) {
+    const p = getProgress();
+    if (!p.itemStrength) p.itemStrength = {};
+    const s = p.itemStrength[itemName] || { strength: 3, attempts: 0 };
+    s.attempts++;
+    if (correct) {
+        s.strength = Math.min(5, s.strength + 1);
+    } else {
+        s.strength = Math.max(0, s.strength - 1.5);
     }
-
-    function startLevel(idx) {
-        currentLevel = allData.slice(idx * 10, idx * 10 + 10);
-        currentIndex = 0;
-        lives = 3;
-        showQuestion();
-    }
-    function showQuestion() {
-        const q = currentLevel[currentIndex];
-        const progress = ((currentIndex) / currentLevel.length) * 100;
-        const app = document.getElementById('app');
-        
-        app.innerHTML = `
-            <div id="lives-display" style="color: #f43f5e; font-weight: bold; margin-bottom: 10px;">${"❤️".repeat(lives)}</div>
-            <div id="progress-bar-bg"><div id="progress-bar" style="width: ${progress}%"></div></div>
-            <h3 style="color:white;">${q.name}</h3>
-            <div id="ing-container" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
-            <button onclick="checkAnswer()" style="margin-top:20px; width:100%; padding:15px; border-radius:10px; background:#58cc02; border:none; color:white; font-weight:bold; cursor:pointer;">Проверить</button>
-        `;
-
-        const container = document.getElementById('ing-container');
-        q.pool.forEach(ing => {
-            const btn = document.createElement('button');
-            btn.innerText = ing;
-            btn.className = 'ing-btn';
-            btn.onclick = () => btn.classList.toggle('selected');
-            container.appendChild(btn);
+    s.lastSeen = Date.now();
+    p.itemStrength[itemName] = s;
+    saveProgress(p);
+}
+function getWeakItems(section) {
+    const p = getProgress();
+    if (!p.itemStrength) return [];
+    const sectionData = state.allData;
+    return sectionData
+        .filter(d => {
+            const s = p.itemStrength[d.name];
+            return s && s.strength < 3;
+        })
+        .sort((a, b) => {
+            const sa = (p.itemStrength[a.name] || {}).strength || 3;
+            const sb = (p.itemStrength[b.name] || {}).strength || 3;
+            return sa - sb;
         });
+}
+
+// ====================== UTILITIES ======================
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function showConfetti() {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    const colors = ['#58CC02', '#1CB0F6', '#FFC800', '#FF9600', '#CE82FF', '#FF4B4B'];
+    for (let i = 0; i < 50; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+        container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 4000);
+}
+
+function showXPPopup(amount) {
+    const popup = document.createElement('div');
+    popup.className = 'xp-popup';
+    popup.textContent = `+${amount} XP`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1600);
+}
+
+// ====================== RENDERING ======================
+const app = document.getElementById('app');
+
+function render() {
+    switch (state.screen) {
+        case 'home': renderHome(); break;
+        case 'path': renderPath(); break;
+        case 'lesson': renderLesson(); break;
+        case 'result': renderResult(); break;
+    }
+}
+
+function renderHome() {
+    const stats = getGlobalStats();
+    app.innerHTML = `
+        <div class="top-bar">
+            <div class="top-bar-stat">
+                <span class="icon">🔥</span>
+                <span class="streak-count">${stats.streak}</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">⚡</span>
+                <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">📚</span>
+                <span style="color:var(--purple)">${stats.totalLessons}</span>
+            </div>
+        </div>
+        <div class="home-screen">
+            <div class="mascot-area">
+                <span class="mascot">🦉</span>
+                <div class="app-title">ТТК Академия</div>
+                <div class="app-subtitle">Выучи составы блюд как в Duolingo!</div>
+            </div>
+            <div class="daily-stats">
+                <div class="daily-stat-card">
+                    <div class="stat-value streak-count">🔥 ${stats.streak}</div>
+                    <div class="stat-label">Серия дней</div>
+                </div>
+                <div class="daily-stat-card">
+                    <div class="stat-value xp-count">⚡ ${stats.totalXP}</div>
+                    <div class="stat-label">Всего XP</div>
+                </div>
+                <div class="daily-stat-card">
+                    <div class="stat-value" style="color:var(--green)">📚 ${stats.totalLessons}</div>
+                    <div class="stat-label">Уроков</div>
+                </div>
+            </div>
+            <button class="section-card card-kitchen" onclick="selectSection('kitchen')">
+                <div class="card-icon">🍳</div>
+                <div class="card-info">
+                    Кухня
+                    <small>Завтраки, супы, салаты, пасты</small>
+                </div>
+                <div class="card-arrow">›</div>
+            </button>
+            <button class="section-card card-desserts" onclick="selectSection('desserts')">
+                <div class="card-icon">🍰</div>
+                <div class="card-info">
+                    Десерты
+                    <small>Сладкие блюда и выпечка</small>
+                </div>
+                <div class="card-arrow">›</div>
+            </button>
+            <button class="section-card card-drinks" onclick="selectSection('drinks')">
+                <div class="card-icon">🍹</div>
+                <div class="card-info">
+                    Напитки
+                    <small>Кофе, коктейли, лимонады</small>
+                </div>
+                <div class="card-arrow">›</div>
+            </button>
+        </div>
+    `;
+}
+
+async function selectSection(section) {
+    state.section = section;
+    const labels = { kitchen: '🍳 Кухня', desserts: '🍰 Десерты', drinks: '🍹 Напитки' };
+    state.sectionLabel = labels[section] || section;
+
+    app.innerHTML = `<div class="loading-screen"><div class="loader"></div><p>Загрузка...</p></div>`;
+
+    const fileName = (section === 'kitchen') ? 'dishes.json' : `${section}.json`;
+    try {
+        const response = await fetch(fileName);
+        if (!response.ok) throw new Error('File not found');
+        state.allData = await response.json();
+        buildLessons();
+        state.screen = 'path';
+        render();
+    } catch (e) {
+        app.innerHTML = `
+            <div class="loading-screen">
+                <span style="font-size:60px">😔</span>
+                <p>Файл ${fileName} не найден</p>
+                <button class="result-btn secondary" style="margin-top:20px;max-width:280px" onclick="goHome()">Назад</button>
+            </div>
+        `;
+    }
+}
+
+function buildLessons() {
+    const data = state.allData;
+    const lessonSize = 8;
+    state.lessons = [];
+    for (let i = 0; i < data.length; i += lessonSize) {
+        state.lessons.push(data.slice(i, i + lessonSize));
+    }
+}
+
+function renderPath() {
+    const stats = getGlobalStats();
+    const sp = getSectionProgress(state.section);
+    const weakItems = getWeakItems(state.section);
+
+    // Determine which lesson is the first incomplete
+    let firstIncomplete = state.lessons.length;
+    for (let i = 0; i < state.lessons.length; i++) {
+        const ld = sp[`lesson_${i}`];
+        if (!ld || !ld.completed) {
+            firstIncomplete = i;
+            break;
+        }
     }
 
-    function checkAnswer() {
-        const q = currentLevel[currentIndex];
-        const selected = Array.from(document.querySelectorAll('.ing-btn.selected')).map(b => b.innerText);
-        const isCorrect = q.correct.length === selected.length && q.correct.every(val => selected.includes(val));
+    let nodesHTML = '';
+    const offsets = [0, 40, 60, 40, 0, -40, -60, -40];
 
-        if (!isCorrect) {
-            lives--;
-            if (!mistakes.includes(q.id)) mistakes.push(q.id);
-            if (lives <= 0) {
-                alert("Жизни кончились!");
-                location.reload();
-                return;
+    for (let i = 0; i < state.lessons.length; i++) {
+        const ld = sp[`lesson_${i}`] || {};
+        let nodeClass = 'locked';
+        let clickHandler = '';
+
+        if (i < firstIncomplete) {
+            nodeClass = 'completed';
+            clickHandler = `onclick="startLesson(${i})"`;
+        } else if (i === firstIncomplete) {
+            nodeClass = 'available';
+            clickHandler = `onclick="startLesson(${i})"`;
+        }
+
+        const offset = offsets[i % offsets.length];
+        const crownHTML = ld.crowns > 0 ? `<span class="crown-badge">👑${ld.crowns > 1 ? ld.crowns : ''}</span>` : '';
+        const connectorClass = i < firstIncomplete ? 'completed' : '';
+
+        if (i > 0) {
+            nodesHTML += `<div class="path-connector ${connectorClass}"></div>`;
+        }
+
+        nodesHTML += `
+            <div class="path-row">
+                <button class="lesson-node ${nodeClass}" ${clickHandler} style="margin-left:${offset}px">
+                    ${crownHTML}
+                    ${i + 1}
+                    <span class="node-sub">${state.lessons[i].length} карт</span>
+                </button>
+            </div>
+        `;
+    }
+
+    const practiceHTML = weakItems.length > 0 ? `
+        <button class="practice-btn" onclick="startPractice()">
+            🏋️ Тренировка слабых мест (${weakItems.length})
+        </button>
+    ` : '';
+
+    app.innerHTML = `
+        <div class="top-bar">
+            <div class="top-bar-stat">
+                <span class="icon">🔥</span>
+                <span class="streak-count">${stats.streak}</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">⚡</span>
+                <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">❤️</span>
+                <span class="hearts-count">5</span>
+            </div>
+        </div>
+        <div class="path-screen">
+            <div class="path-header">
+                <button class="back-btn" onclick="goHome()">←</button>
+                <div class="path-title">${state.sectionLabel}</div>
+            </div>
+            ${practiceHTML}
+            <div class="path-container">
+                ${nodesHTML}
+            </div>
+        </div>
+    `;
+}
+
+function goHome() {
+    state.screen = 'home';
+    state.section = null;
+    render();
+}
+
+// ====================== LESSON LOGIC ======================
+function startLesson(idx) {
+    state.currentLessonIdx = idx;
+    state.isPractice = false;
+    const lessonData = state.lessons[idx];
+    state.questions = generateQuestions(lessonData);
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.screen = 'lesson';
+    render();
+}
+
+function startPractice() {
+    const weakItems = getWeakItems(state.section);
+    if (weakItems.length === 0) return;
+    state.isPractice = true;
+    state.currentLessonIdx = -1;
+    const practiceData = weakItems.slice(0, 15);
+    state.questions = generateQuestions(practiceData);
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.screen = 'lesson';
+    render();
+}
+
+function generateQuestions(items) {
+    const questions = [];
+    const shuffled = shuffle(items);
+
+    for (const item of shuffled) {
+        const rand = Math.random();
+
+        if (rand < 0.5) {
+            // Type 1: Select correct items
+            questions.push({
+                type: 'select',
+                item: item,
+                pool: shuffle(item.pool),
+            });
+        } else if (rand < 0.75 && item.correct.length > 2) {
+            // Type 2: Missing ingredient
+            const missingIdx = Math.floor(Math.random() * item.correct.length);
+            const missingIng = item.correct[missingIdx];
+            const shown = item.correct.filter((_, i) => i !== missingIdx);
+            const distractors = item.pool.filter(p => !item.correct.includes(p));
+            const choices = shuffle([missingIng, ...shuffle(distractors).slice(0, 3)]);
+
+            questions.push({
+                type: 'missing',
+                item: item,
+                shown: shown,
+                missing: missingIng,
+                choices: choices,
+            });
+        } else {
+            // Type 3: True/False
+            const isTrue = Math.random() > 0.5;
+            let ingredient;
+            if (isTrue) {
+                ingredient = item.correct[Math.floor(Math.random() * item.correct.length)];
+            } else {
+                const wrong = item.pool.filter(p => !item.correct.includes(p));
+                if (wrong.length === 0) {
+                    // Fallback to select
+                    questions.push({
+                        type: 'select',
+                        item: item,
+                        pool: shuffle(item.pool),
+                    });
+                    continue;
+                }
+                ingredient = wrong[Math.floor(Math.random() * wrong.length)];
             }
-        } else {
-            mistakes = mistakes.filter(id => id !== q.id);
-        }
-
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <h3>${isCorrect ? "✅ Верно!" : "❌ Ошибка!"}</h3>
-            <p>Правильно: ${q.correct.join(', ')}</p>
-            <button onclick="nextQuestion()" style="width:100%; padding:15px; border-radius:10px; background:#58cc02; border:none; color:white; font-weight:bold; cursor:pointer;">Дальше</button>
-        `;
-    }
-
-    function nextQuestion() {
-        currentIndex++;
-        if (currentIndex < currentLevel.length) {
-            showQuestion();
-        } else {
-            finishLevel();
+            questions.push({
+                type: 'truefalse',
+                item: item,
+                ingredient: ingredient,
+                answer: isTrue,
+            });
         }
     }
 
-    function finishLevel() {
-        const app = document.getElementById('app');
-        app.innerHTML = `
-            <h3>Уровень пройден!</h3>
-            ${mistakes.length > 0 ? `<button onclick="startMistakes()" class="section-btn" style="background:#f43f5e">Закрепить ошибки (${mistakes.length})</button>` : ""}
-            <button class="section-btn" onclick="location.reload()">В главное меню</button>
+    return shuffle(questions);
+}
+
+// ====================== LESSON RENDERING ======================
+function renderLesson() {
+    if (state.feedbackShown) {
+        renderFeedback();
+        return;
+    }
+
+    const q = state.questions[state.currentQIdx];
+    if (!q) {
+        finishLesson();
+        return;
+    }
+
+    const progress = (state.currentQIdx / state.questions.length) * 100;
+    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+
+    let questionHTML = '';
+
+    if (q.type === 'select') {
+        const typeLabel = q.item.type === 'allergen' ? 'Выбери аллергены' : 'Выбери состав';
+        const dishName = q.item.name;
+        let optionsHTML = q.pool.map((ing, idx) => `
+            <button class="option-btn ${state.selectedOptions.has(idx) ? 'selected' : ''}"
+                    onclick="toggleOption(${idx})">${ing}</button>
+        `).join('');
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-type-label">${typeLabel}</div>
+                <div class="question-title">
+                    Что входит в <span class="question-dish-name">${dishName}</span>?
+                </div>
+                <div class="options-grid">${optionsHTML}</div>
+            </div>
+            <div class="bottom-area">
+                <button class="check-btn ${state.selectedOptions.size > 0 ? 'active' : 'disabled'}"
+                        onclick="${state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : ''}">
+                    Проверить
+                </button>
+            </div>
+        `;
+    } else if (q.type === 'missing') {
+        const typeLabel = 'Найди пропущенное';
+        const dishName = q.item.name;
+
+        const shownHTML = q.shown.map(ing =>
+            `<span class="missing-item">${ing}</span>`
+        ).join('') + `<span class="missing-slot">❓</span>`;
+
+        const choicesHTML = q.choices.map((c, idx) => `
+            <button class="choice-btn ${state.selectedChoice === idx ? 'selected' : ''}"
+                    onclick="selectChoice(${idx})">${c}</button>
+        `).join('');
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-type-label">${typeLabel}</div>
+                <div class="question-title">
+                    Какой ингредиент пропущен в <span class="question-dish-name">${dishName}</span>?
+                </div>
+                <div class="missing-list">${shownHTML}</div>
+                <div class="choice-grid">${choicesHTML}</div>
+            </div>
+            <div class="bottom-area">
+                <button class="check-btn ${state.selectedChoice !== null ? 'active' : 'disabled'}"
+                        onclick="${state.selectedChoice !== null ? 'checkMissingAnswer()' : ''}">
+                    Проверить
+                </button>
+            </div>
+        `;
+    } else if (q.type === 'truefalse') {
+        const typeLabel = q.item.type === 'allergen' ? 'Верно или нет?' : 'Верно или нет?';
+        const verb = q.item.type === 'allergen' ? 'содержит аллерген' : 'входит в состав';
+        const dishName = q.item.name;
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-type-label">${typeLabel}</div>
+                <div class="question-title">
+                    <span class="question-dish-name">${q.ingredient}</span>
+                    <br>${verb}
+                    <br><span class="question-dish-name">${dishName}</span>?
+                </div>
+                <div class="tf-buttons">
+                    <button class="tf-btn tf-yes" onclick="checkTFAnswer(true)">✅ Да</button>
+                    <button class="tf-btn tf-no" onclick="checkTFAnswer(false)">❌ Нет</button>
+                </div>
+            </div>
         `;
     }
 
-    function startMistakes() {
-        currentLevel = allData.filter(q => mistakes.includes(q.id));
-        currentIndex = 0;
-        mistakes = [];
-        showQuestion();
+    app.innerHTML = `
+        <div class="lesson-screen">
+            <div class="lesson-header">
+                <button class="close-btn" onclick="confirmQuit()">✕</button>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width:${progress}%"></div>
+                </div>
+                <div class="hearts-display" id="hearts-display">${heartsStr}</div>
+            </div>
+            ${questionHTML}
+        </div>
+    `;
+}
+
+function toggleOption(idx) {
+    if (state.feedbackShown) return;
+    if (state.selectedOptions.has(idx)) {
+        state.selectedOptions.delete(idx);
+    } else {
+        state.selectedOptions.add(idx);
     }
+    render();
+}
+
+function selectChoice(idx) {
+    if (state.feedbackShown) return;
+    state.selectedChoice = idx;
+    render();
+}
+
+// ====================== ANSWER CHECKING ======================
+function checkSelectAnswer() {
+    const q = state.questions[state.currentQIdx];
+    const selectedItems = [...state.selectedOptions].map(i => q.pool[i]);
+    const correctSet = new Set(q.item.correct);
+    const selectedSet = new Set(selectedItems);
+    const isCorrect = correctSet.size === selectedSet.size && [...correctSet].every(c => selectedSet.has(c));
+
+    processAnswer(isCorrect, q.item);
+}
+
+function checkMissingAnswer() {
+    const q = state.questions[state.currentQIdx];
+    const selected = q.choices[state.selectedChoice];
+    const isCorrect = selected === q.missing;
+
+    processAnswer(isCorrect, q.item);
+}
+
+function checkTFAnswer(userAnswer) {
+    const q = state.questions[state.currentQIdx];
+    const isCorrect = userAnswer === q.answer;
+
+    processAnswer(isCorrect, q.item);
+}
+
+function processAnswer(isCorrect, item) {
+    state.sessionTotal++;
+    recordAnswer(item.name, isCorrect);
+
+    if (isCorrect) {
+        state.sessionCorrect++;
+        state.sessionXP += 10;
+        state._lastCorrect = true;
+    } else {
+        state.hearts--;
+        state._lastCorrect = false;
+        if (!state.mistakeIds.includes(item.name)) {
+            state.mistakeIds.push(item.name);
+        }
+    }
+
+    state._lastItem = item;
+    state.feedbackShown = true;
+
+    if (state.hearts <= 0) {
+        renderFeedback();
+        return;
+    }
+
+    renderFeedback();
+}
+
+function renderFeedback() {
+    const q = state.questions[state.currentQIdx];
+    const item = state._lastItem;
+    const isCorrect = state._lastCorrect;
+    const progress = ((state.currentQIdx + 1) / state.questions.length) * 100;
+    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+
+    const feedbackClass = isCorrect ? 'correct' : 'wrong';
+    const icon = isCorrect ? '🎉' : '😞';
+    const text = isCorrect ? 'Отлично!' : 'Неправильно';
+    const infoText = item.info_text || '';
+    const correctList = item.correct.join(', ');
+
+    const detailHTML = isCorrect
+        ? `<div class="info-box">${infoText}</div>`
+        : `<div class="feedback-detail">Правильный ответ: ${correctList}</div><div class="info-box">${infoText}</div>`;
+
+    const btnText = state.hearts <= 0 ? 'Результаты' : 'Продолжить';
+
+    app.innerHTML = `
+        <div class="lesson-screen">
+            <div class="lesson-header">
+                <button class="close-btn" onclick="confirmQuit()">✕</button>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width:${progress}%"></div>
+                </div>
+                <div class="hearts-display" id="hearts-display">${heartsStr}</div>
+            </div>
+            <div class="question-area" style="flex:1;overflow-y:auto;">
+                <div style="flex:1"></div>
+            </div>
+            <div class="feedback-banner ${feedbackClass}">
+                <div class="feedback-header">
+                    <span class="feedback-icon">${icon}</span>
+                    <span class="feedback-text">${text}</span>
+                </div>
+                ${detailHTML}
+                <button class="feedback-continue-btn" onclick="nextQuestion()">${btnText}</button>
+            </div>
+        </div>
+    `;
+
+    if (!isCorrect) {
+        const display = document.getElementById('hearts-display');
+        if (display) display.classList.add('heart-break');
+    }
+}
+
+function nextQuestion() {
+    if (state.hearts <= 0) {
+        finishLesson();
+        return;
+    }
+
+    state.currentQIdx++;
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+
+    if (state.currentQIdx >= state.questions.length) {
+        finishLesson();
+    } else {
+        render();
+    }
+}
+
+function finishLesson() {
+    const xpEarned = state.sessionXP + (state.hearts > 0 ? 15 : 0);
+    addXP(xpEarned);
+
+    if (!state.isPractice && state.currentLessonIdx >= 0 && state.hearts > 0) {
+        saveLessonComplete(state.section, state.currentLessonIdx, state.sessionCorrect, state.sessionTotal);
+    }
+
+    state.screen = 'result';
+    state._finalXP = xpEarned;
+    render();
+
+    if (state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0) {
+        setTimeout(showConfetti, 300);
+    }
+    setTimeout(() => showXPPopup(xpEarned), 500);
+}
+
+function renderResult() {
+    const accuracy = state.sessionTotal > 0
+        ? Math.round((state.sessionCorrect / state.sessionTotal) * 100)
+        : 0;
+
+    const barColor = accuracy >= 80 ? 'var(--green)' : accuracy >= 50 ? 'var(--gold)' : 'var(--red)';
+    const resultEmoji = accuracy === 100 ? '🏆' : accuracy >= 80 ? '🌟' : accuracy >= 50 ? '👍' : '💪';
+    const resultTitle = accuracy === 100 ? 'Идеально!' :
+                        accuracy >= 80 ? 'Отличная работа!' :
+                        accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
+    const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
+                      `Ты заработал ${state._finalXP} XP!`;
+
+    app.innerHTML = `
+        <div class="result-screen">
+            <div class="result-mascot">${resultEmoji}</div>
+            <div class="result-title">${resultTitle}</div>
+            <div class="result-subtitle">${resultSub}</div>
+            <div class="result-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value" style="color:var(--green)">${state.sessionCorrect}</div>
+                    <div class="result-stat-label">Верно</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" style="color:var(--red)">${state.sessionTotal - state.sessionCorrect}</div>
+                    <div class="result-stat-label">Ошибок</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" style="color:var(--gold)">${state._finalXP}</div>
+                    <div class="result-stat-label">XP</div>
+                </div>
+            </div>
+            <div class="result-accuracy-bar">
+                <div class="result-accuracy-fill" style="width:${accuracy}%;background:${barColor}"></div>
+            </div>
+            <p style="color:var(--text-secondary);margin-bottom:24px;font-weight:700">${accuracy}% точность</p>
+            <button class="result-btn primary" onclick="returnToPath()">Продолжить</button>
+            ${state.mistakeIds.length > 0 ? `<button class="result-btn secondary" onclick="retryMistakes()">🔄 Повторить ошибки (${state.mistakeIds.length})</button>` : ''}
+        </div>
+    `;
+
+    // Animate the bar
+    setTimeout(() => {
+        const fill = document.querySelector('.result-accuracy-fill');
+        if (fill) fill.style.width = accuracy + '%';
+    }, 100);
+}
+
+function returnToPath() {
+    state.screen = 'path';
+    render();
+}
+
+function retryMistakes() {
+    const mistakeItems = state.allData.filter(d => state.mistakeIds.includes(d.name));
+    if (mistakeItems.length === 0) {
+        returnToPath();
+        return;
+    }
+    state.isPractice = true;
+    state.questions = generateQuestions(mistakeItems);
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.screen = 'lesson';
+    render();
+}
+
+// ====================== QUIT CONFIRMATION ======================
+function confirmQuit() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-title">Выйти из урока?</div>
+            <div class="modal-text">Твой прогресс в этом уроке не сохранится.</div>
+            <button class="modal-btn primary" onclick="this.closest('.modal-overlay').remove()">Остаться</button>
+            <button class="modal-btn secondary" onclick="quitLesson()">Выйти</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function quitLesson() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+    state.screen = 'path';
+    render();
+}
+
+// ====================== INIT ======================
+render();
 </script>
+</body>
+</html>
