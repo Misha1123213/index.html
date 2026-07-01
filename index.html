@@ -369,18 +369,18 @@
             flex-direction: column;
         }
         .question-type-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
-            color: var(--text-secondary);
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .question-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 800;
             line-height: 1.3;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
         .question-dish-name {
             color: var(--blue);
@@ -546,65 +546,51 @@
             cursor: default;
         }
 
-        /* Feedback banner */
-        .feedback-banner {
-            padding: 20px 16px;
-            border-top: 2px solid;
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .feedback-banner.correct {
-            background: rgba(88,204,2,0.12);
-            border-color: var(--green);
-        }
-        .feedback-banner.wrong {
-            background: rgba(255,75,75,0.12);
-            border-color: var(--red);
-        }
-        .feedback-header {
+        /* Inline feedback result strip */
+        .inline-result {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 8px;
-        }
-        .feedback-icon { font-size: 28px; }
-        .feedback-text {
-            font-size: 20px;
-            font-weight: 800;
-        }
-        .feedback-banner.correct .feedback-text { color: var(--green); }
-        .feedback-banner.wrong .feedback-text { color: var(--red); }
-        .feedback-detail {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 14px;
-            white-space: pre-line;
-        }
-        .feedback-continue-btn {
-            width: 100%;
-            padding: 14px;
+            padding: 10px 16px;
             border-radius: 12px;
-            font-size: 15px;
+            margin-bottom: 12px;
             font-weight: 800;
-            cursor: pointer;
-            border: none;
-            border-bottom: 4px solid;
-            font-family: inherit;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: white;
+            font-size: 15px;
+            animation: fadeIn 0.2s ease;
         }
-        .feedback-banner.correct .feedback-continue-btn {
-            background: var(--green);
-            border-bottom-color: var(--green-dark);
+        .inline-result.correct {
+            background: rgba(88,204,2,0.12);
+            color: var(--green);
         }
-        .feedback-banner.wrong .feedback-continue-btn {
-            background: var(--red);
-            border-bottom-color: var(--red-dark);
+        .inline-result.wrong {
+            background: rgba(255,75,75,0.12);
+            color: var(--red);
+        }
+        .inline-result .result-icon { font-size: 22px; }
+
+        /* Disabled state for answered buttons */
+        .option-btn.disabled, .choice-btn.disabled, .tf-btn.disabled {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .option-btn.correct-reveal, .choice-btn.correct-reveal {
+            opacity: 1 !important;
+        }
+        .option-btn.wrong-reveal, .choice-btn.wrong-reveal {
+            opacity: 1 !important;
+        }
+
+        .tf-btn.tf-correct {
+            background: rgba(88,204,2,0.25);
+            border-color: var(--green);
+            color: var(--green);
+            opacity: 1 !important;
+        }
+        .tf-btn.tf-wrong {
+            background: rgba(255,75,75,0.25);
+            border-color: var(--red);
+            color: var(--red);
+            opacity: 1 !important;
         }
 
         /* Result screen */
@@ -1300,94 +1286,124 @@ function generateQuestions(items) {
 
 // ====================== LESSON RENDERING ======================
 function renderLesson() {
-    if (state.feedbackShown) {
-        renderFeedback();
-        return;
-    }
-
     const q = state.questions[state.currentQIdx];
     if (!q) {
         finishLesson();
         return;
     }
 
-    const progress = (state.currentQIdx / state.questions.length) * 100;
+    const fb = state.feedbackShown;
+    const progress = ((state.currentQIdx + (fb ? 1 : 0)) / state.questions.length) * 100;
     const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+    const correctSet = new Set(q.item.correct);
 
     let questionHTML = '';
+    let resultStripHTML = '';
+
+    if (fb) {
+        const ic = state._lastCorrect;
+        resultStripHTML = `<div class="inline-result ${ic ? 'correct' : 'wrong'}">
+            <span class="result-icon">${ic ? '✓' : '✗'}</span>
+            ${ic ? 'Верно!' : 'Неверно'}
+        </div>`;
+    }
 
     if (q.type === 'select') {
-        const typeLabel = q.item.type === 'allergen' ? 'Выбери аллергены' : 'Выбери состав';
         const dishName = q.item.name;
-        let optionsHTML = q.pool.map((ing, idx) => `
-            <button class="option-btn ${state.selectedOptions.has(idx) ? 'selected' : ''}"
-                    onclick="toggleOption(${idx})">${ing}</button>
-        `).join('');
+        let optionsHTML = q.pool.map((ing, idx) => {
+            let cls = '';
+            if (fb) {
+                const isCorrectIng = correctSet.has(ing);
+                const wasSelected = state.selectedOptions.has(idx);
+                if (isCorrectIng) cls = 'correct-reveal disabled';
+                else if (wasSelected && !isCorrectIng) cls = 'wrong-reveal disabled';
+                else cls = 'disabled';
+            } else {
+                cls = state.selectedOptions.has(idx) ? 'selected' : '';
+            }
+            return `<button class="option-btn ${cls}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}</button>`;
+        }).join('');
 
         questionHTML = `
             <div class="question-area">
-                <div class="question-type-label">${typeLabel}</div>
                 <div class="question-title">
-                    Что входит в <span class="question-dish-name">${dishName}</span>?
+                    <span class="question-dish-name">${dishName}</span>
                 </div>
+                ${resultStripHTML}
                 <div class="options-grid">${optionsHTML}</div>
-            </div>
-            <div class="bottom-area">
-                <button class="check-btn ${state.selectedOptions.size > 0 ? 'active' : 'disabled'}"
-                        onclick="${state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : ''}">
-                    Проверить
-                </button>
             </div>
         `;
     } else if (q.type === 'missing') {
-        const typeLabel = 'Найди пропущенное';
         const dishName = q.item.name;
 
+        const slotContent = fb
+            ? `<span class="missing-item" style="border-color:var(--${state._lastCorrect ? 'green' : 'red'});color:var(--${state._lastCorrect ? 'green' : 'red'})">${q.missing}</span>`
+            : `<span class="missing-slot">?</span>`;
         const shownHTML = q.shown.map(ing =>
             `<span class="missing-item">${ing}</span>`
-        ).join('') + `<span class="missing-slot">❓</span>`;
+        ).join('') + slotContent;
 
-        const choicesHTML = q.choices.map((c, idx) => `
-            <button class="choice-btn ${state.selectedChoice === idx ? 'selected' : ''}"
-                    onclick="selectChoice(${idx})">${c}</button>
-        `).join('');
+        const choicesHTML = q.choices.map((c, idx) => {
+            let cls = '';
+            if (fb) {
+                if (c === q.missing) cls = 'correct-reveal disabled';
+                else if (state.selectedChoice === idx) cls = 'wrong-reveal disabled';
+                else cls = 'disabled';
+            } else {
+                cls = state.selectedChoice === idx ? 'selected' : '';
+            }
+            return `<button class="choice-btn ${cls}" onclick="${fb ? '' : `selectChoice(${idx})`}">${c}</button>`;
+        }).join('');
 
         questionHTML = `
             <div class="question-area">
-                <div class="question-type-label">${typeLabel}</div>
                 <div class="question-title">
-                    Какой ингредиент пропущен в <span class="question-dish-name">${dishName}</span>?
+                    Пропущенное в <span class="question-dish-name">${dishName}</span>?
                 </div>
+                ${resultStripHTML}
                 <div class="missing-list">${shownHTML}</div>
                 <div class="choice-grid">${choicesHTML}</div>
             </div>
-            <div class="bottom-area">
-                <button class="check-btn ${state.selectedChoice !== null ? 'active' : 'disabled'}"
-                        onclick="${state.selectedChoice !== null ? 'checkMissingAnswer()' : ''}">
-                    Проверить
-                </button>
-            </div>
         `;
     } else if (q.type === 'truefalse') {
-        const typeLabel = q.item.type === 'allergen' ? 'Верно или нет?' : 'Верно или нет?';
-        const verb = q.item.type === 'allergen' ? 'содержит аллерген' : 'входит в состав';
         const dishName = q.item.name;
+
+        let yesClass = 'tf-btn tf-yes';
+        let noClass = 'tf-btn tf-no';
+        if (fb) {
+            yesClass += q.answer === true ? ' tf-correct' : ' tf-wrong';
+            noClass += q.answer === false ? ' tf-correct' : ' tf-wrong';
+            yesClass += ' disabled';
+            noClass += ' disabled';
+        }
 
         questionHTML = `
             <div class="question-area">
-                <div class="question-type-label">${typeLabel}</div>
                 <div class="question-title">
                     <span class="question-dish-name">${q.ingredient}</span>
-                    <br>${verb}
-                    <br><span class="question-dish-name">${dishName}</span>?
+                    входит в <span class="question-dish-name">${dishName}</span>?
                 </div>
+                ${resultStripHTML}
                 <div class="tf-buttons">
-                    <button class="tf-btn tf-yes" onclick="checkTFAnswer(true)">✅ Да</button>
-                    <button class="tf-btn tf-no" onclick="checkTFAnswer(false)">❌ Нет</button>
+                    <button class="${yesClass}" onclick="${fb ? '' : 'checkTFAnswer(true)'}">Да</button>
+                    <button class="${noClass}" onclick="${fb ? '' : 'checkTFAnswer(false)'}">Нет</button>
                 </div>
             </div>
         `;
     }
+
+    const bottomHTML = fb
+        ? `<div class="bottom-area">
+            <button class="check-btn active" onclick="nextQuestion()" style="background:${state._lastCorrect ? 'var(--green)' : 'var(--red)'};border-bottom-color:${state._lastCorrect ? 'var(--green-dark)' : 'var(--red-dark)'}">
+                ${state.hearts <= 0 ? 'Результаты' : 'Дальше'}
+            </button>
+           </div>`
+        : (q.type !== 'truefalse' ? `<div class="bottom-area">
+            <button class="check-btn ${(q.type === 'select' ? state.selectedOptions.size > 0 : state.selectedChoice !== null) ? 'active' : 'disabled'}"
+                    onclick="${(q.type === 'select' ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : ''))}">
+                Проверить
+            </button>
+           </div>` : '');
 
     app.innerHTML = `
         <div class="lesson-screen">
@@ -1399,8 +1415,14 @@ function renderLesson() {
                 <div class="hearts-display" id="hearts-display">${heartsStr}</div>
             </div>
             ${questionHTML}
+            ${bottomHTML}
         </div>
     `;
+
+    if (fb && !state._lastCorrect) {
+        const display = document.getElementById('hearts-display');
+        if (display) display.classList.add('heart-break');
+    }
 }
 
 function toggleOption(idx) {
@@ -1463,61 +1485,7 @@ function processAnswer(isCorrect, item) {
 
     state._lastItem = item;
     state.feedbackShown = true;
-
-    if (state.hearts <= 0) {
-        renderFeedback();
-        return;
-    }
-
-    renderFeedback();
-}
-
-function renderFeedback() {
-    const q = state.questions[state.currentQIdx];
-    const item = state._lastItem;
-    const isCorrect = state._lastCorrect;
-    const progress = ((state.currentQIdx + 1) / state.questions.length) * 100;
-    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
-
-    const feedbackClass = isCorrect ? 'correct' : 'wrong';
-    const icon = isCorrect ? '🎉' : '😞';
-    const text = isCorrect ? 'Отлично!' : 'Неправильно';
-    const infoText = item.info_text || '';
-    const correctList = item.correct.join(', ');
-
-    const detailHTML = isCorrect
-        ? `<div class="info-box">${infoText}</div>`
-        : `<div class="feedback-detail">Правильный ответ: ${correctList}</div><div class="info-box">${infoText}</div>`;
-
-    const btnText = state.hearts <= 0 ? 'Результаты' : 'Продолжить';
-
-    app.innerHTML = `
-        <div class="lesson-screen">
-            <div class="lesson-header">
-                <button class="close-btn" onclick="confirmQuit()">✕</button>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" style="width:${progress}%"></div>
-                </div>
-                <div class="hearts-display" id="hearts-display">${heartsStr}</div>
-            </div>
-            <div class="question-area" style="flex:1;overflow-y:auto;">
-                <div style="flex:1"></div>
-            </div>
-            <div class="feedback-banner ${feedbackClass}">
-                <div class="feedback-header">
-                    <span class="feedback-icon">${icon}</span>
-                    <span class="feedback-text">${text}</span>
-                </div>
-                ${detailHTML}
-                <button class="feedback-continue-btn" onclick="nextQuestion()">${btnText}</button>
-            </div>
-        </div>
-    `;
-
-    if (!isCorrect) {
-        const display = document.getElementById('hearts-display');
-        if (display) display.classList.add('heart-break');
-    }
+    render();
 }
 
 function nextQuestion() {
