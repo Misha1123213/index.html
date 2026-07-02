@@ -118,6 +118,12 @@
             margin-bottom: 30px;
         }
 
+        /* Concrete texture mixin */
+        .concrete-tex {
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
+        }
+
         /* Section cards - concrete tablet style */
         .section-card {
             display: flex;
@@ -127,6 +133,8 @@
             padding: 0;
             margin-bottom: 16px;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
@@ -164,13 +172,6 @@
             font-size: 22px;
             padding-right: 16px;
         }
-        .section-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-            pointer-events: none;
-        }
 
         /* Daily stats bar */
         .daily-stats {
@@ -181,6 +182,8 @@
         .daily-stat-card {
             flex: 1;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             border: none;
             border-radius: 4px;
             padding: 14px 10px;
@@ -212,6 +215,8 @@
             width: 40px; height: 40px;
             border-radius: 4px;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             border: none;
             color: var(--concrete-text);
             font-size: 20px;
@@ -334,6 +339,8 @@
             padding: 16px;
             margin-top: 20px;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
@@ -407,19 +414,14 @@
         }
         .question-panel {
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             border-radius: 4px;
             padding: 18px 20px;
             margin-bottom: 16px;
             box-shadow: 2px 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08);
             position: relative;
             overflow: hidden;
-        }
-        .question-panel::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-            pointer-events: none;
         }
         .question-type-label {
             font-size: 11px;
@@ -451,6 +453,8 @@
         .option-btn {
             padding: 10px 16px;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
@@ -464,15 +468,7 @@
             position: relative;
             overflow: hidden;
         }
-        .option-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-            pointer-events: none;
-            border-radius: 4px;
-        }
-        .option-btn:hover { background: var(--concrete-light); transform: translateY(-1px); box-shadow: 3px 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .option-btn:hover { background-color: var(--concrete-light); transform: translateY(-1px); box-shadow: 3px 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
         .option-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .option-btn.selected {
             background: #e8e4dc;
@@ -490,31 +486,44 @@
             color: #b71c1c;
             box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
         }
-        /* Crumble animation for wrong answers */
-        @keyframes concreteBreak {
-            0% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
-            20% { transform: scale(1.02) rotate(0deg); opacity: 1; }
-            40% { transform: scale(0.98) rotate(1deg); opacity: 0.9; }
-            100% { transform: scale(0) rotate(8deg) translateY(30px); opacity: 0; filter: blur(3px); }
-        }
-        .option-btn.crumble-away {
-            animation: concreteBreak 0.6s cubic-bezier(.4,0,.7,.4) forwards;
-        }
-        /* Crack effect on click */
-        @keyframes crackFlash {
-            0% { opacity: 0; transform: scale(0.8); }
-            30% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(1.1); }
-        }
-        .option-btn.crack-effect::after {
+        /* Crack overlay on wrong answer tablets before they break */
+        .option-btn.crack-overlay::after,
+        .choice-btn.crack-overlay::after {
             content: '';
             position: absolute;
-            inset: -2px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Cpath d='M20 0 L25 20 L15 25 L22 40 L18 60' stroke='%23555' fill='none' stroke-width='1.5' opacity='0.6'/%3E%3Cpath d='M60 0 L55 15 L65 22 L58 45 L62 60' stroke='%23555' fill='none' stroke-width='1' opacity='0.5'/%3E%3Cpath d='M80 0 L78 18 L85 30 L75 50 L80 60' stroke='%23666' fill='none' stroke-width='0.8' opacity='0.4'/%3E%3C/svg%3E");
-            background-size: cover;
+            inset: -4px;
+            background: url('img/concrete-cracks.png') center/cover no-repeat;
+            opacity: 0.7;
+            pointer-events: none;
+            animation: crackAppear 0.3s ease-out forwards;
+            z-index: 2;
+        }
+        @keyframes crackAppear {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        /* Break apart into fragments animation */
+        .option-btn.crumble-away,
+        .choice-btn.crumble-away {
+            animation: none;
+        }
+        /* Crack effect on click */
+        .option-btn.crack-effect::after,
+        .choice-btn.crack-effect::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: url('img/concrete-cracks.png') center/cover no-repeat;
+            opacity: 0;
             animation: crackFlash 0.4s ease-out forwards;
             pointer-events: none;
             border-radius: 4px;
+            z-index: 2;
+        }
+        @keyframes crackFlash {
+            0% { opacity: 0; transform: scale(0.85); }
+            40% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.05); }
         }
 
         /* True/False buttons - concrete tablet */
@@ -540,14 +549,18 @@
         .tf-btn:active { transform: translateY(2px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .tf-btn.tf-yes {
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             color: #2e7d32;
         }
-        .tf-btn.tf-yes:hover { background: var(--concrete-light); }
+        .tf-btn.tf-yes:hover { background-color: var(--concrete-light); }
         .tf-btn.tf-no {
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             color: #c62828;
         }
-        .tf-btn.tf-no:hover { background: var(--concrete-light); }
+        .tf-btn.tf-no:hover { background-color: var(--concrete-light); }
 
         /* Missing ingredient choices */
         .missing-list {
@@ -559,6 +572,8 @@
         .missing-item {
             padding: 8px 14px;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
@@ -589,6 +604,8 @@
             width: 100%;
             padding: 14px 18px;
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
@@ -602,7 +619,7 @@
             position: relative;
             overflow: hidden;
         }
-        .choice-btn:hover { background: var(--concrete-light); transform: translateY(-1px); }
+        .choice-btn:hover { background-color: var(--concrete-light); transform: translateY(-1px); }
         .choice-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .choice-btn.selected { background: #e8e4dc; outline: 2px solid #555; color: var(--concrete-text); }
         .choice-btn.correct-reveal {
@@ -614,7 +631,7 @@
             color: #b71c1c;
         }
         .choice-btn.crumble-away {
-            animation: concreteBreak 0.6s cubic-bezier(.4,0,.7,.4) forwards;
+            animation: none;
         }
 
         /* Check button - concrete tablet */
@@ -641,10 +658,12 @@
         }
         .check-btn.active {
             background: var(--concrete-light);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             color: var(--concrete-text);
             box-shadow: 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);
         }
-        .check-btn.active:hover { background: #d0cbc3; transform: translateY(-1px); box-shadow: 3px 4px 12px rgba(0,0,0,0.45); }
+        .check-btn.active:hover { background-color: #d0cbc3; transform: translateY(-1px); box-shadow: 3px 4px 12px rgba(0,0,0,0.45); }
         .check-btn.active:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .check-btn.disabled {
             background: rgba(181,176,168,0.3);
@@ -689,16 +708,18 @@
         
         /* Concrete fragment particles for break animation */
         .concrete-fragment {
-            position: absolute;
-            background: var(--concrete);
-            border-radius: 2px;
+            position: fixed;
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 100px 100px;
+            border-radius: 1px;
             pointer-events: none;
             z-index: 1000;
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.4);
         }
-        @keyframes fragmentFall {
-            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-            100% { transform: translate(var(--fx), var(--fy)) rotate(var(--fr)); opacity: 0; }
+        @keyframes fragmentFly {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+            30% { opacity: 1; }
+            100% { transform: translate(var(--fx), var(--fy)) rotate(var(--fr)) scale(0.3); opacity: 0; }
         }
 
         .tf-btn.tf-correct {
@@ -783,10 +804,14 @@
         }
         .result-btn.primary {
             background: var(--concrete-light);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             box-shadow: 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
         }
         .result-btn.secondary {
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             color: var(--concrete-text);
             box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
@@ -809,6 +834,8 @@
         }
         .modal-content {
             background: var(--concrete);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 300px 300px;
             border: none;
             border-radius: 4px;
             padding: 28px 24px;
@@ -846,11 +873,15 @@
         }
         .modal-btn.primary {
             background: var(--concrete-light);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             color: var(--concrete-text);
             box-shadow: 2px 3px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
         }
         .modal-btn.secondary {
             background: var(--concrete-dark);
+            background-image: url('img/concrete-texture.jpg');
+            background-size: 200px 200px;
             color: rgba(42,42,42,0.7);
         }
 
@@ -1597,28 +1628,48 @@ function selectChoice(idx) {
     render();
 }
 
-// Spawn concrete fragments from a crumbling button
-function spawnFragments(btn) {
+// Break a concrete tablet into flying fragments
+function breakTablet(btn) {
     const rect = btn.getBoundingClientRect();
-    const count = 8 + Math.floor(Math.random() * 6);
-    for (let i = 0; i < count; i++) {
-        const frag = document.createElement('div');
-        frag.className = 'concrete-fragment';
-        const size = 4 + Math.random() * 10;
-        frag.style.width = size + 'px';
-        frag.style.height = size + 'px';
-        frag.style.left = (rect.left + Math.random() * rect.width) + 'px';
-        frag.style.top = (rect.top + Math.random() * rect.height) + 'px';
-        const fx = (Math.random() - 0.5) * 120;
-        const fy = 30 + Math.random() * 80;
-        const fr = (Math.random() - 0.5) * 360;
-        frag.style.setProperty('--fx', fx + 'px');
-        frag.style.setProperty('--fy', fy + 'px');
-        frag.style.setProperty('--fr', fr + 'deg');
-        frag.style.animation = `fragmentFall ${0.5 + Math.random() * 0.4}s ease-out forwards`;
-        document.body.appendChild(frag);
-        setTimeout(() => frag.remove(), 1000);
-    }
+    // First show crack overlay
+    btn.classList.add('crack-overlay');
+    
+    // After cracks appear, spawn fragments and hide the button
+    setTimeout(() => {
+        const count = 12 + Math.floor(Math.random() * 8);
+        for (let i = 0; i < count; i++) {
+            const frag = document.createElement('div');
+            frag.className = 'concrete-fragment';
+            // Mix of larger chunks and small debris
+            const isChunk = i < 5;
+            const w = isChunk ? (15 + Math.random() * 25) : (4 + Math.random() * 10);
+            const h = isChunk ? (10 + Math.random() * 20) : (3 + Math.random() * 8);
+            frag.style.width = w + 'px';
+            frag.style.height = h + 'px';
+            frag.style.left = (rect.left + Math.random() * rect.width) + 'px';
+            frag.style.top = (rect.top + Math.random() * rect.height) + 'px';
+            // Irregular shape via clip-path
+            if (isChunk) {
+                const p1 = Math.random() * 30;
+                const p2 = 70 + Math.random() * 30;
+                const p3 = Math.random() * 30;
+                const p4 = 70 + Math.random() * 30;
+                frag.style.clipPath = `polygon(${p1}% 0%, ${p2}% ${p3}%, 100% ${p4}%, ${100-p1}% 100%, ${p3}% ${p2}%, 0% ${100-p4}%)`;
+            }
+            const fx = (Math.random() - 0.5) * 200;
+            const fy = 40 + Math.random() * 120;
+            const fr = (Math.random() - 0.5) * 540;
+            frag.style.setProperty('--fx', fx + 'px');
+            frag.style.setProperty('--fy', fy + 'px');
+            frag.style.setProperty('--fr', fr + 'deg');
+            const dur = 0.5 + Math.random() * 0.5;
+            frag.style.animation = `fragmentFly ${dur}s cubic-bezier(.2,0,.8,.4) forwards`;
+            document.body.appendChild(frag);
+            setTimeout(() => frag.remove(), 1200);
+        }
+        // Hide the original button
+        btn.style.visibility = 'hidden';
+    }, 350);
 }
 
 // ====================== ANSWER CHECKING ======================
@@ -1667,10 +1718,10 @@ function processAnswer(isCorrect, item) {
     state.feedbackShown = true;
     render();
 
-    // Spawn fragments from crumbling wrong-answer buttons
+    // Break wrong-answer tablets with crack + fragment animation
     setTimeout(() => {
         document.querySelectorAll('[data-crumble]').forEach(btn => {
-            spawnFragments(btn);
+            breakTablet(btn);
         });
     }, 50);
 }
