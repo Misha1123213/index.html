@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>MET Академия ☕</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --green: #4CAF50;
@@ -29,9 +29,11 @@
             --border: rgba(255,255,255,0.12);
             --border-light: rgba(255,255,255,0.2);
             --shadow: rgba(0,0,0,0.5);
-            --concrete: #3a3a3a;
-            --concrete-light: #4a4a4a;
-            --concrete-border: rgba(255,255,255,0.08);
+            --concrete: #b5b0a8;
+            --concrete-light: #c5c0b8;
+            --concrete-dark: #9a958d;
+            --concrete-text: #2a2a2a;
+            --concrete-border: rgba(0,0,0,0.12);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,7 +41,7 @@
         body {
             background: var(--bg-dark);
             color: var(--text-primary);
-            font-family: 'Nunito', sans-serif;
+            font-family: 'Inter', sans-serif;
             min-height: 100dvh;
             overflow-x: hidden;
             background-image: url('img/bg-cafe.jpg');
@@ -116,7 +118,7 @@
             margin-bottom: 30px;
         }
 
-        /* Section cards - concrete/microcement style */
+        /* Section cards - concrete tablet style */
         .section-card {
             display: flex;
             align-items: center;
@@ -125,26 +127,26 @@
             padding: 0;
             margin-bottom: 16px;
             background: var(--concrete);
-            border: 1px solid var(--concrete-border);
-            border-radius: 16px;
-            color: var(--text-primary);
-            font-size: 18px;
-            font-weight: 800;
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 17px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
             text-align: left;
             font-family: inherit;
             overflow: hidden;
             position: relative;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+            box-shadow: 2px 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08);
         }
-        .section-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
-        .section-card:active { transform: translateY(0px); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        .section-card:hover { transform: translateY(-3px); box-shadow: 3px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25); }
+        .section-card:active { transform: translateY(0px); box-shadow: 1px 2px 6px rgba(0,0,0,0.4); }
         .section-card .card-img {
             width: 90px; height: 90px;
             object-fit: cover;
             flex-shrink: 0;
-            border-radius: 14px 0 0 14px;
+            border-radius: 4px 0 0 4px;
         }
         .section-card .card-info {
             flex: 1;
@@ -153,12 +155,12 @@
         .section-card .card-info small {
             display: block;
             font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
+            font-weight: 500;
+            color: rgba(42,42,42,0.6);
             margin-top: 3px;
         }
         .section-card .card-arrow {
-            color: var(--text-dim);
+            color: rgba(42,42,42,0.4);
             font-size: 22px;
             padding-right: 16px;
         }
@@ -166,7 +168,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
             pointer-events: none;
         }
 
@@ -179,20 +181,21 @@
         .daily-stat-card {
             flex: 1;
             background: var(--concrete);
-            border: 1px solid var(--concrete-border);
-            border-radius: 12px;
+            border: none;
+            border-radius: 4px;
             padding: 14px 10px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .daily-stat-card .stat-value {
             font-size: 22px;
-            font-weight: 900;
+            font-weight: 800;
+            color: var(--concrete-text);
         }
         .daily-stat-card .stat-label {
             font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 700;
+            color: rgba(42,42,42,0.6);
+            font-weight: 600;
             text-transform: uppercase;
             margin-top: 2px;
         }
@@ -207,16 +210,16 @@
         }
         .back-btn {
             width: 40px; height: 40px;
-            border-radius: 50%;
+            border-radius: 4px;
             background: var(--concrete);
-            border: 1px solid var(--concrete-border);
-            color: var(--text-primary);
+            border: none;
+            color: var(--concrete-text);
             font-size: 20px;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             transition: 0.15s;
             font-family: inherit;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .back-btn:hover { background: var(--concrete-light); }
         .path-title {
@@ -241,10 +244,10 @@
         .path-connector {
             width: 3px;
             height: 30px;
-            background: var(--concrete-light);
+            background: var(--concrete-dark);
             margin: 0 auto;
         }
-        .path-connector.completed { background: rgba(76,175,80,0.5); }
+        .path-connector.completed { background: rgba(76,175,80,0.6); }
 
         .lesson-node {
             width: 70px; height: 70px;
@@ -266,17 +269,17 @@
             opacity: 0.8;
         }
         .lesson-node.locked {
-            background: var(--concrete);
-            border-color: var(--concrete-border);
-            color: var(--text-dim);
+            background: var(--concrete-dark);
+            border-color: rgba(0,0,0,0.15);
+            color: rgba(42,42,42,0.4);
             cursor: default;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35);
         }
         .lesson-node.available {
-            background: var(--text-primary);
-            border-color: rgba(255,255,255,0.3);
-            color: #1a1a1a;
-            box-shadow: 0 4px 12px rgba(255,255,255,0.15);
+            background: var(--concrete-light);
+            border-color: var(--concrete-text);
+            color: var(--concrete-text);
+            box-shadow: 2px 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
             animation: nodePulse 2s ease-in-out infinite;
         }
         .lesson-node.available:hover { transform: translateY(-3px); }
@@ -285,14 +288,14 @@
             box-shadow: 0 1px 4px rgba(255,255,255,0.1);
         }
         @keyframes nodePulse {
-            0%, 100% { box-shadow: 0 4px 12px rgba(255,255,255,0.15), 0 0 0 0 rgba(255,255,255,0.3); }
-            50% { box-shadow: 0 4px 12px rgba(255,255,255,0.15), 0 0 0 8px rgba(255,255,255,0); }
+            0%, 100% { box-shadow: 2px 4px 12px rgba(0,0,0,0.4), 0 0 0 0 rgba(181,176,168,0.4); }
+            50% { box-shadow: 2px 4px 12px rgba(0,0,0,0.4), 0 0 0 8px rgba(181,176,168,0); }
         }
         .lesson-node.completed {
-            background: var(--concrete-light);
+            background: var(--concrete);
             border-color: var(--green);
             color: var(--green);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .lesson-node.completed:hover { transform: translateY(-3px); }
         .lesson-node.completed:active {
@@ -331,15 +334,15 @@
             padding: 16px;
             margin-top: 20px;
             background: var(--concrete);
-            border: 1px solid rgba(255,193,7,0.3);
-            border-radius: 14px;
-            color: var(--gold);
-            font-size: 16px;
-            font-weight: 800;
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.15s;
             font-family: inherit;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .practice-btn:hover { background: var(--concrete-light); }
 
@@ -373,16 +376,16 @@
 
         .progress-bar-container {
             flex: 1;
-            height: 14px;
-            background: var(--concrete);
-            border-radius: 7px;
+            height: 12px;
+            background: rgba(181,176,168,0.3);
+            border-radius: 3px;
             overflow: hidden;
-            border: 1px solid var(--concrete-border);
+            border: none;
         }
         .progress-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #FAFAFA, #E0E0E0);
-            border-radius: 7px;
+            background: var(--concrete);
+            border-radius: 3px;
             transition: width 0.5s ease;
         }
 
@@ -395,33 +398,50 @@
             color: var(--red);
         }
 
-        /* Question area */
+        /* Question area - concrete tablet panel */
         .question-area {
             flex: 1;
-            padding: 24px 16px;
+            padding: 20px 16px;
             display: flex;
             flex-direction: column;
         }
+        .question-panel {
+            background: var(--concrete);
+            border-radius: 4px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 2px 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .question-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
         .question-type-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(42,42,42,0.5);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             margin-bottom: 4px;
         }
         .question-title {
-            font-size: 20px;
-            font-weight: 800;
-            line-height: 1.3;
-            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 0;
+            color: var(--concrete-text);
         }
         .question-dish-name {
-            color: var(--text-primary);
-            font-style: italic;
+            color: var(--concrete-text);
+            font-weight: 800;
         }
 
-        /* Ingredient buttons grid - concrete chip style */
+        /* Ingredient buttons grid - concrete tablet style */
         .options-grid {
             display: flex;
             flex-wrap: wrap;
@@ -431,37 +451,73 @@
         .option-btn {
             padding: 10px 16px;
             background: var(--concrete);
-            border: 1px solid var(--concrete-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 15px;
-            font-weight: 700;
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.12s;
+            transition: all 0.15s;
             font-family: inherit;
             user-select: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
-        .option-btn:hover { background: var(--concrete-light); box-shadow: 0 3px 8px rgba(0,0,0,0.4); }
-        .option-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .option-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+            pointer-events: none;
+            border-radius: 4px;
+        }
+        .option-btn:hover { background: var(--concrete-light); transform: translateY(-1px); box-shadow: 3px 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .option-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .option-btn.selected {
-            background: rgba(255,255,255,0.12);
-            border-color: var(--text-primary);
-            color: var(--text-primary);
-            box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+            background: #e8e4dc;
+            outline: 2px solid #555;
+            color: var(--concrete-text);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
         }
         .option-btn.correct-reveal {
-            background: rgba(76,175,80,0.15);
-            border-color: var(--green);
-            color: var(--green);
+            background: #a8d5a2;
+            color: #1b5e20;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
         }
         .option-btn.wrong-reveal {
-            background: rgba(229,57,53,0.15);
-            border-color: var(--red);
-            color: var(--red);
+            background: #e8a8a5;
+            color: #b71c1c;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
+        }
+        /* Crumble animation for wrong answers */
+        @keyframes concreteBreak {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+            20% { transform: scale(1.02) rotate(0deg); opacity: 1; }
+            40% { transform: scale(0.98) rotate(1deg); opacity: 0.9; }
+            100% { transform: scale(0) rotate(8deg) translateY(30px); opacity: 0; filter: blur(3px); }
+        }
+        .option-btn.crumble-away {
+            animation: concreteBreak 0.6s cubic-bezier(.4,0,.7,.4) forwards;
+        }
+        /* Crack effect on click */
+        @keyframes crackFlash {
+            0% { opacity: 0; transform: scale(0.8); }
+            30% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.1); }
+        }
+        .option-btn.crack-effect::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Cpath d='M20 0 L25 20 L15 25 L22 40 L18 60' stroke='%23555' fill='none' stroke-width='1.5' opacity='0.6'/%3E%3Cpath d='M60 0 L55 15 L65 22 L58 45 L62 60' stroke='%23555' fill='none' stroke-width='1' opacity='0.5'/%3E%3Cpath d='M80 0 L78 18 L85 30 L75 50 L80 60' stroke='%23666' fill='none' stroke-width='0.8' opacity='0.4'/%3E%3C/svg%3E");
+            background-size: cover;
+            animation: crackFlash 0.4s ease-out forwards;
+            pointer-events: none;
+            border-radius: 4px;
         }
 
-        /* True/False buttons */
+        /* True/False buttons - concrete tablet */
         .tf-buttons {
             display: flex;
             gap: 12px;
@@ -470,29 +526,28 @@
         .tf-btn {
             flex: 1;
             padding: 20px;
-            border-radius: 14px;
+            border-radius: 4px;
             font-size: 18px;
-            font-weight: 800;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.15s;
-            border-width: 1px;
-            border-style: solid;
+            border: none;
             font-family: inherit;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+            position: relative;
+            overflow: hidden;
         }
-        .tf-btn:active { transform: translateY(2px); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+        .tf-btn:active { transform: translateY(2px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .tf-btn.tf-yes {
             background: var(--concrete);
-            border-color: rgba(76,175,80,0.4);
-            color: var(--green);
+            color: #2e7d32;
         }
-        .tf-btn.tf-yes:hover { background: rgba(76,175,80,0.12); }
+        .tf-btn.tf-yes:hover { background: var(--concrete-light); }
         .tf-btn.tf-no {
             background: var(--concrete);
-            border-color: rgba(229,57,53,0.4);
-            color: var(--red);
+            color: #c62828;
         }
-        .tf-btn.tf-no:hover { background: rgba(229,57,53,0.12); }
+        .tf-btn.tf-no:hover { background: var(--concrete-light); }
 
         /* Missing ingredient choices */
         .missing-list {
@@ -504,20 +559,21 @@
         .missing-item {
             padding: 8px 14px;
             background: var(--concrete);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
-            color: var(--text-primary);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 600;
+            box-shadow: 2px 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .missing-slot {
             padding: 8px 14px;
-            background: rgba(255,255,255,0.05);
-            border: 1px dashed rgba(255,255,255,0.4);
-            border-radius: 10px;
+            background: rgba(181,176,168,0.3);
+            border: 2px dashed var(--concrete-dark);
+            border-radius: 4px;
             color: var(--text-secondary);
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 600;
             animation: slotPulse 1.5s ease-in-out infinite;
         }
         @keyframes slotPulse {
@@ -533,22 +589,35 @@
             width: 100%;
             padding: 14px 18px;
             background: var(--concrete);
-            border: 1px solid var(--concrete-border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 16px;
-            font-weight: 700;
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             transition: 0.12s;
             text-align: left;
             font-family: inherit;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
-        .choice-btn:hover { background: var(--concrete-light); }
-        .choice-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-        .choice-btn.selected { background: rgba(255,255,255,0.12); border-color: var(--text-primary); color: var(--text-primary); }
+        .choice-btn:hover { background: var(--concrete-light); transform: translateY(-1px); }
+        .choice-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
+        .choice-btn.selected { background: #e8e4dc; outline: 2px solid #555; color: var(--concrete-text); }
+        .choice-btn.correct-reveal {
+            background: #a8d5a2;
+            color: #1b5e20;
+        }
+        .choice-btn.wrong-reveal {
+            background: #e8a8a5;
+            color: #b71c1c;
+        }
+        .choice-btn.crumble-away {
+            animation: concreteBreak 0.6s cubic-bezier(.4,0,.7,.4) forwards;
+        }
 
-        /* Check button */
+        /* Check button - concrete tablet */
         .bottom-area {
             padding: 16px;
             background: rgba(26,26,26,0.95);
@@ -558,25 +627,27 @@
         .check-btn {
             width: 100%;
             padding: 16px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 800;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.15s;
             border: none;
             font-family: inherit;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
         }
         .check-btn.active {
-            background: #FAFAFA;
-            color: #1a1a1a;
-            box-shadow: 0 3px 12px rgba(255,255,255,0.2);
+            background: var(--concrete-light);
+            color: var(--concrete-text);
+            box-shadow: 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);
         }
-        .check-btn.active:hover { background: #FFFFFF; box-shadow: 0 4px 16px rgba(255,255,255,0.25); }
-        .check-btn.active:active { transform: translateY(1px); box-shadow: 0 1px 6px rgba(255,255,255,0.15); }
+        .check-btn.active:hover { background: #d0cbc3; transform: translateY(-1px); box-shadow: 3px 4px 12px rgba(0,0,0,0.45); }
+        .check-btn.active:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .check-btn.disabled {
-            background: var(--concrete);
+            background: rgba(181,176,168,0.3);
             color: var(--text-dim);
             cursor: default;
             box-shadow: none;
@@ -588,26 +659,26 @@
             align-items: center;
             gap: 10px;
             padding: 10px 16px;
-            border-radius: 10px;
+            border-radius: 4px;
             margin-bottom: 12px;
-            font-weight: 800;
-            font-size: 15px;
+            font-weight: 700;
+            font-size: 14px;
             animation: fadeIn 0.2s ease;
         }
         .inline-result.correct {
-            background: rgba(76,175,80,0.15);
-            color: var(--green);
+            background: #a8d5a2;
+            color: #1b5e20;
         }
         .inline-result.wrong {
-            background: rgba(229,57,53,0.15);
-            color: var(--red);
+            background: #e8a8a5;
+            color: #b71c1c;
         }
-        .inline-result .result-icon { font-size: 22px; }
+        .inline-result .result-icon { font-size: 20px; }
 
         /* Disabled state for answered buttons */
         .option-btn.disabled, .choice-btn.disabled, .tf-btn.disabled {
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.5;
         }
         .option-btn.correct-reveal, .choice-btn.correct-reveal {
             opacity: 1 !important;
@@ -615,17 +686,29 @@
         .option-btn.wrong-reveal, .choice-btn.wrong-reveal {
             opacity: 1 !important;
         }
+        
+        /* Concrete fragment particles for break animation */
+        .concrete-fragment {
+            position: absolute;
+            background: var(--concrete);
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        @keyframes fragmentFall {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--fx), var(--fy)) rotate(var(--fr)); opacity: 0; }
+        }
 
         .tf-btn.tf-correct {
-            background: rgba(76,175,80,0.2);
-            border-color: var(--green);
-            color: var(--green);
+            background: #a8d5a2;
+            color: #1b5e20;
             opacity: 1 !important;
         }
         .tf-btn.tf-wrong {
-            background: rgba(229,57,53,0.2);
-            border-color: var(--red);
-            color: var(--red);
+            background: #e8a8a5;
+            color: #b71c1c;
             opacity: 1 !important;
         }
 
@@ -687,25 +770,25 @@
             width: 100%;
             max-width: 340px;
             padding: 16px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 800;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
             border: none;
             font-family: inherit;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #1a1a1a;
+            letter-spacing: 1.5px;
+            color: var(--concrete-text);
             margin-bottom: 12px;
         }
         .result-btn.primary {
-            background: #FAFAFA;
-            box-shadow: 0 3px 12px rgba(255,255,255,0.2);
+            background: var(--concrete-light);
+            box-shadow: 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
         }
         .result-btn.secondary {
             background: var(--concrete);
-            color: var(--text-secondary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            color: var(--concrete-text);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
 
         /* Modal overlay */
@@ -726,55 +809,56 @@
         }
         .modal-content {
             background: var(--concrete);
-            border: 1px solid var(--concrete-border);
-            border-radius: 20px;
+            border: none;
+            border-radius: 4px;
             padding: 28px 24px;
             max-width: 400px;
             width: 100%;
             animation: modalPop 0.3s ease;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 3px 5px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         @keyframes modalPop {
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
         .modal-title {
-            font-size: 22px;
-            font-weight: 900;
+            font-size: 20px;
+            font-weight: 800;
             margin-bottom: 8px;
+            color: var(--concrete-text);
         }
         .modal-text {
-            font-size: 15px;
-            color: var(--text-secondary);
+            font-size: 14px;
+            color: rgba(42,42,42,0.7);
             margin-bottom: 20px;
             line-height: 1.5;
         }
         .modal-btn {
             width: 100%;
             padding: 14px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 800;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 700;
             cursor: pointer;
             border: none;
             font-family: inherit;
             margin-bottom: 10px;
         }
         .modal-btn.primary {
-            background: #FAFAFA;
-            color: #1a1a1a;
-            box-shadow: 0 2px 8px rgba(255,255,255,0.15);
+            background: var(--concrete-light);
+            color: var(--concrete-text);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
         }
         .modal-btn.secondary {
-            background: var(--concrete-light);
-            color: var(--text-secondary);
+            background: var(--concrete-dark);
+            color: rgba(42,42,42,0.7);
         }
 
         /* Info tooltip */
         .info-box {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--concrete-border);
-            border-radius: 12px;
+            background: rgba(181,176,168,0.15);
+            border: none;
+            border-radius: 4px;
             padding: 14px 16px;
             margin-top: 12px;
             font-size: 13px;
@@ -1362,22 +1446,25 @@ function renderLesson() {
         const dishName = q.item.name;
         let optionsHTML = q.pool.map((ing, idx) => {
             let cls = '';
+            let dataCrumble = '';
             if (fb) {
                 const isCorrectIng = correctSet.has(ing);
                 const wasSelected = state.selectedOptions.has(idx);
-                if (isCorrectIng) cls = 'correct-reveal disabled';
-                else if (wasSelected && !isCorrectIng) cls = 'wrong-reveal disabled';
+                if (isCorrectIng) cls = 'correct-reveal';
+                else if (wasSelected && !isCorrectIng) { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
                 else cls = 'disabled';
             } else {
                 cls = state.selectedOptions.has(idx) ? 'selected' : '';
             }
-            return `<button class="option-btn ${cls}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}</button>`;
+            return `<button class="option-btn ${cls}" ${dataCrumble} onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}</button>`;
         }).join('');
 
         questionHTML = `
             <div class="question-area">
-                <div class="question-title">
-                    <span class="question-dish-name">${dishName}</span>
+                <div class="question-panel">
+                    <div class="question-title">
+                        Выбери состав: <span class="question-dish-name">${dishName}</span>
+                    </div>
                 </div>
                 ${resultStripHTML}
                 <div class="options-grid">${optionsHTML}</div>
@@ -1387,7 +1474,7 @@ function renderLesson() {
         const dishName = q.item.name;
 
         const slotContent = fb
-            ? `<span class="missing-item" style="border-color:var(--${state._lastCorrect ? 'green' : 'red'});color:var(--${state._lastCorrect ? 'green' : 'red'})">${q.missing}</span>`
+            ? `<span class="missing-item" style="background:${state._lastCorrect ? '#a8d5a2' : '#e8a8a5'};color:${state._lastCorrect ? '#1b5e20' : '#b71c1c'}">${q.missing}</span>`
             : `<span class="missing-slot">?</span>`;
         const shownHTML = q.shown.map(ing =>
             `<span class="missing-item">${ing}</span>`
@@ -1395,20 +1482,23 @@ function renderLesson() {
 
         const choicesHTML = q.choices.map((c, idx) => {
             let cls = '';
+            let dataCrumble = '';
             if (fb) {
-                if (c === q.missing) cls = 'correct-reveal disabled';
-                else if (state.selectedChoice === idx) cls = 'wrong-reveal disabled';
+                if (c === q.missing) cls = 'correct-reveal';
+                else if (state.selectedChoice === idx) { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
                 else cls = 'disabled';
             } else {
                 cls = state.selectedChoice === idx ? 'selected' : '';
             }
-            return `<button class="choice-btn ${cls}" onclick="${fb ? '' : `selectChoice(${idx})`}">${c}</button>`;
+            return `<button class="choice-btn ${cls}" ${dataCrumble} onclick="${fb ? '' : `selectChoice(${idx})`}">${c}</button>`;
         }).join('');
 
         questionHTML = `
             <div class="question-area">
-                <div class="question-title">
-                    Пропущенное в <span class="question-dish-name">${dishName}</span>?
+                <div class="question-panel">
+                    <div class="question-title">
+                        Пропущенное в <span class="question-dish-name">${dishName}</span>?
+                    </div>
                 </div>
                 ${resultStripHTML}
                 <div class="missing-list">${shownHTML}</div>
@@ -1429,9 +1519,11 @@ function renderLesson() {
 
         questionHTML = `
             <div class="question-area">
-                <div class="question-title">
-                    <span class="question-dish-name">${q.ingredient}</span>
-                    входит в <span class="question-dish-name">${dishName}</span>?
+                <div class="question-panel">
+                    <div class="question-title">
+                        <span class="question-dish-name">${q.ingredient}</span>
+                        входит в <span class="question-dish-name">${dishName}</span>?
+                    </div>
                 </div>
                 ${resultStripHTML}
                 <div class="tf-buttons">
@@ -1442,9 +1534,11 @@ function renderLesson() {
         `;
     }
 
+    const bottomBg = fb ? (state._lastCorrect ? '#a8d5a2' : '#e8a8a5') : '';
+    const bottomColor = fb ? (state._lastCorrect ? '#1b5e20' : '#b71c1c') : '';
     const bottomHTML = fb
         ? `<div class="bottom-area">
-            <button class="check-btn active" onclick="nextQuestion()" style="background:${state._lastCorrect ? 'var(--green)' : 'var(--red)'};border-bottom-color:${state._lastCorrect ? 'var(--green-dark)' : 'var(--red-dark)'}">
+            <button class="check-btn active" onclick="nextQuestion()" style="background:${bottomBg};color:${bottomColor}">
                 ${state.hearts <= 0 ? 'Результаты' : 'Дальше'}
             </button>
            </div>`
@@ -1482,13 +1576,49 @@ function toggleOption(idx) {
     } else {
         state.selectedOptions.add(idx);
     }
+    // Crack effect on the button
+    const btns = document.querySelectorAll('.option-btn');
+    if (btns[idx]) {
+        btns[idx].classList.add('crack-effect');
+        setTimeout(() => btns[idx].classList.remove('crack-effect'), 400);
+    }
     render();
 }
 
 function selectChoice(idx) {
     if (state.feedbackShown) return;
     state.selectedChoice = idx;
+    // Crack effect on the button
+    const btns = document.querySelectorAll('.choice-btn');
+    if (btns[idx]) {
+        btns[idx].classList.add('crack-effect');
+        setTimeout(() => btns[idx].classList.remove('crack-effect'), 400);
+    }
     render();
+}
+
+// Spawn concrete fragments from a crumbling button
+function spawnFragments(btn) {
+    const rect = btn.getBoundingClientRect();
+    const count = 8 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < count; i++) {
+        const frag = document.createElement('div');
+        frag.className = 'concrete-fragment';
+        const size = 4 + Math.random() * 10;
+        frag.style.width = size + 'px';
+        frag.style.height = size + 'px';
+        frag.style.left = (rect.left + Math.random() * rect.width) + 'px';
+        frag.style.top = (rect.top + Math.random() * rect.height) + 'px';
+        const fx = (Math.random() - 0.5) * 120;
+        const fy = 30 + Math.random() * 80;
+        const fr = (Math.random() - 0.5) * 360;
+        frag.style.setProperty('--fx', fx + 'px');
+        frag.style.setProperty('--fy', fy + 'px');
+        frag.style.setProperty('--fr', fr + 'deg');
+        frag.style.animation = `fragmentFall ${0.5 + Math.random() * 0.4}s ease-out forwards`;
+        document.body.appendChild(frag);
+        setTimeout(() => frag.remove(), 1000);
+    }
 }
 
 // ====================== ANSWER CHECKING ======================
@@ -1536,6 +1666,13 @@ function processAnswer(isCorrect, item) {
     state._lastItem = item;
     state.feedbackShown = true;
     render();
+
+    // Spawn fragments from crumbling wrong-answer buttons
+    setTimeout(() => {
+        document.querySelectorAll('[data-crumble]').forEach(btn => {
+            spawnFragments(btn);
+        });
+    }, 50);
 }
 
 function nextQuestion() {
