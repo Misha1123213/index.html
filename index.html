@@ -457,21 +457,14 @@
             font-weight: 800;
         }
 
-        /* Format indicator badge */
-        .format-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        .format-badge.logical { background: rgba(120,144,156,0.2); color: #546E7A; }
-        .format-badge.color_coded { background: rgba(156,39,176,0.15); color: #7B1FA2; }
-        .format-badge.chronological { background: rgba(255,152,0,0.15); color: #E65100; }
-        .format-badge.spatial { background: rgba(0,150,136,0.15); color: #00796B; }
+        /* Category badge */
+        .category-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .category-badge.breakfast { background: rgba(255,152,0,0.18); color: #E65100; }
+        .category-badge.lunch { background: rgba(76,175,80,0.18); color: #2E7D32; }
+        .category-badge.sandwich { background: rgba(120,144,156,0.25); color: #37474F; }
+        .category-badge.dessert { background: rgba(156,39,176,0.15); color: #7B1FA2; }
+        .category-badge.drink { background: rgba(0,150,136,0.18); color: #00796B; }
+        .category-badge.drink_pf { background: rgba(255,193,7,0.18); color: #F57F17; }
 
         /* Ingredient buttons grid - concrete tablet style */
         .options-grid {
@@ -499,15 +492,22 @@
         .option-btn:hover { background-color: var(--concrete-light); transform: translateY(-1px); box-shadow: 3px 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
         .option-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
         .option-btn.selected {
-            background: #e8e4dc;
-            outline: 2px solid #555;
+            outline: 3px solid #333;
             color: var(--concrete-text);
-            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+            box-shadow: 0 0 16px rgba(255,255,255,0.5), 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+            transform: translateY(-2px) scale(1.03);
+            filter: brightness(1.25);
         }
         .option-btn.correct-reveal {
             background: #a8d5a2;
             color: #1b5e20;
             box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
+        }
+        .option-btn.correct-unselected {
+            background: #c8e6c5;
+            color: #1b5e20;
+            opacity: 0.55;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
         }
         .option-btn.wrong-reveal {
             background: #e8a8a5;
@@ -649,7 +649,7 @@
         }
         .choice-btn:hover { background-color: var(--concrete-light); transform: translateY(-1px); }
         .choice-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
-        .choice-btn.selected { background: #e8e4dc; outline: 2px solid #555; color: var(--concrete-text); }
+        .choice-btn.selected { outline: 3px solid #333; color: var(--concrete-text); box-shadow: 0 0 16px rgba(255,255,255,0.5), 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5); transform: translateY(-2px) scale(1.03); filter: brightness(1.25); }
         .choice-btn.correct-reveal { background: #a8d5a2; color: #1b5e20; }
         .choice-btn.wrong-reveal { background: #e8a8a5; color: #b71c1c; }
         .choice-btn.crumble-away { animation: none; }
@@ -1001,37 +1001,6 @@
         .cat-topping { background: rgba(255,152,0,0.15); color: #E65100; }
         .cat-liquid { background: rgba(156,39,176,0.15); color: #7B1FA2; }
 
-        /* Chronological format */
-        .chrono-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 8px;
-            position: relative;
-        }
-        .chrono-num {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: var(--concrete-dark);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 800;
-            flex-shrink: 0;
-        }
-        .chrono-line {
-            position: absolute;
-            left: 13px;
-            top: 28px;
-            width: 2px;
-            height: calc(100% + 8px);
-            background: var(--concrete-dark);
-            opacity: 0.3;
-        }
-
         /* Spatial format */
         .spatial-container {
             display: grid;
@@ -1276,8 +1245,8 @@ function getWeakItems(section) {
 }
 
 // ====================== ADAPTIVE ENGINE ======================
-const FORMATS = ['logical', 'color_coded', 'chronological', 'spatial'];
-const CALIBRATION_COUNT = 12;
+const FORMATS = ['logical', 'color_coded', 'spatial'];
+const CALIBRATION_COUNT = 9;
 
 function getAdaptiveData() {
     const p = getProgress();
@@ -1341,7 +1310,6 @@ function getFormatLabel(f) {
     const labels = {
         logical: 'Логический',
         color_coded: 'Визуальный',
-        chronological: 'Хронологический',
         spatial: 'Пространственный'
     };
     return labels[f] || f;
@@ -1351,10 +1319,24 @@ function getFormatDescription(f) {
     const desc = {
         logical: 'Текстовые списки ингредиентов',
         color_coded: 'Цветовая группировка по категориям',
-        chronological: 'Пошаговый порядок приготовления',
         spatial: 'Визуальное расположение компонентов'
     };
     return desc[f] || '';
+}
+
+function getDishCategory(name) {
+    const n = name.toLowerCase();
+    if (n.includes('крок-') || n.includes('гриль-чиз') || n.includes('гирос')) return { label: 'Сэндвич', cls: 'sandwich' };
+    if (n.includes('суп') || n.includes('бульон') || n.includes('орзо') || n.includes('ньокки') || n.includes('салат') || n.includes('щёчки') || n.includes('щечки')) return { label: 'Обед', cls: 'lunch' };
+    if (n.includes('каша') || n.includes('сырник') || n.includes('шакшука') || n.includes('завтрак') || n.includes('скрэмбл') || n.includes('бенедикт') || n.includes('дранник') || n.includes('френч-тост') || n.includes('гречка')) return { label: 'Завтрак', cls: 'breakfast' };
+    return { label: 'Завтрак', cls: 'breakfast' };
+}
+
+function getSectionCategory(section) {
+    if (section === 'desserts') return { label: 'Десерт', cls: 'dessert' };
+    if (section === 'drinks') return { label: 'Напиток', cls: 'drink' };
+    if (section === 'drink_pf') return { label: 'ПФ Напитков', cls: 'drink_pf' };
+    return null;
 }
 
 // ====================== CHAPTER PROGRESS ======================
@@ -1890,9 +1872,6 @@ function renderIngredientsForFormat(ingredients, format, isClickable, q) {
     if (format === 'color_coded') {
         return renderColorCoded(ingredients, isClickable, q);
     }
-    if (format === 'chronological') {
-        return renderChronological(ingredients, isClickable, q);
-    }
     if (format === 'spatial') {
         return renderSpatial(ingredients, isClickable, q);
     }
@@ -1909,14 +1888,14 @@ function renderLogical(pool, isClickable, q) {
         if (fb) {
             const isCorrectIng = correctSet.has(ing);
             const wasSelected = state.selectedOptions.has(idx);
-            if (isCorrectIng) cls = 'correct-reveal';
-            else if (wasSelected && !isCorrectIng) { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-            else cls = 'disabled';
+            if (isCorrectIng && wasSelected) cls = 'correct-reveal';
+            else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
+            else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
             if (q.showGrams && isCorrectIng) {
                 const correctGram = q.item._grams[ing];
                 const userGram = state.gramInputs[idx];
                 const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? (gramOk ? 'gram-correct' : 'gram-wrong') : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
             }
         } else {
             cls = state.selectedOptions.has(idx) ? 'selected' : '';
@@ -1956,14 +1935,14 @@ function renderColorCoded(pool, isClickable, q) {
             if (fb) {
                 const isCorrectIng = correctSet.has(ing);
                 const wasSelected = state.selectedOptions.has(idx);
-                if (isCorrectIng) btnCls = 'correct-reveal';
-                else if (wasSelected && !isCorrectIng) { btnCls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-                else btnCls = 'disabled';
+                if (isCorrectIng && wasSelected) btnCls = 'correct-reveal';
+                else if (isCorrectIng && !wasSelected) btnCls = 'correct-unselected';
+                else { btnCls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
                 if (q.showGrams && isCorrectIng) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
                     const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (state.selectedOptions.has(idx) ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
                 }
             } else {
                 btnCls = state.selectedOptions.has(idx) ? 'selected' : '';
@@ -1976,39 +1955,6 @@ function renderColorCoded(pool, isClickable, q) {
         html += `</div></div>`;
     }
     return html;
-}
-
-function renderChronological(pool, isClickable, q) {
-    const fb = state.feedbackShown;
-    const correctSet = new Set(q.item._ingredients);
-    return `<div class="options-grid" style="flex-direction:column;">${pool.map((ing, idx) => {
-        let cls = '';
-        let dataCrumble = '';
-        let gramHTML = '';
-        if (fb) {
-            const isCorrectIng = correctSet.has(ing);
-            const wasSelected = state.selectedOptions.has(idx);
-            if (isCorrectIng) cls = 'correct-reveal';
-            else if (wasSelected && !isCorrectIng) { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-            else cls = 'disabled';
-            if (q.showGrams && isCorrectIng) {
-                const correctGram = q.item._grams[ing];
-                const userGram = state.gramInputs[idx];
-                const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (state.selectedOptions.has(idx) ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
-            }
-        } else {
-            cls = state.selectedOptions.has(idx) ? 'selected' : '';
-            if (q.showGrams && state.selectedOptions.has(idx)) {
-                gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
-            }
-        }
-        return `<div class="chrono-step">
-            <div class="chrono-num">${idx + 1}</div>
-            ${idx < pool.length - 1 ? '<div class="chrono-line"></div>' : ''}
-            <button class="option-btn ${cls}" ${dataCrumble} style="flex:1;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>
-        </div>`;
-    }).join('')}</div>`;
 }
 
 function renderSpatial(pool, isClickable, q) {
@@ -2031,14 +1977,14 @@ function renderSpatial(pool, isClickable, q) {
             if (fb) {
                 const isCorrectIng = correctSet.has(ing);
                 const wasSelected = state.selectedOptions.has(idx);
-                if (isCorrectIng) cls = 'correct-reveal';
-                else if (wasSelected && !isCorrectIng) { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-                else cls = 'disabled';
+                if (isCorrectIng && wasSelected) cls = 'correct-reveal';
+                else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
+                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
                 if (q.showGrams && isCorrectIng) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
                     const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (state.selectedOptions.has(idx) ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
                 }
             } else {
                 cls = state.selectedOptions.has(idx) ? 'selected' : '';
@@ -2082,7 +2028,8 @@ function renderLesson() {
         </div>`;
     }
 
-    const formatBadge = `<span class="format-badge ${q.format}">${getFormatLabel(q.format)}</span>`;
+    const catInfo = state.section === 'kitchen' ? getDishCategory(q.item.name) : getSectionCategory(state.section);
+    const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
 
     if (q.type === 'select') {
         const dishName = q.item.name;
@@ -2091,7 +2038,7 @@ function renderLesson() {
         questionHTML = `
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
-                    ${formatBadge}
+                    ${categoryBadge}
                     <div class="question-title">
                         Выбери состав: <span class="question-dish-name">${dishName}</span>
                         ${q.showGrams ? '<div style="font-size:12px;color:rgba(42,42,42,0.6);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
@@ -2116,8 +2063,7 @@ function renderLesson() {
             let dataCrumble = '';
             if (fb) {
                 if (c === q.missing) cls = 'correct-reveal';
-                else if (state.selectedChoice === idx) { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-                else cls = 'disabled';
+                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
             } else {
                 cls = state.selectedChoice === idx ? 'selected' : '';
             }
@@ -2127,7 +2073,7 @@ function renderLesson() {
         questionHTML = `
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
-                    ${formatBadge}
+                    ${categoryBadge}
                     <div class="question-title">
                         Пропущенное в <span class="question-dish-name">${dishName}</span>?
                     </div>
@@ -2152,7 +2098,7 @@ function renderLesson() {
         questionHTML = `
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
-                    ${formatBadge}
+                    ${categoryBadge}
                     <div class="question-title">
                         <span class="question-dish-name">${q.ingredient}</span>
                         входит в <span class="question-dish-name">${dishName}</span>?
