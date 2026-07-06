@@ -982,48 +982,7 @@
         .gram-correct { border-color: var(--green) !important; background: #e8f5e9 !important; }
         .gram-wrong { border-color: var(--red) !important; background: #ffebee !important; }
 
-        /* Color coded format */
-        .color-category {
-            margin-bottom: 12px;
-        }
-        .color-category-label {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-        .cat-base { background: rgba(33,150,243,0.15); color: #1565C0; }
-        .cat-flavor { background: rgba(76,175,80,0.15); color: #2E7D32; }
-        .cat-topping { background: rgba(255,152,0,0.15); color: #E65100; }
-        .cat-liquid { background: rgba(156,39,176,0.15); color: #7B1FA2; }
 
-        /* Spatial format */
-        .spatial-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        .spatial-zone {
-            border: 2px dashed var(--concrete-dark);
-            border-radius: 8px;
-            padding: 10px;
-            min-height: 60px;
-            text-align: center;
-        }
-        .spatial-zone-label {
-            font-size: 10px;
-            color: var(--concrete-text);
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-            opacity: 0.6;
-        }
 
         /* Confetti */
         .confetti-container {
@@ -1129,48 +1088,11 @@
             vertical-align: middle;
         }
 
-        /* Category Sorting - drag and drop */
+        /* Place missing - drill question */
         .sorting-container {
             display: flex;
             flex-direction: column;
             gap: 10px;
-        }
-        .sorting-zones {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .sorting-zone {
-            border: 2px dashed var(--concrete-dark);
-            border-radius: 6px;
-            padding: 8px;
-            min-height: 80px;
-            background: rgba(181,176,168,0.12);
-            transition: all 0.2s;
-        }
-        .sorting-zone.drag-over {
-            border-color: var(--blue);
-            background: rgba(120,144,156,0.2);
-            box-shadow: inset 0 0 12px rgba(120,144,156,0.15);
-        }
-        .sorting-zone-label {
-            font-size: 11px;
-            color: var(--concrete-text);
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-            text-align: center;
-            background: var(--concrete);
-            border-radius: 3px;
-            padding: 4px 6px;
-        }
-        .sorting-zone-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            min-height: 30px;
         }
         .sorting-pool {
             display: flex;
@@ -1197,16 +1119,10 @@
             color: var(--concrete-text);
             font-size: 12px;
             font-weight: 600;
-            cursor: grab;
+            cursor: pointer;
             user-select: none;
             transition: all 0.15s;
             box-shadow: 1px 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-            touch-action: none;
-        }
-        .drag-item:active { cursor: grabbing; }
-        .drag-item.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
         }
         .drag-item.tap-selected {
             outline: 2px solid #333;
@@ -1918,36 +1834,6 @@ function generateQuestions(items) {
         const format = pickFormat();
         const rand = Math.random();
 
-        if (rand < 0.25 && nd._ingredients.length >= 3) {
-            const categories = {};
-            nd._ingredients.forEach(ing => {
-                const cat = categorizeIngredient(ing);
-                if (!categories[cat]) categories[cat] = [];
-                categories[cat].push(ing);
-            });
-            const usedCats = Object.keys(categories).filter(c => categories[c].length > 0);
-            if (usedCats.length >= 2) {
-                const sortItems = [...nd._ingredients];
-                const wrongToAdd = shuffle(wrongPool).slice(0, Math.min(2, wrongPool.length));
-                const allSortItems = shuffle([...sortItems, ...wrongToAdd]);
-                const correctMap = {};
-                nd._ingredients.forEach(ing => { correctMap[ing] = categorizeIngredient(ing); });
-                const hasWrong = wrongToAdd.length > 0;
-                wrongToAdd.forEach(ing => { correctMap[ing] = '_wrong'; });
-                const cats = hasWrong ? [...usedCats, '_wrong'] : usedCats;
-                questions.push({
-                    type: 'category_sorting',
-                    item: nd,
-                    sortItems: allSortItems,
-                    categories: cats,
-                    correctMap: correctMap,
-                    format: format,
-                    showGrams: false,
-                });
-                continue;
-            }
-        }
-
         if (rand < 0.45 && wrongPool.length >= 3) {
             const displayPool = shuffle([...nd._ingredients, ...shuffle(wrongPool).slice(0, Math.max(4, Math.ceil(nd._ingredients.length * 0.6)))]);
             questions.push({
@@ -2040,20 +1926,13 @@ function generateDrillQuestions(item, usedType) {
                 ? nd._ingredients[Math.floor(Math.random() * nd._ingredients.length)]
                 : wrongPool[Math.floor(Math.random() * wrongPool.length)];
             drills.push({ type: 'truefalse', item: nd, ingredient, answer: isTrue, format, showGrams: false, isDrill: true });
-        } else if (type === 'category_sorting' && nd._ingredients.length >= 3) {
-            const categories = {};
-            nd._ingredients.forEach(ing => { const cat = categorizeIngredient(ing); if (!categories[cat]) categories[cat] = []; categories[cat].push(ing); });
-            const usedCats = Object.keys(categories).filter(c => categories[c].length > 0);
-            if (usedCats.length >= 2) {
-                const wrongToAdd = shuffle(wrongPool).slice(0, Math.min(2, wrongPool.length));
-                const allSortItems = shuffle([...nd._ingredients, ...wrongToAdd]);
-                const correctMap = {};
-                nd._ingredients.forEach(ing => { correctMap[ing] = categorizeIngredient(ing); });
-                const hasWrong = wrongToAdd.length > 0;
-                wrongToAdd.forEach(ing => { correctMap[ing] = '_wrong'; });
-                const cats = hasWrong ? [...usedCats, '_wrong'] : usedCats;
-                drills.push({ type: 'category_sorting', item: nd, sortItems: allSortItems, categories: cats, correctMap, format, showGrams: false, isDrill: true });
-            }
+        } else if (type === 'category_sorting' && nd._ingredients.length >= 3 && wrongPool.length >= 2) {
+            const missingCount = Math.min(3, Math.max(1, Math.floor(nd._ingredients.length * 0.3)));
+            const missingIngs = shuffle([...nd._ingredients]).slice(0, missingCount);
+            const shown = nd._ingredients.filter(i => !missingIngs.includes(i));
+            const distractors = shuffle(wrongPool).slice(0, Math.max(3, missingCount));
+            const pool = shuffle([...missingIngs, ...distractors]);
+            drills.push({ type: 'place_missing', item: nd, shown, missingIngs, pool, format, showGrams: false, isDrill: true });
         }
     }
     return shuffle(drills);
@@ -2120,96 +1999,11 @@ function renderLogical(pool, isClickable, q) {
 }
 
 function renderColorCoded(pool, isClickable, q) {
-    const fb = state.feedbackShown;
-    const correctSet = new Set(q.item._ingredients);
-    const categories = { base: [], liquid: [], flavor: [], topping: [] };
-    pool.forEach((ing, idx) => {
-        const cat = categorizeIngredient(ing);
-        categories[cat].push({ ing, idx });
-    });
-
-    const catLabels = {
-        base: ['Основа', 'cat-base'],
-        liquid: ['Жидкость', 'cat-liquid'],
-        flavor: ['Вкус', 'cat-flavor'],
-        topping: ['Топпинг', 'cat-topping']
-    };
-
-    let html = '';
-    for (const [cat, items] of Object.entries(categories)) {
-        if (items.length === 0) continue;
-        const [label, cls] = catLabels[cat];
-        html += `<div class="color-category"><span class="color-category-label ${cls}">${label}</span><div class="options-grid">`;
-        for (const { ing, idx } of items) {
-            let btnCls = '';
-            let dataCrumble = '';
-            let gramHTML = '';
-            if (fb) {
-                const isCorrectIng = correctSet.has(ing);
-                const wasSelected = state.selectedOptions.has(idx);
-                if (isCorrectIng && wasSelected) btnCls = 'correct-reveal';
-                else if (isCorrectIng && !wasSelected) btnCls = 'correct-unselected';
-                else { btnCls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-                if (q.showGrams && isCorrectIng) {
-                    const correctGram = q.item._grams[ing];
-                    const userGram = state.gramInputs[idx];
-                    const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
-                }
-            } else {
-                btnCls = state.selectedOptions.has(idx) ? 'selected' : '';
-                if (q.showGrams && state.selectedOptions.has(idx)) {
-                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
-                }
-            }
-            html += `<button class="option-btn ${btnCls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
-        }
-        html += `</div></div>`;
-    }
-    return html;
+    return renderLogical(pool, isClickable, q);
 }
 
 function renderSpatial(pool, isClickable, q) {
-    const fb = state.feedbackShown;
-    const correctSet = new Set(q.item._ingredients);
-    const zones = { base: [], liquid: [], flavor: [], topping: [] };
-    pool.forEach((ing, idx) => {
-        zones[categorizeIngredient(ing)].push({ ing, idx });
-    });
-
-    const zoneLabels = { base: 'Основа', liquid: 'Жидкости', flavor: 'Вкусовые', topping: 'Сверху' };
-
-    let html = '<div class="spatial-container">';
-    for (const [zone, items] of Object.entries(zones)) {
-        html += `<div class="spatial-zone"><div class="spatial-zone-label">${zoneLabels[zone]}</div>`;
-        for (const { ing, idx } of items) {
-            let cls = '';
-            let dataCrumble = '';
-            let gramHTML = '';
-            if (fb) {
-                const isCorrectIng = correctSet.has(ing);
-                const wasSelected = state.selectedOptions.has(idx);
-                if (isCorrectIng && wasSelected) cls = 'correct-reveal';
-                else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
-                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
-                if (q.showGrams && isCorrectIng) {
-                    const correctGram = q.item._grams[ing];
-                    const userGram = state.gramInputs[idx];
-                    const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
-                }
-            } else {
-                cls = state.selectedOptions.has(idx) ? 'selected' : '';
-                if (q.showGrams && state.selectedOptions.has(idx)) {
-                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
-                }
-            }
-            html += `<button class="option-btn ${cls}" ${dataCrumble} style="width:100%;margin-bottom:4px;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
-        }
-        html += `</div>`;
-    }
-    html += `</div>`;
-    return html;
+    return renderLogical(pool, isClickable, q);
 }
 
 // ====================== LESSON RENDERING ======================
@@ -2296,56 +2090,24 @@ function renderLesson() {
                 <div class="choice-grid">${choicesHTML}</div>
             </div>
         `;
-    } else if (q.type === 'category_sorting') {
+    } else if (q.type === 'place_missing') {
         const dishName = q.item.name;
-        const catLabels = { base: 'Основа', liquid: 'Жидкости', flavor: 'Вкусовые', topping: 'Топпинг', _wrong: 'Лишнее ❌' };
+        const missingSet = new Set(q.missingIngs);
 
-        let zonesHTML = '';
-        for (const cat of q.categories) {
-            const placedItems = Object.entries(state.sortingPlacements)
-                .filter(([_, c]) => c === cat)
-                .map(([ingIdx]) => {
-                    const ing = q.sortItems[parseInt(ingIdx)];
-                    let itemCls = '';
-                    if (fb) {
-                        const correctCat = q.correctMap[ing];
-                        if (correctCat === cat) itemCls = 'sort-correct';
-                        else if (correctCat === '_wrong') itemCls = 'sort-wrong';
-                        else itemCls = 'sort-wrong';
-                    }
-                    return `<span class="drag-item ${itemCls}" style="${cementStyle()}" ${fb ? '' : `onclick="returnFromZone(${ingIdx})"`}>${ing}</span>`;
-                }).join('');
+        const shownHTML = q.shown.map(ing => `<span class="drag-item sort-correct" style="${cementStyle()}">${ing}</span>`).join('');
 
-            let missedHTML = '';
+        const poolHTML = q.pool.map((ing, idx) => {
+            let cls = '';
             if (fb) {
-                q.sortItems.forEach((ing, idx) => {
-                    if (q.correctMap[ing] === cat && state.sortingPlacements[idx] !== cat) {
-                        missedHTML += `<span class="drag-item sort-missed" style="${cementStyle()}">${ing}</span>`;
-                    }
-                });
+                const wasSelected = state.selectedOptions.has(idx);
+                const isCorrect = missingSet.has(ing);
+                if (isCorrect && wasSelected) cls = 'sort-correct';
+                else if (isCorrect && !wasSelected) cls = 'sort-missed';
+                else if (!isCorrect && wasSelected) cls = 'sort-wrong';
+            } else {
+                cls = state.selectedOptions.has(idx) ? 'tap-selected' : '';
             }
-
-            zonesHTML += `
-                <div class="sorting-zone" data-zone="${cat}"
-                    ondragover="event.preventDefault();this.classList.add('drag-over')"
-                    ondragleave="this.classList.remove('drag-over')"
-                    ondrop="dropInZone(event,'${cat}');this.classList.remove('drag-over')"
-                    ${fb ? '' : `onclick="tapZone('${cat}')"`}>
-                    <div class="sorting-zone-label">${catLabels[cat] || cat}</div>
-                    <div class="sorting-zone-items">${placedItems}${missedHTML}</div>
-                </div>
-            `;
-        }
-
-        const poolItems = q.sortItems.map((ing, idx) => {
-            if (state.sortingPlacements[idx] !== undefined) return '';
-            let itemCls = '';
-            if (state.tapSelectedItem === idx) itemCls = 'tap-selected';
-            return `<span class="drag-item ${itemCls}" style="${cementStyle()}"
-                draggable="true"
-                ondragstart="dragStart(event,${idx})"
-                ondragend="dragEnd(event)"
-                onclick="${fb ? '' : `tapItem(${idx})`}">${ing}</span>`;
+            return `<span class="drag-item ${cls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}</span>`;
         }).join('');
 
         questionHTML = `
@@ -2353,13 +2115,15 @@ function renderLesson() {
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
                     <div class="question-title">
-                        Распредели ингредиенты: <span class="question-dish-name">${dishName}</span>${drillBadge}
+                        Чего не хватает в: <span class="question-dish-name">${dishName}</span>?${drillBadge}
                     </div>
                 </div>
                 ${resultStripHTML}
                 <div class="sorting-container">
-                    <div class="sorting-zones">${zonesHTML}</div>
-                    ${poolItems ? `<div class="sorting-pool-label">Ингредиенты:</div><div class="sorting-pool">${poolItems}</div>` : ''}
+                    <div class="sorting-pool-label">Уже есть:</div>
+                    <div class="sorting-pool">${shownHTML}</div>
+                    <div class="sorting-pool-label" style="margin-top:10px;">Выбери недостающее:</div>
+                    <div class="sorting-pool">${poolHTML}</div>
                 </div>
             </div>
         `;
@@ -2410,10 +2174,9 @@ function renderLesson() {
             } else if (q.type === 'missing') {
                 canCheck = state.selectedChoice !== null;
                 checkFn = 'checkMissingAnswer()';
-            } else if (q.type === 'category_sorting') {
-                const placedCount = Object.keys(state.sortingPlacements).length;
-                canCheck = placedCount === q.sortItems.length;
-                checkFn = 'checkSortingAnswer()';
+            } else if (q.type === 'place_missing') {
+                canCheck = state.selectedOptions.size > 0;
+                checkFn = 'checkPlaceMissingAnswer()';
             }
             return `<div class="bottom-area">
                 <button class="check-btn ${canCheck ? 'active' : 'disabled'}"
@@ -2514,61 +2277,21 @@ function breakTablet(btn) {
 }
 
 // ====================== DRAG & DROP / TAP SORTING ======================
-let _dragIdx = null;
-
-function dragStart(e, idx) {
-    _dragIdx = idx;
-    e.dataTransfer.setData('text/plain', idx);
-    e.target.classList.add('dragging');
-}
-
-function dragEnd(e) {
-    e.target.classList.remove('dragging');
-    _dragIdx = null;
-}
-
-function dropInZone(e, zone) {
-    e.preventDefault();
-    const idx = parseInt(e.dataTransfer.getData('text/plain'));
-    if (isNaN(idx) || state.feedbackShown) return;
-    state.sortingPlacements[idx] = zone;
-    state.tapSelectedItem = null;
-    render();
-}
-
-function tapItem(idx) {
-    if (state.feedbackShown) return;
-    if (state.tapSelectedItem === idx) {
-        state.tapSelectedItem = null;
-    } else {
-        state.tapSelectedItem = idx;
-    }
-    render();
-}
-
-function tapZone(zone) {
-    if (state.feedbackShown || state.tapSelectedItem === null) return;
-    state.sortingPlacements[state.tapSelectedItem] = zone;
-    state.tapSelectedItem = null;
-    render();
-}
-
-function returnFromZone(idx) {
-    if (state.feedbackShown) return;
-    delete state.sortingPlacements[idx];
-    render();
-}
-
-function checkSortingAnswer() {
+function checkPlaceMissingAnswer() {
     const q = state.questions[state.currentQIdx];
-    let correctCount = 0;
-    q.sortItems.forEach((ing, idx) => {
-        const correctCat = q.correctMap[ing];
-        if (state.sortingPlacements[idx] === correctCat) correctCount++;
+    const missingSet = new Set(q.missingIngs);
+    let allCorrect = true;
+    state.selectedOptions.forEach(idx => {
+        if (!missingSet.has(q.pool[idx])) allCorrect = false;
     });
-    const isCorrect = correctCount === q.sortItems.length;
+    if (allCorrect) {
+        missingSet.forEach(ing => {
+            const idx = q.pool.indexOf(ing);
+            if (!state.selectedOptions.has(idx)) allCorrect = false;
+        });
+    }
     const timeTaken = (Date.now() - (state._questionStartTime || Date.now())) / 1000;
-    processAnswer(isCorrect, q.item, q.format, timeTaken);
+    processAnswer(allCorrect, q.item, q.format, timeTaken);
 }
 
 // ====================== ANSWER CHECKING ======================
