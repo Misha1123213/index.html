@@ -91,13 +91,13 @@
         .hearts-count { color: var(--red); }
 
         /* Home screen */
-        .home-screen { padding: 20px 16px 40px; }
+        .home-screen { padding: 14px 12px 30px; }
         .mascot-area {
             text-align: center;
-            padding: 30px 0 20px;
+            padding: 18px 0 12px;
         }
         .mascot {
-            font-size: 80px;
+            font-size: 60px;
             display: block;
             animation: mascotBounce 2s ease-in-out infinite;
         }
@@ -106,16 +106,16 @@
             50% { transform: translateY(-10px); }
         }
         .app-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 900;
             color: var(--text-primary);
-            margin: 10px 0 4px;
+            margin: 6px 0 2px;
             letter-spacing: -0.5px;
         }
         .app-subtitle {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-secondary);
-            margin-bottom: 30px;
+            margin-bottom: 18px;
         }
 
         /* Cement texture classes for variety */
@@ -130,15 +130,15 @@
         .section-card {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             width: 100%;
             padding: 0;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             background: var(--concrete);
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
@@ -151,18 +151,18 @@
         .section-card:hover { transform: translateY(-3px); box-shadow: 3px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25); }
         .section-card:active { transform: translateY(0px); box-shadow: 1px 2px 6px rgba(0,0,0,0.4); }
         .section-card .card-img {
-            width: 90px; height: 90px;
+            width: 70px; height: 70px;
             object-fit: cover;
             flex-shrink: 0;
             border-radius: 4px 0 0 4px;
         }
         .section-card .card-info {
             flex: 1;
-            padding: 18px 0;
+            padding: 12px 0;
         }
         .section-card .card-info small {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             color: rgba(42,42,42,0.6);
             margin-top: 3px;
@@ -176,20 +176,20 @@
         /* Daily stats bar */
         .daily-stats {
             display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
+            gap: 8px;
+            margin-bottom: 16px;
         }
         .daily-stat-card {
             flex: 1;
             background: var(--concrete);
             border: none;
             border-radius: 4px;
-            padding: 14px 10px;
+            padding: 10px 8px;
             text-align: center;
             box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
         }
         .daily-stat-card .stat-value {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 800;
             color: var(--concrete-text);
         }
@@ -204,8 +204,8 @@
         /* Learning Stats button */
         .stats-btn {
             width: 100%;
-            padding: 14px 18px;
-            margin-bottom: 24px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
             background: var(--concrete);
             border: none;
             border-radius: 4px;
@@ -224,7 +224,7 @@
         .stats-btn:hover { transform: translateY(-2px); box-shadow: 3px 5px 14px rgba(0,0,0,0.45); }
 
         /* Path screen */
-        .path-screen { padding: 20px 16px 100px; }
+        .path-screen { padding: 14px 12px 80px; }
         .path-header {
             display: flex;
             align-items: center;
@@ -246,7 +246,7 @@
         }
         .back-btn:hover { background: var(--concrete-light); }
         .path-title {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 900;
         }
 
@@ -273,7 +273,7 @@
         .path-connector.completed { background: rgba(76,175,80,0.6); }
 
         .lesson-node {
-            width: 70px; height: 70px;
+            width: 60px; height: 60px;
             border-radius: 50%;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
@@ -424,15 +424,15 @@
         /* Question area - concrete tablet panel */
         .question-area {
             flex: 1;
-            padding: 20px 16px;
+            padding: 14px 12px;
             display: flex;
             flex-direction: column;
         }
         .question-panel {
             background: var(--concrete);
             border-radius: 4px;
-            padding: 18px 20px;
-            margin-bottom: 16px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
             box-shadow: 2px 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08);
             position: relative;
             overflow: hidden;
@@ -446,7 +446,7 @@
             margin-bottom: 4px;
         }
         .question-title {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 700;
             line-height: 1.4;
             margin-bottom: 0;
@@ -470,16 +470,16 @@
         .options-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 12px;
         }
         .option-btn {
-            padding: 10px 16px;
+            padding: 8px 12px;
             background: var(--concrete);
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s;
@@ -575,9 +575,9 @@
         }
         .tf-btn {
             flex: 1;
-            padding: 20px;
+            padding: 14px;
             border-radius: 4px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             cursor: pointer;
             transition: 0.15s;
@@ -602,7 +602,7 @@
             margin-bottom: 16px;
         }
         .missing-item {
-            padding: 8px 14px;
+            padding: 6px 10px;
             background: var(--concrete);
             border: none;
             border-radius: 4px;
@@ -632,12 +632,12 @@
         }
         .choice-btn {
             width: 100%;
-            padding: 14px 18px;
+            padding: 10px 14px;
             background: var(--concrete);
             border: none;
             border-radius: 4px;
             color: var(--concrete-text);
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: 0.12s;
@@ -656,16 +656,16 @@
 
         /* Check button - concrete tablet */
         .bottom-area {
-            padding: 16px;
+            padding: 10px 12px;
             background: rgba(26,26,26,0.95);
             backdrop-filter: blur(10px);
             border-top: 1px solid var(--border);
         }
         .check-btn {
             width: 100%;
-            padding: 16px;
+            padding: 12px;
             border-radius: 4px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             transition: 0.15s;
@@ -694,12 +694,12 @@
         .inline-result {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
+            gap: 8px;
+            padding: 8px 12px;
             border-radius: 4px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             animation: fadeIn 0.2s ease;
         }
         .inline-result.correct {
@@ -736,12 +736,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
+            padding: 24px 16px;
             text-align: center;
         }
-        .result-mascot { font-size: 64px; margin-bottom: 16px; }
+        .result-mascot { font-size: 48px; margin-bottom: 12px; }
         .result-title {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 900;
             margin-bottom: 8px;
         }
@@ -1114,6 +1114,108 @@
             font-weight: 700;
         }
 
+        /* Category Sorting - drag and drop */
+        .sorting-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sorting-zones {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .sorting-zone {
+            border: 2px dashed var(--concrete-dark);
+            border-radius: 6px;
+            padding: 8px;
+            min-height: 80px;
+            background: rgba(181,176,168,0.12);
+            transition: all 0.2s;
+        }
+        .sorting-zone.drag-over {
+            border-color: var(--blue);
+            background: rgba(120,144,156,0.2);
+            box-shadow: inset 0 0 12px rgba(120,144,156,0.15);
+        }
+        .sorting-zone-label {
+            font-size: 11px;
+            color: var(--concrete-text);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-align: center;
+            background: var(--concrete);
+            border-radius: 3px;
+            padding: 4px 6px;
+        }
+        .sorting-zone-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            min-height: 30px;
+        }
+        .sorting-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 6px;
+            min-height: 40px;
+        }
+        .sorting-pool-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .drag-item {
+            padding: 6px 10px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.15s;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            touch-action: none;
+        }
+        .drag-item:active { cursor: grabbing; }
+        .drag-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        .drag-item.tap-selected {
+            outline: 2px solid #333;
+            filter: brightness(1.2);
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(255,255,255,0.4), 2px 3px 8px rgba(0,0,0,0.4);
+        }
+        .drag-item.sort-correct {
+            background: #4A6B42;
+            color: #e8f5e9;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.3);
+        }
+        .drag-item.sort-wrong {
+            background: #9E3F3F;
+            color: #ffebee;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.3);
+        }
+        .drag-item.sort-missed {
+            background: #4A6B42;
+            color: #e8f5e9;
+            opacity: 0.5;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
+        }
+
         /* Cement texture applied dynamically via JS */
         [data-cement] {
             background-size: 400px 400px !important;
@@ -1146,6 +1248,8 @@ let state = {
     isPractice: false,
     isDrinksChapter: false,
     gramInputs: {},
+    sortingPlacements: {},
+    tapSelectedItem: null,
 };
 
 // Cement texture images for variety
@@ -1739,6 +1843,8 @@ function startLesson(idx) {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state.sortingPlacements = {};
+    state.tapSelectedItem = null;
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
@@ -1761,6 +1867,8 @@ function startPractice() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state.sortingPlacements = {};
+    state.tapSelectedItem = null;
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
@@ -1792,7 +1900,37 @@ function generateQuestions(items) {
         const format = pickFormat();
         const rand = Math.random();
 
-        if (rand < 0.4 && wrongPool.length >= 3) {
+        if (rand < 0.25 && nd._ingredients.length >= 3) {
+            const categories = {};
+            nd._ingredients.forEach(ing => {
+                const cat = categorizeIngredient(ing);
+                if (!categories[cat]) categories[cat] = [];
+                categories[cat].push(ing);
+            });
+            const usedCats = Object.keys(categories).filter(c => categories[c].length > 0);
+            if (usedCats.length >= 2) {
+                const sortItems = [...nd._ingredients];
+                const wrongToAdd = shuffle(wrongPool).slice(0, Math.min(2, wrongPool.length));
+                const allSortItems = shuffle([...sortItems, ...wrongToAdd]);
+                const correctMap = {};
+                nd._ingredients.forEach(ing => { correctMap[ing] = categorizeIngredient(ing); });
+                const hasWrong = wrongToAdd.length > 0;
+                wrongToAdd.forEach(ing => { correctMap[ing] = '_wrong'; });
+                const cats = hasWrong ? [...usedCats, '_wrong'] : usedCats;
+                questions.push({
+                    type: 'category_sorting',
+                    item: nd,
+                    sortItems: allSortItems,
+                    categories: cats,
+                    correctMap: correctMap,
+                    format: format,
+                    showGrams: false,
+                });
+                continue;
+            }
+        }
+
+        if (rand < 0.45 && wrongPool.length >= 3) {
             const displayPool = shuffle([...nd._ingredients, ...shuffle(wrongPool).slice(0, Math.max(4, Math.ceil(nd._ingredients.length * 0.6)))]);
             questions.push({
                 type: 'select',
@@ -2083,6 +2221,73 @@ function renderLesson() {
                 <div class="choice-grid">${choicesHTML}</div>
             </div>
         `;
+    } else if (q.type === 'category_sorting') {
+        const dishName = q.item.name;
+        const catLabels = { base: 'Основа', liquid: 'Жидкости', flavor: 'Вкусовые', topping: 'Топпинг', _wrong: 'Лишнее ❌' };
+
+        let zonesHTML = '';
+        for (const cat of q.categories) {
+            const placedItems = Object.entries(state.sortingPlacements)
+                .filter(([_, c]) => c === cat)
+                .map(([ingIdx]) => {
+                    const ing = q.sortItems[parseInt(ingIdx)];
+                    let itemCls = '';
+                    if (fb) {
+                        const correctCat = q.correctMap[ing];
+                        if (correctCat === cat) itemCls = 'sort-correct';
+                        else if (correctCat === '_wrong') itemCls = 'sort-wrong';
+                        else itemCls = 'sort-wrong';
+                    }
+                    return `<span class="drag-item ${itemCls}" style="${cementStyle()}" ${fb ? '' : `onclick="returnFromZone(${ingIdx})"`}>${ing}</span>`;
+                }).join('');
+
+            let missedHTML = '';
+            if (fb) {
+                q.sortItems.forEach((ing, idx) => {
+                    if (q.correctMap[ing] === cat && state.sortingPlacements[idx] !== cat) {
+                        missedHTML += `<span class="drag-item sort-missed" style="${cementStyle()}">${ing}</span>`;
+                    }
+                });
+            }
+
+            zonesHTML += `
+                <div class="sorting-zone" data-zone="${cat}"
+                    ondragover="event.preventDefault();this.classList.add('drag-over')"
+                    ondragleave="this.classList.remove('drag-over')"
+                    ondrop="dropInZone(event,'${cat}');this.classList.remove('drag-over')"
+                    ${fb ? '' : `onclick="tapZone('${cat}')"`}>
+                    <div class="sorting-zone-label">${catLabels[cat] || cat}</div>
+                    <div class="sorting-zone-items">${placedItems}${missedHTML}</div>
+                </div>
+            `;
+        }
+
+        const poolItems = q.sortItems.map((ing, idx) => {
+            if (state.sortingPlacements[idx] !== undefined) return '';
+            let itemCls = '';
+            if (state.tapSelectedItem === idx) itemCls = 'tap-selected';
+            return `<span class="drag-item ${itemCls}" style="${cementStyle()}"
+                draggable="true"
+                ondragstart="dragStart(event,${idx})"
+                ondragend="dragEnd(event)"
+                onclick="${fb ? '' : `tapItem(${idx})`}">${ing}</span>`;
+        }).join('');
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-panel" style="${cementStyle()}">
+                    ${categoryBadge}
+                    <div class="question-title">
+                        Распредели ингредиенты: <span class="question-dish-name">${dishName}</span>
+                    </div>
+                </div>
+                ${resultStripHTML}
+                <div class="sorting-container">
+                    <div class="sorting-zones">${zonesHTML}</div>
+                    ${poolItems ? `<div class="sorting-pool-label">Ингредиенты:</div><div class="sorting-pool">${poolItems}</div>` : ''}
+                </div>
+            </div>
+        `;
     } else if (q.type === 'truefalse') {
         const dishName = q.item.name;
 
@@ -2121,12 +2326,27 @@ function renderLesson() {
                 ${state.hearts <= 0 ? 'Результаты' : 'Дальше'}
             </button>
            </div>`
-        : (q.type !== 'truefalse' ? `<div class="bottom-area">
-            <button class="check-btn ${(q.type === 'select' ? state.selectedOptions.size > 0 : state.selectedChoice !== null) ? 'active' : 'disabled'}"
-                    onclick="${(q.type === 'select' ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : ''))}">
-                Проверить
-            </button>
-           </div>` : '');
+        : (q.type !== 'truefalse' ? (() => {
+            let canCheck = false;
+            let checkFn = '';
+            if (q.type === 'select') {
+                canCheck = state.selectedOptions.size > 0;
+                checkFn = 'checkSelectAnswer()';
+            } else if (q.type === 'missing') {
+                canCheck = state.selectedChoice !== null;
+                checkFn = 'checkMissingAnswer()';
+            } else if (q.type === 'category_sorting') {
+                const placedCount = Object.keys(state.sortingPlacements).length;
+                canCheck = placedCount === q.sortItems.length;
+                checkFn = 'checkSortingAnswer()';
+            }
+            return `<div class="bottom-area">
+                <button class="check-btn ${canCheck ? 'active' : 'disabled'}"
+                        onclick="${canCheck ? checkFn : ''}">
+                    Проверить
+                </button>
+               </div>`;
+        })() : '');
 
     app.innerHTML = `
         <div class="lesson-screen">
@@ -2218,6 +2438,64 @@ function breakTablet(btn) {
     }, 350);
 }
 
+// ====================== DRAG & DROP / TAP SORTING ======================
+let _dragIdx = null;
+
+function dragStart(e, idx) {
+    _dragIdx = idx;
+    e.dataTransfer.setData('text/plain', idx);
+    e.target.classList.add('dragging');
+}
+
+function dragEnd(e) {
+    e.target.classList.remove('dragging');
+    _dragIdx = null;
+}
+
+function dropInZone(e, zone) {
+    e.preventDefault();
+    const idx = parseInt(e.dataTransfer.getData('text/plain'));
+    if (isNaN(idx) || state.feedbackShown) return;
+    state.sortingPlacements[idx] = zone;
+    state.tapSelectedItem = null;
+    render();
+}
+
+function tapItem(idx) {
+    if (state.feedbackShown) return;
+    if (state.tapSelectedItem === idx) {
+        state.tapSelectedItem = null;
+    } else {
+        state.tapSelectedItem = idx;
+    }
+    render();
+}
+
+function tapZone(zone) {
+    if (state.feedbackShown || state.tapSelectedItem === null) return;
+    state.sortingPlacements[state.tapSelectedItem] = zone;
+    state.tapSelectedItem = null;
+    render();
+}
+
+function returnFromZone(idx) {
+    if (state.feedbackShown) return;
+    delete state.sortingPlacements[idx];
+    render();
+}
+
+function checkSortingAnswer() {
+    const q = state.questions[state.currentQIdx];
+    let correctCount = 0;
+    q.sortItems.forEach((ing, idx) => {
+        const correctCat = q.correctMap[ing];
+        if (state.sortingPlacements[idx] === correctCat) correctCount++;
+    });
+    const isCorrect = correctCount === q.sortItems.length;
+    const timeTaken = (Date.now() - (state._questionStartTime || Date.now())) / 1000;
+    processAnswer(isCorrect, q.item, q.format, timeTaken);
+}
+
 // ====================== ANSWER CHECKING ======================
 function checkSelectAnswer() {
     const q = state.questions[state.currentQIdx];
@@ -2302,6 +2580,8 @@ function nextQuestion() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state.sortingPlacements = {};
+    state.tapSelectedItem = null;
     state._questionStartTime = Date.now();
 
     if (state.currentQIdx >= state.questions.length) {
@@ -2399,6 +2679,8 @@ function retryMistakes() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state.sortingPlacements = {};
+    state.tapSelectedItem = null;
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
