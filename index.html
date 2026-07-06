@@ -1114,6 +1114,21 @@
             font-weight: 700;
         }
 
+        /* Drill badge */
+        .drill-badge {
+            display: inline-block;
+            background: rgba(255,152,0,0.2);
+            color: #FF9800;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
         /* Category Sorting - drag and drop */
         .sorting-container {
             display: flex;
@@ -1250,6 +1265,7 @@ let state = {
     gramInputs: {},
     sortingPlacements: {},
     tapSelectedItem: null,
+    drilledItems: new Set(),
 };
 
 // Cement texture images for variety
@@ -1845,6 +1861,7 @@ function startLesson(idx) {
     state.gramInputs = {};
     state.sortingPlacements = {};
     state.tapSelectedItem = null;
+    state.drilledItems = new Set();
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
@@ -1869,6 +1886,7 @@ function startPractice() {
     state.gramInputs = {};
     state.sortingPlacements = {};
     state.tapSelectedItem = null;
+    state.drilledItems = new Set();
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
@@ -1983,6 +2001,62 @@ function generateQuestions(items) {
     }
 
     return shuffle(questions);
+}
+
+function generateDrillQuestions(item, usedType) {
+    const nd = normalizeItem(item);
+    const correctSet = new Set(nd._ingredients);
+    const allIngredientsSet = new Set();
+    (state.allData || []).forEach(d => {
+        const n = normalizeItem(d);
+        n._ingredients.forEach(i => allIngredientsSet.add(i));
+        (n._wrongPool || []).forEach(i => allIngredientsSet.add(i));
+        (n._pool || []).forEach(i => allIngredientsSet.add(i));
+    });
+    let wrongPool = (nd._wrongPool || []).filter(p => !correctSet.has(p));
+    if (wrongPool.length < 4) {
+        const extra = [...allIngredientsSet].filter(i => !correctSet.has(i) && !wrongPool.includes(i));
+        wrongPool = wrongPool.concat(shuffle(extra).slice(0, 5 - wrongPool.length));
+    }
+
+    const drills = [];
+    const format = pickFormat();
+    const types = ['select', 'missing', 'truefalse', 'category_sorting'].filter(t => t !== usedType);
+
+    for (const type of types) {
+        if (type === 'select' && wrongPool.length >= 3) {
+            const displayPool = shuffle([...nd._ingredients, ...shuffle(wrongPool).slice(0, Math.max(4, Math.ceil(nd._ingredients.length * 0.6)))]);
+            drills.push({ type: 'select', item: nd, pool: displayPool, format, showGrams: state.isDrinksChapter && nd._hasGrams, isDrill: true });
+        } else if (type === 'missing' && nd._ingredients.length > 2 && wrongPool.length >= 2) {
+            const missingIdx = Math.floor(Math.random() * nd._ingredients.length);
+            const missingIng = nd._ingredients[missingIdx];
+            const shown = nd._ingredients.filter((_, i) => i !== missingIdx);
+            const distractors = shuffle(wrongPool).slice(0, 3);
+            const choices = shuffle([missingIng, ...distractors]);
+            drills.push({ type: 'missing', item: nd, shown, missing: missingIng, choices, format, showGrams: false, isDrill: true });
+        } else if (type === 'truefalse' && wrongPool.length >= 1) {
+            const isTrue = Math.random() > 0.5;
+            const ingredient = isTrue
+                ? nd._ingredients[Math.floor(Math.random() * nd._ingredients.length)]
+                : wrongPool[Math.floor(Math.random() * wrongPool.length)];
+            drills.push({ type: 'truefalse', item: nd, ingredient, answer: isTrue, format, showGrams: false, isDrill: true });
+        } else if (type === 'category_sorting' && nd._ingredients.length >= 3) {
+            const categories = {};
+            nd._ingredients.forEach(ing => { const cat = categorizeIngredient(ing); if (!categories[cat]) categories[cat] = []; categories[cat].push(ing); });
+            const usedCats = Object.keys(categories).filter(c => categories[c].length > 0);
+            if (usedCats.length >= 2) {
+                const wrongToAdd = shuffle(wrongPool).slice(0, Math.min(2, wrongPool.length));
+                const allSortItems = shuffle([...nd._ingredients, ...wrongToAdd]);
+                const correctMap = {};
+                nd._ingredients.forEach(ing => { correctMap[ing] = categorizeIngredient(ing); });
+                const hasWrong = wrongToAdd.length > 0;
+                wrongToAdd.forEach(ing => { correctMap[ing] = '_wrong'; });
+                const cats = hasWrong ? [...usedCats, '_wrong'] : usedCats;
+                drills.push({ type: 'category_sorting', item: nd, sortItems: allSortItems, categories: cats, correctMap, format, showGrams: false, isDrill: true });
+            }
+        }
+    }
+    return shuffle(drills);
 }
 
 // ====================== FORMAT RENDERERS ======================
@@ -2168,6 +2242,7 @@ function renderLesson() {
 
     const catInfo = state.section === 'kitchen' ? getDishCategory(q.item.name) : getSectionCategory(state.section);
     const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
+    const drillBadge = q.isDrill ? '<span class="drill-badge">🔁 повтор</span>' : '';
 
     if (q.type === 'select') {
         const dishName = q.item.name;
@@ -2178,7 +2253,7 @@ function renderLesson() {
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
                     <div class="question-title">
-                        Выбери состав: <span class="question-dish-name">${dishName}</span>
+                        Выбери состав: <span class="question-dish-name">${dishName}</span>${drillBadge}
                         ${q.showGrams ? '<div style="font-size:12px;color:rgba(42,42,42,0.6);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
                     </div>
                 </div>
@@ -2213,7 +2288,7 @@ function renderLesson() {
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
                     <div class="question-title">
-                        Пропущенное в <span class="question-dish-name">${dishName}</span>?
+                        Пропущенное в <span class="question-dish-name">${dishName}</span>?${drillBadge}
                     </div>
                 </div>
                 ${resultStripHTML}
@@ -2278,7 +2353,7 @@ function renderLesson() {
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
                     <div class="question-title">
-                        Распредели ингредиенты: <span class="question-dish-name">${dishName}</span>
+                        Распредели ингредиенты: <span class="question-dish-name">${dishName}</span>${drillBadge}
                     </div>
                 </div>
                 ${resultStripHTML}
@@ -2306,7 +2381,7 @@ function renderLesson() {
                     ${categoryBadge}
                     <div class="question-title">
                         <span class="question-dish-name">${q.ingredient}</span>
-                        входит в <span class="question-dish-name">${dishName}</span>?
+                        входит в <span class="question-dish-name">${dishName}</span>?${drillBadge}
                     </div>
                 </div>
                 ${resultStripHTML}
@@ -2546,6 +2621,8 @@ function processAnswer(isCorrect, item, format, timeTaken) {
     recordAnswer(item.name, isCorrect);
     recordFormatAnswer(format, isCorrect, timeTaken);
 
+    const currentQ = state.questions[state.currentQIdx];
+
     if (isCorrect) {
         state.sessionCorrect++;
         state.sessionXP += 10;
@@ -2555,6 +2632,13 @@ function processAnswer(isCorrect, item, format, timeTaken) {
         state._lastCorrect = false;
         if (!state.mistakeIds.includes(item.name)) {
             state.mistakeIds.push(item.name);
+        }
+        if (!state.drilledItems.has(item.name) && !(currentQ && currentQ.isDrill)) {
+            state.drilledItems.add(item.name);
+            const drillQs = generateDrillQuestions(item, currentQ ? currentQ.type : 'select');
+            if (drillQs.length > 0) {
+                state.questions.splice(state.currentQIdx + 1, 0, ...drillQs);
+            }
         }
     }
 
@@ -2681,6 +2765,7 @@ function retryMistakes() {
     state.gramInputs = {};
     state.sortingPlacements = {};
     state.tapSelectedItem = null;
+    state.drilledItems = new Set();
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
