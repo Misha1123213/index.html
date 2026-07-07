@@ -636,6 +636,12 @@
             color: #b71c1c;
             box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
         }
+        .option-btn.wrong-selected {
+            color: #b71c1c;
+            outline: 3px solid #b71c1c;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
+            filter: brightness(1.15);
+        }
         /* Crack overlay on wrong answer tablets before they break */
         .option-btn.crack-overlay::after,
         .choice-btn.crack-overlay::after {
@@ -2851,6 +2857,7 @@ function renderLogical(pool, isClickable, q) {
             const wasSelected = state.selectedOptions.has(idx);
             if (isCorrectIng && wasSelected) cls = 'correct-reveal';
             else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
+            else if (wasSelected) cls = 'wrong-selected';
             else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
             if (q.showGrams && isCorrectIng) {
                 const correctGram = q.item._grams[ing];
