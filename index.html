@@ -2256,6 +2256,7 @@ function startLesson(idx) {
         const nd = normalizeItem(item);
         return buildBasicSelect(nd, buildWrongPool(nd, allIngredients));
     });
+    state._phaseTotal = state.questions.length;
     state.currentQIdx = 0;
     state.hearts = 5;
     state.sessionXP = 0;
@@ -2279,6 +2280,7 @@ function startPractice() {
     state.currentLessonIdx = -1;
     const practiceData = weakItems.slice(0, 15);
     state.questions = generateQuestions(practiceData);
+    state._phaseTotal = state.questions.length;
     state.currentQIdx = 0;
     state.hearts = 5;
     state.sessionXP = 0;
@@ -2753,7 +2755,8 @@ function renderLesson() {
     }
 
     const fb = state.feedbackShown;
-    const progress = ((state.currentQIdx + (fb ? 1 : 0)) / state.questions.length) * 100;
+    const progressTotal = Math.max(state._phaseTotal || state.questions.length, state.currentQIdx + 1);
+    const progress = ((state.currentQIdx + (fb ? 1 : 0)) / progressTotal) * 100;
     const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
     const correctSet = new Set(q.item._ingredients);
 
@@ -3141,6 +3144,21 @@ function processAnswer(isCorrect, item, format, timeTaken) {
         if (state.phase === 'basic' && !state.basicMistakeIds.includes(item.name)) {
             state.basicMistakeIds.push(item.name);
         }
+
+        // Duolingo-style: immediate spaced reinforcement for the missed item
+        const currentQ = state.questions[state.currentQIdx];
+        if (state.phase === 'basic' && currentQ && !currentQ.isReinforce) {
+            const allIngredients = getAllIngredients();
+            const reinforceSet = buildRemediationSet(item, allIngredients).map(q => ({ ...q, isReinforce: true }));
+            if (reinforceSet.length >= 1) {
+                const idx1 = Math.min(state.currentQIdx + 2, state.questions.length);
+                state.questions.splice(idx1, 0, reinforceSet[0]);
+            }
+            if (reinforceSet.length >= 2) {
+                const idx2 = Math.min(state.currentQIdx + 4, state.questions.length);
+                state.questions.splice(idx2, 0, reinforceSet[1]);
+            }
+        }
     }
 
     state._lastItem = item;
@@ -3172,6 +3190,7 @@ function nextQuestion() {
             const allIngredients = getAllIngredients();
             const mistakeItems = state.basicMistakeIds.map(name => state.allData.find(d => d.name === name)).filter(Boolean);
             state.questions = shuffle(mistakeItems).flatMap(item => buildRemediationSet(item, allIngredients));
+            state._phaseTotal = state.questions.length;
             state.phase = 'remediation';
             state.currentQIdx = 0;
             render();
@@ -3184,6 +3203,7 @@ function nextQuestion() {
                 const nd = normalizeItem(item);
                 return buildBasicSelect(nd, buildWrongPool(nd, allIngredients));
             });
+            state._phaseTotal = state.questions.length;
             state.phase = 'consolidation';
             state.currentQIdx = 0;
             render();
