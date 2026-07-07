@@ -150,12 +150,22 @@
         }
         .section-card:hover { transform: translateY(-3px); box-shadow: 3px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25); }
         .section-card:active { transform: translateY(0px); box-shadow: 1px 2px 6px rgba(0,0,0,0.4); }
-        .section-card .card-img {
+        .section-card .card-img-wrap {
             width: 90px; height: 90px;
-            object-fit: cover;
             flex-shrink: 0;
             border-radius: 4px 0 0 4px;
+            overflow: hidden;
+            background: var(--concrete-dark);
+            display: flex; align-items: center; justify-content: center;
         }
+        .section-card .card-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .section-card .card-img-placeholder { display: none; font-size: 32px; }
+        .section-card .card-img-wrap.no-img .card-img { display: none; }
+        .section-card .card-img-wrap.no-img .card-img-placeholder { display: block; }
         .section-card .card-info {
             flex: 1;
             padding: 18px 0;
@@ -327,6 +337,40 @@
             color: var(--text-secondary);
             font-weight: 700;
         }
+        .browse-item-photo {
+            width: 48px; height: 48px;
+            border-radius: 4px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--concrete-dark);
+        }
+        .browse-item-name { flex: 1; }
+
+        /* Dish photo in questions */
+        .dish-photo {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 10px 0;
+            background: var(--concrete-dark);
+            display: block;
+        }
+        .dish-photo-fallback {
+            width: 100%;
+            height: 160px;
+            border-radius: 4px;
+            margin: 10px 0;
+            background: var(--concrete-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--text-primary);
+        }
+        .dish-fallback-emoji { font-size: 48px; }
+        .dish-fallback-label { font-size: 13px; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
 
         /* Lesson path nodes */
         .path-container {
@@ -1837,9 +1881,39 @@ function normalizeItem(item) {
             if (item.wrong) item._wrongPool = item.wrong;
             item._hasGrams = false;
         }
+        item._image = item.image || null;
         item._normalized = true;
     }
     return item;
+}
+
+function getDishPhotoHTML(item, extraClass = 'dish-photo') {
+    if (!item || !item._image) {
+        return renderPhotoFallback(item, extraClass);
+    }
+    return `<img class="${extraClass}" src="${item._image}" alt="${item.name || ''}" onerror="replacePhotoFallback(this, '${extraClass}')">`;
+}
+
+function replacePhotoFallback(el, cls) {
+    const name = el.alt || '';
+    el.replaceWith(stringToElement(renderPhotoFallbackString(name, cls)));
+}
+
+function stringToElement(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html.trim();
+    return div.firstChild;
+}
+
+function renderPhotoFallback(item, cls = 'dish-photo') {
+    return renderPhotoFallbackString(item ? item.name : '', cls);
+}
+
+function renderPhotoFallbackString(name, cls) {
+    const cat = name ? getDishCategory(name) : null;
+    const label = cat ? cat.label : 'Блюдо';
+    const emoji = cat ? (cat.cls === 'breakfast' ? '🍳' : cat.cls === 'lunch' ? '🥗' : cat.cls === 'sandwich' ? '🥪' : '🍽️') : '🍽️';
+    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${emoji}</span><span class="dish-fallback-label">${label}</span></div>`;
 }
 
 // ====================== RENDERING ======================
@@ -1905,7 +1979,10 @@ function renderHome() {
                 🏆 Рейтинг
             </button>
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('kitchen')">
-                <img class="card-img" src="img/shakshuka.jpg" alt="Кухня">
+                <div class="card-img-wrap">
+                    <img class="card-img" src="img/shakshuka.jpg" alt="Кухня" onerror="this.parentNode.classList.add('no-img')">
+                    <span class="card-img-placeholder">🍳</span>
+                </div>
                 <div class="card-info">
                     Кухня
                     <small>Завтраки, супы, салаты, сэндвичи</small>
@@ -1913,7 +1990,10 @@ function renderHome() {
                 <div class="card-arrow">›</div>
             </button>
             <button class="section-card" style="${cementStyle()}" onclick="selectSection('desserts')">
-                <img class="card-img" src="img/tart.jpg" alt="Десерты">
+                <div class="card-img-wrap">
+                    <img class="card-img" src="img/tart.jpg" alt="Десерты" onerror="this.parentNode.classList.add('no-img')">
+                    <span class="card-img-placeholder">🍰</span>
+                </div>
                 <div class="card-info">
                     Десерты
                     <small>Выпечка, кексы, печенье</small>
@@ -1921,7 +2001,10 @@ function renderHome() {
                 <div class="card-arrow">›</div>
             </button>
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('drinks')">
-                <img class="card-img" src="img/cappuccino.jpg" alt="Напитки">
+                <div class="card-img-wrap">
+                    <img class="card-img" src="img/cappuccino.jpg" alt="Напитки" onerror="this.parentNode.classList.add('no-img')">
+                    <span class="card-img-placeholder">☕</span>
+                </div>
                 <div class="card-info">
                     Напитки
                     <small>Кофе, лимонады, чай</small>
@@ -2082,7 +2165,10 @@ function renderBranchSelection() {
 
     const cardsHTML = branches.map(b => `
         <button class="section-card" style="${cementStyle()}" onclick="selectSection('${b.id}')">
-            <img class="card-img" src="${b.img}" alt="${b.label}">
+            <div class="card-img-wrap">
+                <img class="card-img" src="${b.img}" alt="${b.label}" onerror="this.parentNode.classList.add('no-img')">
+                <span class="card-img-placeholder">${isKitchen ? '🍳' : '☕'}</span>
+            </div>
             <div class="card-info">
                 ${b.label}
                 <small>${b.desc}</small>
@@ -2349,7 +2435,8 @@ function renderBrowse() {
         return `
             <div class="browse-item">
                 <button class="browse-item-header" style="${cementStyle()}" onclick="toggleBrowseItem(this)">
-                    <span>${item.name}</span>
+                    ${getDishPhotoHTML(item, 'browse-item-photo')}
+                    <span class="browse-item-name">${item.name}</span>
                     <span class="browse-arrow">▼</span>
                 </button>
                 <div class="browse-item-body">
@@ -2904,6 +2991,7 @@ function renderLesson() {
 
     const catInfo = state.section === 'kitchen' ? getDishCategory(q.item.name) : getSectionCategory(state.section);
     const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
+    const dishPhotoHTML = getDishPhotoHTML(q.item);
 
     if (q.type === 'select') {
         const dishName = q.item.name;
@@ -2913,6 +3001,7 @@ function renderLesson() {
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
+                    ${dishPhotoHTML}
                     <div class="question-title">
                         Выбери состав: <span class="question-dish-name">${dishName}</span>
                         ${q.showGrams ? '<div style="font-size:12px;color:rgba(42,42,42,0.6);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
@@ -2965,6 +3054,7 @@ function renderLesson() {
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
+                    ${dishPhotoHTML}
                     <div class="question-title">
                         Чего не хватает в <span class="question-dish-name">${dishName}</span>?
                     </div>
@@ -3036,6 +3126,7 @@ function renderLesson() {
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
+                    ${dishPhotoHTML}
                     <div class="question-title">
                         Добавь недостающие ингредиенты в <span class="question-dish-name">${dishName}</span>
                     </div>
@@ -3061,6 +3152,7 @@ function renderLesson() {
             <div class="question-area">
                 <div class="question-panel" style="${cementStyle()}">
                     ${categoryBadge}
+                    ${dishPhotoHTML}
                     <div class="question-title">
                         <span class="question-dish-name">${q.ingredient}</span>
                         входит в <span class="question-dish-name">${dishName}</span>?
