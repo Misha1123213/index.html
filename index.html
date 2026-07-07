@@ -1886,7 +1886,10 @@ function renderOnboarding() {
 
 function setOnboardingNickname(value) {
     state.onboardingNickname = value;
-    render();
+    const btn = document.querySelector('.onboarding-btn');
+    if (btn) {
+        btn.classList.toggle('disabled', !value.trim());
+    }
 }
 
 function goToAvatar() {
