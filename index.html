@@ -248,6 +248,84 @@
         .path-title {
             font-size: 22px;
             font-weight: 900;
+            flex: 1;
+        }
+        .browse-btn {
+            width: 40px; height: 40px;
+            border-radius: 4px;
+            background: var(--concrete);
+            border: none;
+            color: var(--concrete-text);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.15s;
+            font-family: inherit;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .browse-btn:hover { background: var(--concrete-light); }
+
+        /* Browse screen */
+        .browse-screen { padding: 20px 16px 100px; }
+        .browse-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .browse-item {
+            border-radius: 4px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35);
+        }
+        .browse-item-header {
+            width: 100%;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--concrete);
+            color: var(--concrete-text);
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.15s;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .browse-item-header:hover { background: var(--concrete-light); }
+        .browse-arrow {
+            transition: transform 0.25s ease;
+            font-size: 14px;
+        }
+        .browse-item.open .browse-arrow { transform: rotate(180deg); }
+        .browse-item-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.35s ease;
+            background: rgba(0,0,0,0.25);
+        }
+        .browse-item.open .browse-item-body {
+            max-height: 500px;
+            padding: 14px 16px;
+        }
+        .browse-ingredient {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            font-size: 15px;
+        }
+        .browse-ingredient:last-child { border-bottom: none; }
+        .browse-grams {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 700;
         }
 
         /* Lesson path nodes */
@@ -1774,6 +1852,7 @@ function render() {
         case 'home': renderHome(); break;
         case 'branch': renderBranchSelection(); break;
         case 'path': renderPath(); break;
+        case 'browse': renderBrowse(); break;
         case 'leaderboard': renderLeaderboard(); break;
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
@@ -2230,6 +2309,7 @@ function renderPath() {
             <div class="path-header">
                 <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
                 <div class="path-title">${state.sectionLabel}</div>
+                <button class="browse-btn" style="${cementStyle()}" onclick="openBrowse()" aria-label="Справочник">📕</button>
             </div>
             ${practiceHTML}
             <div class="path-container">
@@ -2243,6 +2323,53 @@ function goHome() {
     state.screen = 'home';
     state.section = null;
     render();
+}
+
+function openBrowse() {
+    state.screen = 'browse';
+    render();
+}
+
+function closeBrowse() {
+    state.screen = 'path';
+    render();
+}
+
+function toggleBrowseItem(btn) {
+    const item = btn.closest('.browse-item');
+    if (item) item.classList.toggle('open');
+}
+
+function renderBrowse() {
+    const itemsHTML = state.allData.map(item => {
+        const ingredientsHTML = item._ingredients.map(ing => {
+            const grams = item._hasGrams && item._grams[ing] !== undefined ? `<span class="browse-grams">${item._grams[ing]} г</span>` : '';
+            return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
+        }).join('');
+        return `
+            <div class="browse-item">
+                <button class="browse-item-header" style="${cementStyle()}" onclick="toggleBrowseItem(this)">
+                    <span>${item.name}</span>
+                    <span class="browse-arrow">▼</span>
+                </button>
+                <div class="browse-item-body">
+                    ${ingredientsHTML}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    app.innerHTML = `
+        <div class="top-bar">
+            <button class="close-btn" onclick="closeBrowse()" style="position:static;margin:0">← Назад</button>
+        </div>
+        <div class="browse-screen">
+            <div class="path-title">📕 Справочник — ${state.sectionLabel}</div>
+            <div class="browse-container">
+                ${itemsHTML}
+            </div>
+        </div>
+    `;
 }
 
 // ====================== LESSON LOGIC ======================
