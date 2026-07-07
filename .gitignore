@@ -1,0 +1,15 @@
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Temp files
+_temp_*
+_pf_list.txt
+_extract_pf.py
+_build_template.py
+_modify.py
+
+# IDE
+.vscode/
+.idea/

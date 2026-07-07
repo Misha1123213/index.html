@@ -1,0 +1,3323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MET Академия ☕</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green: #4CAF50;
+            --green-dark: #388E3C;
+            --green-light: #66BB6A;
+            --blue: #78909C;
+            --blue-dark: #546E7A;
+            --red: #E53935;
+            --red-dark: #C62828;
+            --gold: #FFC107;
+            --gold-dark: #FFA000;
+            --purple: #9E9E9E;
+            --orange: #FF9800;
+            --bg-dark: #1a1a1a;
+            --bg-card: rgba(38,38,38,0.92);
+            --bg-card-hover: rgba(50,50,50,0.95);
+            --bg-modal: #2a2a2a;
+            --text-primary: #FAFAFA;
+            --text-secondary: #B0B0B0;
+            --text-dim: #707070;
+            --border: rgba(255,255,255,0.12);
+            --border-light: rgba(255,255,255,0.2);
+            --shadow: rgba(0,0,0,0.5);
+            --concrete: #b5b0a8;
+            --concrete-light: #c5c0b8;
+            --concrete-dark: #9a958d;
+            --concrete-text: #2a2a2a;
+            --concrete-border: rgba(0,0,0,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            background-image: url('img/bg-cafe.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(20,20,20,0.82);
+            z-index: 0;
+        }
+
+        #app {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-bar-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .top-bar-stat .icon { font-size: 20px; }
+        .streak-count { color: var(--gold); }
+        .xp-count { color: var(--text-primary); }
+        .hearts-count { color: var(--red); }
+
+        /* Home screen */
+        .home-screen { padding: 20px 16px 40px; }
+        .mascot-area {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+        .mascot {
+            font-size: 80px;
+            display: block;
+            animation: mascotBounce 2s ease-in-out infinite;
+        }
+        @keyframes mascotBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .app-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--text-primary);
+            margin: 10px 0 4px;
+            letter-spacing: -0.5px;
+        }
+        .app-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        /* Cement texture classes for variety */
+        .cement-1 { background-image: url('img/cement-1.jpg'); background-size: 400px 400px; }
+        .cement-2 { background-image: url('img/cement-2.jpg'); background-size: 400px 400px; }
+        .cement-3 { background-image: url('img/cement-3.jpg'); background-size: 400px 400px; }
+        .cement-4 { background-image: url('img/cement-4.jpg'); background-size: 400px 400px; }
+        .cement-5 { background-image: url('img/cement-5.jpg'); background-size: 400px 400px; }
+        .cement-main { background-image: url('img/cement-main.jpg'); background-size: 800px 500px; }
+
+        /* Section cards - concrete tablet style */
+        .section-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            padding: 0;
+            margin-bottom: 16px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-family: inherit;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 2px 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08);
+        }
+        .section-card:hover { transform: translateY(-3px); box-shadow: 3px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25); }
+        .section-card:active { transform: translateY(0px); box-shadow: 1px 2px 6px rgba(0,0,0,0.4); }
+        .section-card .card-img {
+            width: 90px; height: 90px;
+            object-fit: cover;
+            flex-shrink: 0;
+            border-radius: 4px 0 0 4px;
+        }
+        .section-card .card-info {
+            flex: 1;
+            padding: 18px 0;
+        }
+        .section-card .card-info small {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(42,42,42,0.6);
+            margin-top: 3px;
+        }
+        .section-card .card-arrow {
+            color: rgba(42,42,42,0.4);
+            font-size: 22px;
+            padding-right: 16px;
+        }
+
+        /* Daily stats bar */
+        .daily-stats {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .daily-stat-card {
+            flex: 1;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            padding: 14px 10px;
+            text-align: center;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .daily-stat-card .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--concrete-text);
+        }
+        .daily-stat-card .stat-label {
+            font-size: 11px;
+            color: rgba(42,42,42,0.6);
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Learning Stats button */
+        .stats-btn {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .stats-btn:hover { transform: translateY(-2px); box-shadow: 3px 5px 14px rgba(0,0,0,0.45); }
+
+        /* Path screen */
+        .path-screen { padding: 20px 16px 100px; }
+        .path-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .back-btn {
+            width: 40px; height: 40px;
+            border-radius: 4px;
+            background: var(--concrete);
+            border: none;
+            color: var(--concrete-text);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.15s;
+            font-family: inherit;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .back-btn:hover { background: var(--concrete-light); }
+        .path-title {
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        /* Lesson path nodes */
+        .path-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            position: relative;
+        }
+        .path-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            position: relative;
+        }
+        .path-connector {
+            width: 3px;
+            height: 30px;
+            background: var(--concrete-dark);
+            margin: 0 auto;
+        }
+        .path-connector.completed { background: rgba(76,175,80,0.6); }
+
+        .lesson-node {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-weight: 900;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            border: 4px solid;
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+        .lesson-node .node-sub {
+            font-size: 9px;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+        .lesson-node.locked {
+            background: var(--concrete-dark);
+            border-color: rgba(0,0,0,0.15);
+            color: rgba(42,42,42,0.4);
+            cursor: default;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35);
+        }
+        .lesson-node.available {
+            background: var(--concrete-light);
+            border-color: var(--concrete-text);
+            color: var(--concrete-text);
+            box-shadow: 2px 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            animation: nodePulse 2s ease-in-out infinite;
+        }
+        .lesson-node.available:hover { transform: translateY(-3px); }
+        .lesson-node.available:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 4px rgba(255,255,255,0.1);
+        }
+        @keyframes nodePulse {
+            0%, 100% { box-shadow: 2px 4px 12px rgba(0,0,0,0.4), 0 0 0 0 rgba(181,176,168,0.4); }
+            50% { box-shadow: 2px 4px 12px rgba(0,0,0,0.4), 0 0 0 8px rgba(181,176,168,0); }
+        }
+        .lesson-node.completed {
+            background: var(--concrete);
+            border-color: var(--green);
+            color: var(--green);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .lesson-node.completed:hover { transform: translateY(-3px); }
+        .lesson-node.completed:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .lesson-node.practice {
+            background: var(--concrete);
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+        .lesson-node.practice:hover { transform: translateY(-3px); }
+
+        /* Crown badges */
+        .crown-badge {
+            position: absolute;
+            top: -8px; right: -8px;
+            background: var(--gold);
+            color: #333;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--gold-dark);
+        }
+
+        /* Practice button */
+        .practice-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: inherit;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .practice-btn:hover { background: var(--concrete-light); }
+
+        /* Lesson screen */
+        .lesson-screen {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+        .lesson-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+        .close-btn {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: none;
+            border: 2px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-family: inherit;
+        }
+        .close-btn:hover { border-color: var(--text-secondary); }
+
+        .progress-bar-container {
+            flex: 1;
+            height: 12px;
+            background: rgba(181,176,168,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            border: none;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--concrete);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .hearts-display {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 800;
+            font-size: 16px;
+            color: var(--red);
+        }
+
+        /* Question area - concrete tablet panel */
+        .question-area {
+            flex: 1;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .question-panel {
+            background: var(--concrete);
+            border-radius: 4px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 2px 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .question-type-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(42,42,42,0.5);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+        .question-title {
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 0;
+            color: var(--concrete-text);
+        }
+        .question-dish-name {
+            color: var(--concrete-text);
+            font-weight: 800;
+        }
+
+        /* Category badge */
+        .category-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .category-badge.breakfast { background: rgba(255,152,0,0.18); color: #E65100; }
+        .category-badge.lunch { background: rgba(76,175,80,0.18); color: #2E7D32; }
+        .category-badge.sandwich { background: rgba(120,144,156,0.25); color: #37474F; }
+        .category-badge.dessert { background: rgba(156,39,176,0.15); color: #7B1FA2; }
+        .category-badge.drink { background: rgba(0,150,136,0.18); color: #00796B; }
+        .category-badge.drink_pf { background: rgba(255,193,7,0.18); color: #F57F17; }
+
+        /* Ingredient buttons grid - concrete tablet style */
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option-btn {
+            padding: 10px 16px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            user-select: none;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .option-btn:hover { background-color: var(--concrete-light); transform: translateY(-1px); box-shadow: 3px 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
+        .option-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
+        .option-btn.selected {
+            outline: 3px solid #333;
+            color: var(--concrete-text);
+            box-shadow: 0 0 16px rgba(255,255,255,0.5), 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+            transform: translateY(-2px) scale(1.03);
+            filter: brightness(1.25);
+        }
+        .option-btn.correct-reveal {
+            background: #a8d5a2;
+            color: #1b5e20;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
+        }
+        .option-btn.correct-unselected {
+            background: #c8e6c5;
+            color: #1b5e20;
+            opacity: 0.55;
+            box-shadow: 1px 2px 5px rgba(0,0,0,0.2);
+        }
+        .option-btn.wrong-reveal {
+            background: #e8a8a5;
+            color: #b71c1c;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
+        }
+        /* Crack overlay on wrong answer tablets before they break */
+        .option-btn.crack-overlay::after,
+        .choice-btn.crack-overlay::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: url('img/concrete-cracks.png') center/cover no-repeat;
+            opacity: 0.7;
+            pointer-events: none;
+            animation: crackAppear 0.3s ease-out forwards;
+            z-index: 2;
+        }
+        @keyframes crackAppear {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        /* Break apart into fragments animation */
+        .option-btn.crumble-away,
+        .choice-btn.crumble-away {
+            animation: none;
+        }
+        /* Crack effect on click */
+        .option-btn.crack-effect::after,
+        .choice-btn.crack-effect::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: url('img/concrete-cracks.png') center/cover no-repeat;
+            opacity: 0;
+            animation: crackFlash 0.4s ease-out forwards;
+            pointer-events: none;
+            border-radius: 4px;
+            z-index: 2;
+        }
+        @keyframes crackFlash {
+            0% { opacity: 0; transform: scale(0.85); }
+            40% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.05); }
+        }
+
+        /* Concrete fragment for break animation */
+        .concrete-fragment {
+            position: fixed;
+            background: var(--concrete);
+            z-index: 9999;
+            pointer-events: none;
+            border-radius: 1px;
+        }
+        @keyframes fragmentFly {
+            0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--fx), var(--fy)) rotate(var(--fr)); opacity: 0; }
+        }
+
+        /* True/False buttons - concrete tablet */
+        .tf-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .tf-btn {
+            flex: 1;
+            padding: 20px;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s;
+            border: none;
+            font-family: inherit;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+            position: relative;
+            overflow: hidden;
+            background: var(--concrete);
+        }
+        .tf-btn:active { transform: translateY(2px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
+        .tf-btn.tf-yes { color: #2e7d32; }
+        .tf-btn.tf-yes:hover { background-color: var(--concrete-light); }
+        .tf-btn.tf-no { color: #c62828; }
+        .tf-btn.tf-no:hover { background-color: var(--concrete-light); }
+
+
+        /* Category columns for missing question */
+        .sort-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .sort-column {
+            border: 2px dashed var(--concrete-dark);
+            border-radius: 10px;
+            padding: 8px;
+            min-height: 80px;
+            background: rgba(255,255,255,0.03);
+        }
+        .sort-column-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .sort-column-items {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        /* Missing ingredient choices */
+        .missing-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .missing-item {
+            padding: 8px 14px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 2px 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .missing-slot {
+            padding: 8px 14px;
+            background: rgba(181,176,168,0.3);
+            border: 2px dashed var(--concrete-dark);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            animation: slotPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes slotPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .choice-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .choice-btn {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--concrete);
+            border: none;
+            border-radius: 4px;
+            color: var(--concrete-text);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.12s;
+            text-align: left;
+            font-family: inherit;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .choice-btn:hover { background-color: var(--concrete-light); transform: translateY(-1px); }
+        .choice-btn:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
+        .choice-btn.selected { outline: 3px solid #333; color: var(--concrete-text); box-shadow: 0 0 16px rgba(255,255,255,0.5), 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5); transform: translateY(-2px) scale(1.03); filter: brightness(1.25); }
+        .choice-btn.correct-reveal { background: #a8d5a2; color: #1b5e20; }
+        .choice-btn.wrong-reveal { background: #e8a8a5; color: #b71c1c; }
+        .choice-btn.crumble-away { animation: none; }
+
+        /* Check button - concrete tablet */
+        .bottom-area {
+            padding: 16px;
+            background: rgba(26,26,26,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
+        }
+        .check-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.15s;
+            border: none;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .check-btn.active {
+            background: var(--concrete-light);
+            color: var(--concrete-text);
+            box-shadow: 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);
+        }
+        .check-btn.active:hover { background-color: #d0cbc3; transform: translateY(-1px); box-shadow: 3px 4px 12px rgba(0,0,0,0.45); }
+        .check-btn.active:active { transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
+        .check-btn.disabled {
+            background: rgba(181,176,168,0.3);
+            color: var(--text-dim);
+            cursor: default;
+            box-shadow: none;
+        }
+
+        /* Inline feedback result strip */
+        .inline-result {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            animation: fadeIn 0.2s ease;
+        }
+        .inline-result.correct {
+            background: #a8d5a2;
+            color: #1b5e20;
+        }
+        .inline-result.wrong {
+            background: #e8a8a5;
+            color: #b71c1c;
+        }
+        .inline-result .result-icon { font-size: 20px; }
+
+        /* Disabled state for answered buttons */
+        .option-btn.disabled, .choice-btn.disabled, .tf-btn.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .tf-btn.tf-correct {
+            background: #a8d5a2 !important;
+            color: #1b5e20 !important;
+        }
+        .tf-btn.tf-wrong {
+            background: #e8a8a5 !important;
+            color: #b71c1c !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Result screen */
+        .result-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .result-mascot { font-size: 64px; margin-bottom: 16px; }
+        .result-title {
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .result-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+        .result-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .result-stat { text-align: center; }
+        .result-stat-value { font-size: 30px; font-weight: 900; }
+        .result-stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
+
+        .result-accuracy-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 12px;
+            background: rgba(181,176,168,0.3);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .result-accuracy-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 1s ease;
+            width: 0%;
+        }
+        .result-btn {
+            width: 100%;
+            max-width: 280px;
+            padding: 14px;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            margin-bottom: 10px;
+            transition: 0.15s;
+        }
+        .result-btn.primary {
+            background: var(--concrete-light);
+            color: var(--concrete-text);
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.35);
+        }
+        .result-btn.primary:hover { background: #d0cbc3; }
+        .result-btn.secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .result-btn.secondary:hover { background: rgba(255,255,255,0.05); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-content {
+            background: var(--bg-modal);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .modal-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .modal-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+        .modal-btn.primary {
+            background: var(--concrete-light);
+            color: var(--concrete-text);
+        }
+        .modal-btn.secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        /* Learning Stats Modal */
+        .stats-modal {
+            background: var(--bg-modal);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .stats-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .stats-modal-title {
+            font-size: 20px;
+            font-weight: 800;
+        }
+        .stats-close {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-family: inherit;
+        }
+        .strength-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .strength-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .strength-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+        .strength-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .chapter-progress-item {
+            margin-bottom: 14px;
+        }
+        .chapter-progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .chapter-progress-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .chapter-progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        .format-scores {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .format-score-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        .format-score-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .format-score-val {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* Gram selector */
+        .gram-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .gram-input {
+            width: 70px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 2px solid var(--concrete-dark);
+            background: rgba(255,255,255,0.9);
+            color: var(--concrete-text);
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            text-align: center;
+        }
+        .gram-input:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        .gram-unit {
+            font-size: 13px;
+            color: var(--concrete-text);
+            font-weight: 600;
+        }
+        .gram-correct { border-color: var(--green) !important; background: #e8f5e9 !important; }
+        .gram-wrong { border-color: var(--red) !important; background: #ffebee !important; }
+
+        /* Color coded format */
+        .color-category {
+            margin-bottom: 12px;
+        }
+        .color-category-label {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .cat-base { background: rgba(33,150,243,0.15); color: #1565C0; }
+        .cat-flavor { background: rgba(76,175,80,0.15); color: #2E7D32; }
+        .cat-topping { background: rgba(255,152,0,0.15); color: #E65100; }
+        .cat-liquid { background: rgba(156,39,176,0.15); color: #7B1FA2; }
+
+        /* Color-fill question (color-coded missing ingredients) */
+        .color-fill-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .color-fill-column {
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+        }
+        .color-fill-header {
+            height: 6px;
+            border-radius: 3px;
+            margin-bottom: 8px;
+            padding: 0;
+        }
+        .color-fill-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .color-fill-choices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .color-fill-tablet {
+            display: inline-block;
+            cursor: default;
+            font-size: 13px;
+            padding: 8px 12px;
+            min-width: 60px;
+            text-align: center;
+        }
+        .color-fill-tablet.selected {
+            transform: translateY(-2px) scale(1.03);
+            filter: brightness(1.25);
+        }
+        .color-fill-interactive { cursor: pointer; }
+        .color-cat-red,
+        .color-cat-white,
+        .color-cat-yellow,
+        .color-cat-orange,
+        .color-cat-green,
+        .color-cat-blue,
+        .color-cat-brown,
+        .color-cat-neutral { position: relative; overflow: hidden; }
+        .color-cat-red::before { background: rgba(255,68,68,0.25); }
+        .color-cat-white::before { background: rgba(255,255,255,0.25); }
+        .color-cat-yellow::before { background: rgba(255,215,0,0.25); }
+        .color-cat-orange::before { background: rgba(255,140,0,0.25); }
+        .color-cat-green::before { background: rgba(50,205,50,0.25); }
+        .color-cat-blue::before { background: rgba(30,144,255,0.25); }
+        .color-cat-brown::before { background: rgba(139,69,19,0.25); }
+        .color-cat-neutral::before { background: rgba(170,170,170,0.25); }
+        .color-cat-red::before,
+        .color-cat-white::before,
+        .color-cat-yellow::before,
+        .color-cat-orange::before,
+        .color-cat-green::before,
+        .color-cat-blue::before,
+        .color-cat-brown::before,
+        .color-cat-neutral::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Spatial format */
+        .spatial-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .spatial-zone {
+            border: 2px dashed var(--concrete-dark);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 60px;
+            text-align: center;
+        }
+        .spatial-zone-label {
+            font-size: 10px;
+            color: var(--gold);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* XP popup */
+        .xp-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 4px 20px rgba(255,200,0,0.5);
+            animation: xpPop 1.5s ease forwards;
+            z-index: 9998;
+            pointer-events: none;
+        }
+        @keyframes xpPop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
+        }
+
+        /* Shake animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        .shake { animation: shake 0.4s ease; }
+
+        /* Heart break */
+        @keyframes heartBreak {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.4); }
+            50% { transform: scale(0.8); }
+            100% { transform: scale(1); }
+        }
+        .heart-break { animation: heartBreak 0.5s ease; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        /* Loading spinner */
+        .loader {
+            width: 50px; height: 50px;
+            border: 3px solid var(--concrete-border);
+            border-top-color: var(--text-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 40px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+        }
+        .loading-screen p {
+            color: var(--text-secondary);
+            margin-top: 16px;
+            font-weight: 700;
+        }
+
+        /* Onboarding: nickname + avatar */
+        .onboarding-screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            text-align: center;
+        }
+        .onboarding-mascot {
+            font-size: 80px;
+            margin-bottom: 16px;
+        }
+        .onboarding-title {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+        .onboarding-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 320px;
+        }
+        .nickname-input {
+            width: 100%;
+            max-width: 320px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 700;
+            font-family: inherit;
+            text-align: center;
+            margin-bottom: 16px;
+            outline: none;
+        }
+        .nickname-input:focus {
+            border-color: var(--green);
+        }
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            max-width: 320px;
+            margin-bottom: 32px;
+        }
+        .avatar-btn {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            background: rgba(255,255,255,0.08);
+            font-size: 34px;
+            cursor: pointer;
+            transition: 0.12s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-btn:hover { transform: scale(1.05); }
+        .avatar-btn.selected {
+            border-color: var(--green);
+            background: rgba(88,204,2,0.15);
+            transform: scale(1.08);
+        }
+        .onboarding-btn {
+            width: 100%;
+            max-width: 320px;
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            background: var(--green);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.12s;
+        }
+        .onboarding-btn.disabled {
+            background: var(--text-dim);
+            cursor: not-allowed;
+        }
+
+        /* Leaderboard */
+        .leaderboard-screen {
+            padding: 20px;
+            min-height: 100vh;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+        .leaderboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .leaderboard-title {
+            font-size: 24px;
+            font-weight: 900;
+        }
+        .leaderboard-podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 16px;
+            margin-bottom: 28px;
+            min-height: 130px;
+        }
+        .podium-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .podium-avatar {
+            font-size: 44px;
+            margin-bottom: 4px;
+        }
+        .podium-rank {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .podium-rank.first { background: var(--gold); color: #000; }
+        .podium-rank.second { background: #C0C0C0; color: #000; }
+        .podium-rank.third { background: #CD7F32; color: #000; }
+        .podium-name {
+            font-size: 12px;
+            font-weight: 700;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .podium-xp {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 36px 44px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.05);
+        }
+        .leaderboard-row.current {
+            background: rgba(88,204,2,0.15);
+            border: 2px solid var(--green);
+        }
+        .leaderboard-rank {
+            font-weight: 800;
+            font-size: 16px;
+            text-align: center;
+        }
+        .leaderboard-avatar {
+            font-size: 28px;
+            text-align: center;
+        }
+        .leaderboard-name {
+            font-weight: 700;
+            font-size: 15px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .leaderboard-xp {
+            font-weight: 800;
+            color: var(--gold);
+            font-size: 14px;
+        }
+        .leaderboard-empty {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px 20px;
+        }
+
+        /* Profile chip in top bar */
+        .profile-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px 6px 6px;
+            border-radius: 24px;
+            background: rgba(255,255,255,0.08);
+            cursor: pointer;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .profile-chip:active { transform: scale(0.97); }
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--concrete);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Cement texture applied dynamically via JS */
+        [data-cement] {
+            background-size: 400px 400px !important;
+        }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ====================== STATE ======================
+const APP_KEY = 'ttk_academy_v3';
+
+let state = {
+    screen: 'home',
+    section: null,
+    sectionLabel: '',
+    allData: [],
+    lessons: [],
+    currentLessonIdx: null,
+    questions: [],
+    currentQIdx: 0,
+    hearts: 5,
+    sessionXP: 0,
+    sessionCorrect: 0,
+    sessionTotal: 0,
+    mistakeIds: [],
+    basicMistakeIds: [],
+    phase: 'basic',
+    feedbackShown: false,
+    selectedOptions: new Set(),
+    selectedChoice: null,
+    isPractice: false,
+    isDrinksChapter: false,
+    gramInputs: {},
+    branchSection: null,
+    profile: null,
+    onboardingStep: 'nickname',
+    onboardingNickname: '',
+    onboardingAvatar: '',
+};
+
+// Cement texture images for variety
+const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
+const AVATARS = ['🦉','🐻','🦊','🐼','🐯','🐰','🐧','🐸','🐶','🐱','🦁','🐨'];
+let cementCounter = 0;
+function nextCement() {
+    const img = CEMENT_IMAGES[cementCounter % CEMENT_IMAGES.length];
+    cementCounter++;
+    return img;
+}
+function cementStyle() {
+    return `background-image:url('${nextCement()}');background-size:400px 400px;`;
+}
+
+// ====================== PERSISTENCE ======================
+function loadProgress() {
+    try {
+        const raw = localStorage.getItem(APP_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
+function saveProgress(data) {
+    const current = loadProgress();
+    Object.assign(current, data);
+    localStorage.setItem(APP_KEY, JSON.stringify(current));
+}
+function getProgress() { return loadProgress(); }
+
+function getSectionProgress(section) {
+    const p = getProgress();
+    return p[section] || {};
+}
+function saveLessonComplete(section, lessonIdx, score, total) {
+    const p = getProgress();
+    if (!p[section]) p[section] = {};
+    const key = `lesson_${lessonIdx}`;
+    const prev = p[section][key] || { completed: false, crowns: 0, bestScore: 0 };
+    prev.completed = true;
+    prev.crowns = Math.min(5, prev.crowns + 1);
+    prev.bestScore = Math.max(prev.bestScore, score);
+    p[section][key] = prev;
+    saveProgress(p);
+}
+function getGlobalStats() {
+    const p = getProgress();
+    return {
+        totalXP: p.totalXP || 0,
+        streak: p.streak || 0,
+        lastDate: p.lastDate || null,
+        totalLessons: p.totalLessons || 0,
+    };
+}
+function addXP(amount) {
+    const p = getProgress();
+    p.totalXP = (p.totalXP || 0) + amount;
+    const today = new Date().toDateString();
+    if (p.lastDate !== today) {
+        if (p.lastDate === new Date(Date.now() - 86400000).toDateString()) {
+            p.streak = (p.streak || 0) + 1;
+        } else if (p.lastDate !== today) {
+            p.streak = 1;
+        }
+        p.lastDate = today;
+    }
+    p.totalLessons = (p.totalLessons || 0) + 1;
+    saveProgress(p);
+}
+
+function recordAnswer(itemName, correct) {
+    const p = getProgress();
+    if (!p.itemStrength) p.itemStrength = {};
+    const s = p.itemStrength[itemName] || { strength: 3, attempts: 0 };
+    s.attempts++;
+    if (correct) {
+        s.strength = Math.min(5, s.strength + 1);
+    } else {
+        s.strength = Math.max(0, s.strength - 1.5);
+    }
+    s.lastSeen = Date.now();
+    p.itemStrength[itemName] = s;
+    saveProgress(p);
+}
+function getWeakItems(section) {
+    const p = getProgress();
+    if (!p.itemStrength) return [];
+    const sectionData = state.allData;
+    return sectionData
+        .filter(d => {
+            const s = p.itemStrength[d.name];
+            return s && s.strength < 3;
+        })
+        .sort((a, b) => {
+            const sa = (p.itemStrength[a.name] || {}).strength || 3;
+            const sb = (p.itemStrength[b.name] || {}).strength || 3;
+            return sa - sb;
+        });
+}
+
+// ====================== ADAPTIVE ENGINE ======================
+const FORMATS = ['logical', 'color_coded', 'spatial'];
+
+function getAdaptiveData() {
+    const p = getProgress();
+    if (!p.adaptive) p.adaptive = {
+        totalQuestions: 0,
+        formats: {}
+    };
+    for (const f of FORMATS) {
+        if (!p.adaptive.formats[f]) {
+            p.adaptive.formats[f] = { correct: 0, attempts: 0, totalTime: 0 };
+        }
+    }
+    return p.adaptive;
+}
+
+function saveAdaptiveData(ad) {
+    const p = getProgress();
+    p.adaptive = ad;
+    saveProgress(p);
+}
+
+function recordFormatAnswer(format, correct, timeTaken) {
+    const ad = getAdaptiveData();
+    ad.totalQuestions++;
+    const fd = ad.formats[format];
+    fd.attempts++;
+    if (correct) fd.correct++;
+    fd.totalTime += timeTaken;
+    saveAdaptiveData(ad);
+}
+
+function getFormatScore(format) {
+    const ad = getAdaptiveData();
+    const fd = ad.formats[format];
+    if (!fd || fd.attempts === 0) return 0;
+    const accuracy = fd.correct / fd.attempts;
+    const avgTime = fd.totalTime / fd.attempts;
+    return accuracy * (1 / Math.max(avgTime, 0.5));
+}
+
+function getExplorationScore(format) {
+    const fd = getAdaptiveData().formats[format];
+    const base = getFormatScore(format);
+    // Boost formats with few attempts so calibration never stops and weak formats keep getting sampled
+    const usageBonus = fd.attempts === 0 ? 0.5 : (0.15 / fd.attempts);
+    return base + usageBonus;
+}
+
+function pickFormat() {
+    const scores = FORMATS.map(f => ({ format: f, score: getExplorationScore(f) }));
+    scores.sort((a, b) => b.score - a.score);
+    const dominant = scores[0].format;
+    if (Math.random() < 0.7) return dominant;
+    return FORMATS[Math.floor(Math.random() * FORMATS.length)];
+}
+
+function getDominantFormat() {
+    const scores = FORMATS.map(f => ({ format: f, score: getFormatScore(f) }));
+    scores.sort((a, b) => b.score - a.score);
+    return scores[0];
+}
+
+function getFormatLabel(f) {
+    const labels = {
+        logical: 'Логический',
+        color_coded: 'Визуальный',
+        spatial: 'Пространственный'
+    };
+    return labels[f] || f;
+}
+
+function getFormatDescription(f) {
+    const desc = {
+        logical: 'Текстовые списки ингредиентов',
+        color_coded: 'Цветовая группировка по категориям',
+        spatial: 'Визуальное расположение компонентов'
+    };
+    return desc[f] || '';
+}
+
+function getDishCategory(name) {
+    const n = name.toLowerCase();
+    if (n.includes('крок-') || n.includes('гриль-чиз') || n.includes('гирос')) return { label: 'Сэндвич', cls: 'sandwich' };
+    if (n.includes('суп') || n.includes('бульон') || n.includes('орзо') || n.includes('ньокки') || n.includes('салат') || n.includes('щёчки') || n.includes('щечки')) return { label: 'Обед', cls: 'lunch' };
+    if (n.includes('каша') || n.includes('сырник') || n.includes('шакшука') || n.includes('завтрак') || n.includes('скрэмбл') || n.includes('бенедикт') || n.includes('дранник') || n.includes('френч-тост') || n.includes('гречка')) return { label: 'Завтрак', cls: 'breakfast' };
+    return { label: 'Завтрак', cls: 'breakfast' };
+}
+
+function getSectionCategory(section) {
+    if (section === 'desserts') return { label: 'Десерт', cls: 'dessert' };
+    if (section === 'drinks') return { label: 'Напиток', cls: 'drink' };
+    if (section === 'drink_pf') return { label: 'ПФ Напитков', cls: 'drink_pf' };
+    if (section === 'kitchen_pf') return { label: 'ПФ Кухни', cls: 'kitchen_pf' };
+    return null;
+}
+
+// ====================== CHAPTER PROGRESS ======================
+function getChapterTotals() {
+    return {
+        kitchen: { file: 'dishes.json', label: '🍳 Кухня' },
+        desserts: { file: 'desserts.json', label: '🍰 Десерты' },
+        drinks: { file: 'drinks.json', label: '🍹 Напитки' },
+        drink_pf: { file: 'drink_pf.json', label: '🧪 ПФ Напитков' },
+        kitchen_pf: { file: 'kitchen_pf.json', label: '🧪 ПФ Кухни' }
+    };
+}
+
+function getChapterProgress() {
+    const p = getProgress();
+    const chapters = getChapterTotals();
+    const result = {};
+    for (const [key, info] of Object.entries(chapters)) {
+        const sp = p[key] || {};
+        let completed = 0;
+        let total = 0;
+        for (const k of Object.keys(sp)) {
+            if (k.startsWith('lesson_')) {
+                total++;
+                if (sp[k].completed) completed++;
+            }
+        }
+        result[key] = { completed, total, label: info.label };
+    }
+    return result;
+}
+
+// ====================== UTILITIES ======================
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function showConfetti() {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    const colors = ['#58CC02', '#1CB0F6', '#FFC800', '#FF9600', '#CE82FF', '#FF4B4B'];
+    for (let i = 0; i < 50; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+        container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 4000);
+}
+
+function showXPPopup(amount) {
+    const popup = document.createElement('div');
+    popup.className = 'xp-popup';
+    popup.textContent = `+${amount} XP`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1600);
+}
+
+// Normalize item data: handle both old format (correct: string[], pool: string[])
+// and new format (correct: [{ingredient, grams}], wrong: string[])
+function normalizeItem(item) {
+    if (!item._normalized) {
+        if (item.correct && item.correct.length > 0 && typeof item.correct[0] === 'object') {
+            item._ingredients = item.correct.map(c => c.ingredient);
+            item._grams = {};
+            item.correct.forEach(c => { item._grams[c.ingredient] = c.grams; });
+            item._pool = [...item._ingredients, ...(item.wrong || [])];
+            item._wrongPool = item.wrong || [];
+            item._hasGrams = true;
+        } else {
+            item._ingredients = item.correct || [];
+            item._grams = {};
+            item._pool = item.pool || [...(item.correct || []), ...(item.wrong || [])];
+            item._wrongPool = (item.pool || []).filter(p => !(item.correct || []).includes(p));
+            if (item.wrong) item._wrongPool = item.wrong;
+            item._hasGrams = false;
+        }
+        item._normalized = true;
+    }
+    return item;
+}
+
+// ====================== RENDERING ======================
+const app = document.getElementById('app');
+
+function render() {
+    cementCounter = 0;
+    switch (state.screen) {
+        case 'onboarding': renderOnboarding(); break;
+        case 'home': renderHome(); break;
+        case 'branch': renderBranchSelection(); break;
+        case 'path': renderPath(); break;
+        case 'leaderboard': renderLeaderboard(); break;
+        case 'lesson': renderLesson(); break;
+        case 'result': renderResult(); break;
+    }
+}
+
+function renderHome() {
+    const stats = getGlobalStats();
+    const profile = state.profile || { nickname: 'Ты', avatar: '☕' };
+    app.innerHTML = `
+        <div class="top-bar">
+            <button class="profile-chip" onclick="goLeaderboard()">
+                <span class="profile-avatar">${profile.avatar}</span>
+                <span>${profile.nickname}</span>
+            </button>
+            <div style="flex:1"></div>
+            <div class="top-bar-stat">
+                <span class="icon">🔥</span>
+                <span class="streak-count">${stats.streak}</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">⚡</span>
+                <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+        </div>
+        <div class="home-screen">
+            <div class="mascot-area">
+                <span class="mascot">☕</span>
+                <div class="app-title">MET Академия</div>
+                <div class="app-subtitle">Изучай составы блюд</div>
+            </div>
+            <div class="daily-stats">
+                <div class="daily-stat-card" style="${cementStyle()}">
+                    <div class="stat-value streak-count">🔥 ${stats.streak}</div>
+                    <div class="stat-label">Серия дней</div>
+                </div>
+                <div class="daily-stat-card" style="${cementStyle()}">
+                    <div class="stat-value xp-count">⚡ ${stats.totalXP}</div>
+                    <div class="stat-label">Всего XP</div>
+                </div>
+                <div class="daily-stat-card" style="${cementStyle()}">
+                    <div class="stat-value" style="color:var(--green)">📚 ${stats.totalLessons}</div>
+                    <div class="stat-label">Уроков</div>
+                </div>
+            </div>
+            <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">
+                📊 Характеристика обучения
+            </button>
+            <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">
+                🏆 Рейтинг
+            </button>
+            <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('kitchen')">
+                <img class="card-img" src="img/shakshuka.jpg" alt="Кухня">
+                <div class="card-info">
+                    Кухня
+                    <small>Завтраки, супы, салаты, сэндвичи</small>
+                </div>
+                <div class="card-arrow">›</div>
+            </button>
+            <button class="section-card" style="${cementStyle()}" onclick="selectSection('desserts')">
+                <img class="card-img" src="img/tart.jpg" alt="Десерты">
+                <div class="card-info">
+                    Десерты
+                    <small>Выпечка, кексы, печенье</small>
+                </div>
+                <div class="card-arrow">›</div>
+            </button>
+            <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('drinks')">
+                <img class="card-img" src="img/cappuccino.jpg" alt="Напитки">
+                <div class="card-info">
+                    Напитки
+                    <small>Кофе, лимонады, чай</small>
+                </div>
+                <div class="card-arrow">›</div>
+            </button>
+        </div>
+    `;
+}
+
+function renderOnboarding() {
+    if (state.onboardingStep === 'nickname') {
+        app.innerHTML = `
+            <div class="onboarding-screen">
+                <div class="onboarding-mascot">☕</div>
+                <div class="onboarding-title">Как тебя зовут?</div>
+                <div class="onboarding-subtitle">Создай персонажа, как в Duolingo</div>
+                <input class="nickname-input" type="text" placeholder="Введи никнейм" maxlength="20" value="${state.onboardingNickname}" oninput="setOnboardingNickname(this.value)">
+                <button class="onboarding-btn ${state.onboardingNickname.trim() ? '' : 'disabled'}" onclick="goToAvatar()">
+                    Продолжить
+                </button>
+            </div>
+        `;
+    } else {
+        app.innerHTML = `
+            <div class="onboarding-screen">
+                <div class="onboarding-title">Выбери персонажа</div>
+                <div class="onboarding-subtitle">Твой аватар будет виден в рейтинге</div>
+                <div class="avatar-grid">
+                    ${AVATARS.map(a => `
+                        <button class="avatar-btn ${state.onboardingAvatar === a ? 'selected' : ''}" onclick="selectOnboardingAvatar('${a}')">${a}</button>
+                    `).join('')}
+                </div>
+                <button class="onboarding-btn ${state.onboardingAvatar ? '' : 'disabled'}" onclick="finishOnboarding()">
+                    Начать
+                </button>
+            </div>
+        `;
+    }
+}
+
+function setOnboardingNickname(value) {
+    state.onboardingNickname = value;
+    render();
+}
+
+function goToAvatar() {
+    if (!state.onboardingNickname.trim()) return;
+    state.onboardingStep = 'avatar';
+    render();
+}
+
+function selectOnboardingAvatar(avatar) {
+    state.onboardingAvatar = avatar;
+    render();
+}
+
+function finishOnboarding() {
+    if (!state.onboardingNickname.trim() || !state.onboardingAvatar) return;
+    state.profile = {
+        nickname: state.onboardingNickname.trim(),
+        avatar: state.onboardingAvatar,
+    };
+    saveProgress({ profile: state.profile });
+    state.screen = 'home';
+    render();
+}
+
+function getLeaderboard() {
+    const user = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const userXP = getGlobalStats().totalXP;
+    const names = ['Алекс', 'Миша', 'Катя', 'Саша', 'Дима', 'Лена', 'Ваня', 'Оля', 'Ира', 'Паша', 'Тима', 'Ника', 'Глеб', 'Юля', 'Вера', 'Макс', 'Аня', 'Лёша', 'Зоя', 'Рома', 'Соня', 'Артём', 'Настя', 'Петя'];
+    const users = names.map((n, i) => ({
+        name: n,
+        avatar: AVATARS[i % AVATARS.length],
+        xp: Math.max(0, userXP + Math.floor((Math.random() - 0.5) * 1200)),
+        isUser: false,
+    }));
+    users.push({ name: user.nickname, avatar: user.avatar, xp: userXP, isUser: true });
+    users.sort((a, b) => b.xp - a.xp);
+    return users.slice(0, 20).map((u, i) => ({ ...u, rank: i + 1 }));
+}
+
+function renderLeaderboard() {
+    const rows = getLeaderboard();
+    const top3 = rows.slice(0, 3);
+    const rest = rows.slice(3);
+    const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+
+    const podiumHTML = podiumOrder.length > 0 ? `
+        <div class="leaderboard-podium">
+            ${podiumOrder.map((u, i) => {
+                const rank = i === 1 ? 'first' : i === 0 ? 'second' : 'third';
+                const actualRank = u.rank;
+                return `
+                    <div class="podium-item">
+                        <div class="podium-avatar">${u.avatar}</div>
+                        <div class="podium-rank ${rank}">${actualRank}</div>
+                        <div class="podium-name">${u.name}</div>
+                        <div class="podium-xp">${u.xp} XP</div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    ` : '';
+
+    const listHTML = rest.length > 0 ? `
+        <div class="leaderboard-list">
+            ${rest.map(u => `
+                <div class="leaderboard-row ${u.isUser ? 'current' : ''}">
+                    <div class="leaderboard-rank">${u.rank}</div>
+                    <div class="leaderboard-avatar">${u.avatar}</div>
+                    <div class="leaderboard-name">${u.name}</div>
+                    <div class="leaderboard-xp">${u.xp} XP</div>
+                </div>
+            `).join('')}
+        </div>
+    ` : '<div class="leaderboard-empty">Пока нет данных для рейтинга</div>';
+
+    app.innerHTML = `
+        <div class="leaderboard-screen">
+            <div class="leaderboard-header">
+                <button class="close-btn" onclick="goHome()" style="position:static;margin:0">← Назад</button>
+            </div>
+            <div class="leaderboard-title">🏆 Рейтинг</div>
+            ${podiumHTML}
+            ${listHTML}
+        </div>
+    `;
+}
+
+function goLeaderboard() {
+    state.screen = 'leaderboard';
+    render();
+}
+
+function showBranchSelection(section) {
+    state.branchSection = section;
+    state.screen = 'branch';
+    render();
+}
+
+function renderBranchSelection() {
+    const section = state.branchSection;
+    const isKitchen = section === 'kitchen';
+    const title = isKitchen ? 'Кухня' : 'Напитки';
+    const subtitle = isKitchen ? 'Выбери раздел' : 'Выбери раздел';
+    const branches = isKitchen ? [
+        { id: 'kitchen', label: 'Блюда', desc: 'Завтраки, супы, салаты, сэндвичи', img: 'img/shakshuka.jpg' },
+        { id: 'kitchen_pf', label: 'Полуфабрикаты', desc: 'Составы п/ф кухни', img: 'img/shakshuka.jpg' }
+    ] : [
+        { id: 'drinks', label: 'Напитки', desc: 'Кофе, лимонады, чай', img: 'img/cappuccino.jpg' },
+        { id: 'drink_pf', label: 'Полуфабрикаты', desc: 'Составы п/ф напитков', img: 'img/cappuccino.jpg' }
+    ];
+
+    const cardsHTML = branches.map(b => `
+        <button class="section-card" style="${cementStyle()}" onclick="selectSection('${b.id}')">
+            <img class="card-img" src="${b.img}" alt="${b.label}">
+            <div class="card-info">
+                ${b.label}
+                <small>${b.desc}</small>
+            </div>
+            <div class="card-arrow">›</div>
+        </button>
+    `).join('');
+
+    app.innerHTML = `
+        <div class="top-bar">
+            <button class="close-btn" onclick="goHome()" style="position:static;margin:0">← Назад</button>
+        </div>
+        <div class="home-screen">
+            <div class="mascot-area">
+                <span class="mascot">☕</span>
+                <div class="app-title">${title}</div>
+                <div class="app-subtitle">${subtitle}</div>
+            </div>
+            ${cardsHTML}
+        </div>
+    `;
+}
+
+// ====================== LEARNING STATS DASHBOARD ======================
+function showLearningStats() {
+    const dom = getDominantFormat();
+    const chapterProg = getChapterProgress();
+    const ad = getAdaptiveData();
+
+    let chaptersHTML = '';
+    for (const [key, info] of Object.entries(chapterProg)) {
+        const pct = info.total > 0 ? Math.round((info.completed / info.total) * 100) : 0;
+        const color = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
+        chaptersHTML += `
+            <div class="chapter-progress-item">
+                <div class="chapter-progress-label">
+                    <span>${info.label}</span>
+                    <span>${info.completed} / ${info.total || '—'}</span>
+                </div>
+                <div class="chapter-progress-bar">
+                    <div class="chapter-progress-fill" style="width:${pct}%;background:${color}"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    let formatScoresHTML = '';
+    for (const f of FORMATS) {
+        const score = getFormatScore(f);
+        const fd = ad.formats[f];
+        const isDom = f === dom.format && dom.score > 0;
+        formatScoresHTML += `
+            <div class="format-score-card" style="${isDom ? 'border:2px solid var(--gold)' : ''}">
+                <div class="format-score-name">${getFormatLabel(f)}</div>
+                <div class="format-score-val" style="color:${isDom ? 'var(--gold)' : 'var(--text-primary)'}">${score > 0 ? score.toFixed(2) : '—'}</div>
+                <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${fd.attempts} попыток</div>
+            </div>
+        `;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+        <div class="stats-modal">
+            <div class="stats-modal-header">
+                <div class="stats-modal-title">📊 Характеристика обучения</div>
+                <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Сильная сторона</div>
+                <div class="strength-value">${dom.score > 0 ? getFormatLabel(dom.format) : 'Ещё не определена'}</div>
+                <div class="strength-desc">${dom.score > 0 ? getFormatDescription(dom.format) : 'Проходите вопросы — система постоянно ищет лучший формат'}</div>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Аналитика</div>
+                <div class="strength-value">${ad.totalQuestions} вопросов</div>
+                <div class="strength-desc">Постоянная калибровка по логическим, цветовым и пространственным вопросам</div>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Формат-оценки</div>
+                <div class="format-scores">${formatScoresHTML}</div>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Объем пройденных позиций</div>
+                ${chaptersHTML}
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+// ====================== SECTION SELECTION ======================
+async function selectSection(section) {
+    state.section = section;
+    const labels = {
+        kitchen: '🍳 Кухня',
+        desserts: '🍰 Десерты',
+        drinks: '🍹 Напитки',
+        drink_pf: '🧪 ПФ Напитков',
+        kitchen_pf: '🧪 ПФ Кухни'
+    };
+    state.sectionLabel = labels[section] || section;
+    state.isDrinksChapter = (section === 'drinks' || section === 'drink_pf');
+
+    app.innerHTML = `<div class="loading-screen"><div class="loader"></div><p>Загрузка...</p></div>`;
+
+    const fileMap = {
+        kitchen: 'dishes.json',
+        desserts: 'desserts.json',
+        drinks: 'drinks.json',
+        drink_pf: 'drink_pf.json',
+        kitchen_pf: 'kitchen_pf.json'
+    };
+    const fileName = fileMap[section];
+    try {
+        const response = await fetch(fileName);
+        if (!response.ok) throw new Error('File not found');
+        const data = await response.json();
+        state.allData = data.map(normalizeItem);
+        buildLessons();
+        state.screen = 'path';
+        render();
+    } catch (e) {
+        app.innerHTML = `
+            <div class="loading-screen">
+                <span style="font-size:60px">😔</span>
+                <p>Файл ${fileName} не найден</p>
+                <button class="result-btn secondary" style="margin-top:20px;max-width:280px" onclick="goHome()">Назад</button>
+            </div>
+        `;
+    }
+}
+
+function buildLessons() {
+    const data = state.allData;
+    const lessonSize = 8;
+    const reviewCount = 2;
+    state.lessons = [];
+    for (let i = 0; i < data.length; i += lessonSize) {
+        let lessonItems = data.slice(i, i + lessonSize);
+        if (i > 0 && lessonItems.length >= lessonSize) {
+            const prevItems = data.slice(0, i);
+            const existing = new Set(lessonItems.map(d => d.name));
+            const candidates = prevItems.filter(d => !existing.has(d.name));
+            const reviewItems = shuffle(candidates).slice(0, reviewCount);
+            lessonItems = lessonItems.slice(0, lessonSize - reviewCount).concat(reviewItems);
+        }
+        state.lessons.push(lessonItems);
+    }
+}
+
+function renderPath() {
+    const stats = getGlobalStats();
+    const sp = getSectionProgress(state.section);
+    const weakItems = getWeakItems(state.section);
+
+    let firstIncomplete = state.lessons.length;
+    for (let i = 0; i < state.lessons.length; i++) {
+        const ld = sp[`lesson_${i}`];
+        if (!ld || !ld.completed) {
+            firstIncomplete = i;
+            break;
+        }
+    }
+
+    let nodesHTML = '';
+    const offsets = [0, 40, 60, 40, 0, -40, -60, -40];
+
+    for (let i = 0; i < state.lessons.length; i++) {
+        const ld = sp[`lesson_${i}`] || {};
+        let nodeClass = 'locked';
+        let clickHandler = '';
+
+        if (i < firstIncomplete) {
+            nodeClass = 'completed';
+            clickHandler = `onclick="startLesson(${i})"`;
+        } else if (i === firstIncomplete) {
+            nodeClass = 'available';
+            clickHandler = `onclick="startLesson(${i})"`;
+        }
+
+        const offset = offsets[i % offsets.length];
+        const crownHTML = ld.crowns > 0 ? `<span class="crown-badge">👑${ld.crowns > 1 ? ld.crowns : ''}</span>` : '';
+        const connectorClass = i < firstIncomplete ? 'completed' : '';
+
+        if (i > 0) {
+            nodesHTML += `<div class="path-connector ${connectorClass}"></div>`;
+        }
+
+        nodesHTML += `
+            <div class="path-row">
+                <button class="lesson-node ${nodeClass}" ${clickHandler} style="margin-left:${offset}px">
+                    ${crownHTML}
+                    ${i + 1}
+                    <span class="node-sub">${state.lessons[i].length} карт</span>
+                </button>
+            </div>
+        `;
+    }
+
+    const practiceHTML = weakItems.length > 0 ? `
+        <button class="practice-btn" style="${cementStyle()}" onclick="startPractice()">
+            🏋️ Тренировка слабых мест (${weakItems.length})
+        </button>
+    ` : '';
+
+    app.innerHTML = `
+        <div class="top-bar">
+            <div class="top-bar-stat">
+                <span class="icon">🔥</span>
+                <span class="streak-count">${stats.streak}</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">⚡</span>
+                <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+            <div class="top-bar-stat">
+                <span class="icon">❤️</span>
+                <span class="hearts-count">5</span>
+            </div>
+        </div>
+        <div class="path-screen">
+            <div class="path-header">
+                <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
+                <div class="path-title">${state.sectionLabel}</div>
+            </div>
+            ${practiceHTML}
+            <div class="path-container">
+                ${nodesHTML}
+            </div>
+        </div>
+    `;
+}
+
+function goHome() {
+    state.screen = 'home';
+    state.section = null;
+    render();
+}
+
+// ====================== LESSON LOGIC ======================
+function startLesson(idx) {
+    state.currentLessonIdx = idx;
+    state.isPractice = false;
+    state.phase = 'basic';
+    const lessonData = state.lessons[idx];
+    const allIngredients = getAllIngredients();
+    state.questions = shuffle(lessonData).map(item => {
+        const nd = normalizeItem(item);
+        return buildBasicSelect(nd, buildWrongPool(nd, allIngredients));
+    });
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.basicMistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.gramInputs = {};
+    state._questionStartTime = Date.now();
+    state.screen = 'lesson';
+    render();
+}
+
+function startPractice() {
+    const weakItems = getWeakItems(state.section);
+    if (weakItems.length === 0) return;
+    state.isPractice = true;
+    state.currentLessonIdx = -1;
+    const practiceData = weakItems.slice(0, 15);
+    state.questions = generateQuestions(practiceData);
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.gramInputs = {};
+    state._questionStartTime = Date.now();
+    state.screen = 'lesson';
+    render();
+}
+
+// ====================== QUESTION GENERATION ======================
+function getAllIngredients() {
+    const allIngredientsSet = new Set();
+    (state.allData || []).forEach(d => {
+        const nd = normalizeItem(d);
+        nd._ingredients.forEach(i => allIngredientsSet.add(i));
+        (nd._wrongPool || []).forEach(i => allIngredientsSet.add(i));
+        (nd._pool || []).forEach(i => allIngredientsSet.add(i));
+    });
+    return [...allIngredientsSet];
+}
+
+function buildWrongPool(nd, allIngredients) {
+    const correctSet = new Set(nd._ingredients);
+    let wrongPool = (nd._wrongPool || []).filter(p => !correctSet.has(p));
+    if (wrongPool.length < 4) {
+        const extra = allIngredients.filter(i => !correctSet.has(i) && !wrongPool.includes(i));
+        wrongPool = wrongPool.concat(shuffle(extra).slice(0, 5 - wrongPool.length));
+    }
+    return wrongPool;
+}
+
+function buildBasicSelect(nd, wrongPool) {
+    const correctCount = nd._ingredients.length;
+    const minDistractors = Math.max(2, Math.ceil(correctCount * 0.4));
+    const target = correctCount + minDistractors;
+    const pool = [...nd._ingredients];
+    const used = new Set(nd._ingredients);
+    const remaining = target - pool.length;
+    if (remaining > 0) {
+        const extra = shuffle(wrongPool).filter(i => !used.has(i)).slice(0, remaining);
+        pool.push(...extra);
+    }
+    return {
+        type: 'select',
+        item: nd,
+        pool: shuffle(pool),
+        format: 'logical',
+        showGrams: state.isDrinksChapter && nd._hasGrams,
+    };
+}
+
+function buildRemediationSet(item, allIngredients) {
+    const nd = normalizeItem(item);
+    const wrongPool = buildWrongPool(nd, allIngredients);
+    const order = shuffle(['missing', 'color_fill', 'spatial']);
+    const questions = [];
+    for (const type of order) {
+        let q = null;
+        if (type === 'missing') q = buildMissingQuestion(nd, wrongPool, 'logical');
+        else if (type === 'color_fill') q = buildColorFillQuestion(nd, wrongPool, allIngredients);
+        else if (type === 'spatial') q = buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial');
+        if (!q) q = buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        if (q) questions.push(q);
+    }
+    return questions;
+}
+
+function generateQuestions(items) {
+    const questions = [];
+    const allIngredients = getAllIngredients();
+
+    for (const item of shuffle(items)) {
+        const nd = normalizeItem(item);
+        const wrongPool = buildWrongPool(nd, allIngredients);
+
+        const format = pickFormat();
+        let q = null;
+
+        if (format === 'color_coded') {
+            q = buildColorFillQuestion(nd, wrongPool, allIngredients);
+            if (!q) q = buildMissingQuestion(nd, wrongPool, 'logical') || buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        } else if (format === 'spatial') {
+            q = buildSpatialSelect(nd, wrongPool, allIngredients, format);
+            if (!q) q = buildMissingQuestion(nd, wrongPool, 'logical') || buildColorFillQuestion(nd, wrongPool, allIngredients) || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        } else { // logical
+            q = buildMissingQuestion(nd, wrongPool, format);
+            if (!q) q = buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildColorFillQuestion(nd, wrongPool, allIngredients) || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        }
+
+        if (q) questions.push(q);
+    }
+
+    return shuffle(questions);
+}
+
+function buildColorFillQuestion(nd, wrongPool, allIngredients) {
+    const byCat = {};
+    nd._ingredients.forEach(ing => {
+        const cat = getColorCategory(ing);
+        if (!byCat[cat]) byCat[cat] = [];
+        byCat[cat].push(ing);
+    });
+
+    const missingByCat = {};
+    const shownByCat = {};
+    const missing = [];
+    let totalSlots = 0;
+
+    for (const [cat, ings] of Object.entries(byCat)) {
+        if (ings.length < 2) continue;
+        const maxMissing = Math.min(2, ings.length - 1);
+        const count = maxMissing === 1 ? 1 : (Math.random() < 0.5 ? 1 : 2);
+        const shuffled = shuffle(ings);
+        missingByCat[cat] = shuffled.slice(0, count);
+        shownByCat[cat] = shuffled.slice(count);
+        missing.push(...missingByCat[cat]);
+        totalSlots += count;
+    }
+
+    for (const [cat, ings] of Object.entries(byCat)) {
+        if (!shownByCat[cat]) shownByCat[cat] = [...ings];
+    }
+
+    if (missing.length < 1) return null;
+
+    const used = new Set([...nd._ingredients, ...missing]);
+    const missingCats = Object.keys(missingByCat);
+    let distractors = [];
+    for (const cat of missingCats) {
+        const candidates = allIngredients.filter(i => !used.has(i) && getColorCategory(i) === cat);
+        distractors.push(...shuffle(candidates).slice(0, 2));
+    }
+    if (distractors.length < 2) {
+        const extra = shuffle(wrongPool).filter(i => !used.has(i) && !distractors.includes(i)).slice(0, 2 - distractors.length);
+        distractors.push(...extra);
+    }
+    if (distractors.length === 0) return null;
+
+    const choices = shuffle([...missing, ...distractors]);
+    return {
+        type: 'color_fill',
+        item: nd,
+        missingByCat,
+        shownByCat,
+        missing,
+        choices,
+        totalSlots,
+        format: 'color_coded',
+    };
+}
+
+function buildSpatialSelect(nd, wrongPool, allIngredients, format) {
+    if (wrongPool.length < 2) return null;
+    const correctCount = nd._ingredients.length;
+    const minDistractors = Math.max(2, Math.ceil(correctCount * 0.4));
+    const target = correctCount + minDistractors;
+
+    const pool = [...nd._ingredients];
+    const used = new Set(nd._ingredients);
+
+    // Add at least one distractor into every zone so each column has a wrong option
+    const correctByZone = {};
+    nd._ingredients.forEach(ing => {
+        const z = categorizeIngredient(ing);
+        if (!correctByZone[z]) correctByZone[z] = [];
+        correctByZone[z].push(ing);
+    });
+    for (const [zone, items] of Object.entries(correctByZone)) {
+        const zoneDistractors = allIngredients.filter(i => !used.has(i) && categorizeIngredient(i) === zone);
+        if (zoneDistractors.length > 0) {
+            const d = shuffle(zoneDistractors)[0];
+            pool.push(d);
+            used.add(d);
+        }
+    }
+
+    // Fill the rest with random distractors up to the target
+    const remaining = target - pool.length;
+    if (remaining > 0) {
+        const extra = shuffle(wrongPool).filter(i => !used.has(i)).slice(0, remaining);
+        pool.push(...extra);
+    }
+
+    // Guarantee at least 2 distractors even if the pool above fell short
+    const poolDistractors = pool.filter(i => !nd._ingredients.includes(i));
+    if (poolDistractors.length < 2) {
+        const extra = shuffle(wrongPool).filter(i => !used.has(i)).slice(0, 2 - poolDistractors.length);
+        pool.push(...extra);
+    }
+
+    const displayPool = shuffle(pool);
+    return {
+        type: 'select',
+        item: nd,
+        pool: displayPool,
+        format: format,
+        showGrams: state.isDrinksChapter && nd._hasGrams,
+    };
+}
+
+function buildMissingQuestion(nd, wrongPool, format) {
+    if (nd._ingredients.length <= 2 || wrongPool.length < 2) return null;
+    const correctByCat = {};
+    nd._ingredients.forEach(ing => {
+        const cat = getCategory(ing);
+        if (!correctByCat[cat]) correctByCat[cat] = [];
+        correctByCat[cat].push(ing);
+    });
+    const catsWithMulti = Object.keys(correctByCat).filter(c => correctByCat[c].length > 1);
+    if (catsWithMulti.length > 0) {
+        const cat = catsWithMulti[Math.floor(Math.random() * catsWithMulti.length)];
+        const catIngredients = correctByCat[cat];
+        const missingIdx = Math.floor(Math.random() * catIngredients.length);
+        const missingIng = catIngredients[missingIdx];
+        const shown = nd._ingredients.filter(i => i !== missingIng);
+        const distractors = shuffle(wrongPool).slice(0, 3);
+        const choices = shuffle([missingIng, ...distractors]);
+        return {
+            type: 'missing',
+            item: nd,
+            shown: shown,
+            missing: missingIng,
+            missingCategory: cat,
+            choices: choices,
+            format: format,
+            showGrams: false,
+        };
+    }
+
+    const missingIdx = Math.floor(Math.random() * nd._ingredients.length);
+    const missingIng = nd._ingredients[missingIdx];
+    const shown = nd._ingredients.filter((_, i) => i !== missingIdx);
+    const distractors = shuffle(wrongPool).slice(0, 3);
+    const choices = shuffle([missingIng, ...distractors]);
+    return {
+        type: 'missing',
+        item: nd,
+        shown: shown,
+        missing: missingIng,
+        choices: choices,
+        format: format,
+        showGrams: false,
+    };
+}
+
+function buildTrueFalseQuestion(nd, wrongPool, format) {
+    if (wrongPool.length < 1) return null;
+    const isTrue = Math.random() > 0.5;
+    let ingredient;
+    if (isTrue) {
+        ingredient = nd._ingredients[Math.floor(Math.random() * nd._ingredients.length)];
+    } else {
+        ingredient = wrongPool[Math.floor(Math.random() * wrongPool.length)];
+    }
+    return {
+        type: 'truefalse',
+        item: nd,
+        ingredient: ingredient,
+        answer: isTrue,
+        format: format,
+        showGrams: false,
+    };
+}
+
+function buildSimpleSelect(nd, wrongPool, format) {
+    return {
+        type: 'select',
+        item: nd,
+        pool: shuffle(nd._pool),
+        format: format,
+        showGrams: state.isDrinksChapter && nd._hasGrams,
+    };
+}
+
+// ====================== FORMAT RENDERERS ======================
+
+function getCategory(ing) {
+    const lower = ing.toLowerCase();
+    if (/(вишн|малин|клубник|черник|смородин|облепих|брусник|клюкв|ежевик|голубик|ягод|рябин|ирга|калин|шиповник|земляник|крыжовник|черешн|гранат|юдзу|каламанси)/.test(lower)) return 'berry';
+    if (/(апельсин|лимон|лайм|грейпфрут|мандарин|киви|яблоко|груша|банан|манго|ананас|персик|абрикос|айва|папайя|маракуйя|фрукт|цитрус|цедра|мангов|ананасов|груш|яблочн|гренни|смит)/.test(lower)) return 'fruit';
+    if (/(чёрный перец|черный перец|белый перец|перец чёрный|перец черный|перец белый|перец молотый|молотый перец|перец душистый|душистый перец|перец горошком)/.test(lower)) return 'bulk';
+    if (/(яйцо|яйца|яичный|пашот|сыр|моцарелла|рикотта|фета|пармезан|чеддер|горгонзола|камамбер|бри|фондю|творог|сулугуни|брынза|адыгейский|творожный|мясо|колбаса|ветчина|бекон|сало|салями|фарш|окорок|ростбиф|стейк|филе|рыба|лосось|сёмга|тунец|форель|треска|пикша|скумбрия|сардина|анчоус|сельдь|красная рыба|креветки|мидии|кальмары|краб|раки|устрицы|осьминог|гребешки|икра|тофу|темпе|сейтан|хумус|тахини|гуакамоле|мисо|курин|цыпл|утка|гусь|индейка|кролик|свинин|говядин|баранин|телятин)/.test(lower)) return 'other';
+    if (/(огурец|помидор|томат|морковь|перец|лук|шпинат|салат|айсберг|руккола|кинза|петрушка|сельдерей|фриллис|шнитт|чеснок|шалот|цукини|кабачок|баклажан|капуста|редис|фасоль|горошек|тыква|свекла|щавель|укроп|базилик|тимьян|розмарин|эстрагон|чабрец|мята|кориандр|хмели|сунели|зелень|черри|авокадо|гриб|шампиньон|белые грибы|вешенка|трюфель|картофель|пюре|дранник|свежий|слайс|микс салат|цветок|цветочная|корень|свёкла|брокколи|спаржа|порей|луковица)/.test(lower)) return 'vegetable';
+    if (/(сахар|соль|мука|крахмал|разрыхлитель|гречка|рис|овсянка|птитим|орзо|ньокки|киноа|манка|крупа|полента|кускус|макарон|паста|спагетти|лапша|пудра|какао|специи|перец|корица|кардамон|куркума|имбирь|бадьян|гвоздика|мускат|анис|паприка|лаванда|можжевелов|тмин|хмели|сунели|дрожжи|закваска|сода|пекарский|порошок|пшено|ячмен|пшеница|рожь|кукуруза|булгур|фарро|саго|тapiока|агар|желатин|пектин|ксантан|гуар|альбумин|отруби|хлопья|мюсли|топинамбур|амарант|полба|мак|семечки|семена|кунжут|льняные|тыквенные|подсолнечник|семя|патока|сорбит|ксилит|стевия|эритрит|малтодекстрин|загуститель|стабилизатор|эмульгатор|консервант|краситель|ароматизатор|усилитель|антиоксидант|регулятор|фермент|закваска|сух|смесь|премикс|соль|сахар|пудра|перец|порошок|комплекс|заквас|порошковый|зерно|боб|сублимирован|растворим|лиофилизирован|гранул|молотый|мусковадо|сода|миндаль|фундук|грецкий|кешью|пекан|арахис|фисташки|макадамия|каштаны|кедровый|нут|чечевица|маш|фава|бобы|эдамаме)/.test(lower)) return 'bulk';
+    if (/(вода|молоко|сливки|сметана|сок|пюре|сироп|концентрат|чай|кофе|эспрессо|колд брю|тоник|газ\. вода|газированная|вино|уксус|ликер|амаретто|экстракт|масло|жир|крем|топпинг|глазурь|пена|кордиал|шраб|варенье|джем|компот|кисель|морс|айран|кефир|йогурт|простокваша|ряженка|топлёное|сыворотка|пахта|молочная|растительное|оливковое|подсолнечное|кунжутное|кокосовое|сливочное|топлёное|мусс|суфле|пудинг|мороженое|щербет|взбитые|сгущенка|сгущённое|эссенция|настойка|настой|отвар|декокт|лимонный сок|сок лайма|сок апельсина|кордиал|пекмез|глюкозный|инвертный|мёд|мед|агава|патока|сахарный|солёный|соленый|соус|гранола|бульон|грейви|жидкость|настой|отвар|процеженный|фильтрат|декокт|экстракт|отжим|фреш|пресс|водичка|минерал|стил|питьева|пар|лед|кубик|крошка|сухой лёд|газ|аквафаба|хлорофилл|мескаль|цветочная|гранатовый|виноград|айва|концентрат|пюре|шраб|варенье|курд|сметана|сгущёнка|топлёное|молочный|молочная|сливки|пахта|сыворотка|кефир|йогурт|простокваша|ряженка|айран|кумыс|бернуазет|голландский|бешамель|песто|тар-тар|тоннато|англез|финик|ягодный|горчичный|винегрет|кетчуп|майонез|сальса|чимичурри|хумус|соус)/.test(lower)) return 'liquid';
+    return 'other';
+}
+function categorizeIngredient(ing) {
+    const lower = ing.toLowerCase();
+    if (lower.includes('молоко') || lower.includes('сливки') || lower.includes('вода') ||
+        lower.includes('чай') || lower.includes('кофе') || lower.includes('эспрессо') ||
+        lower.includes('колд брю') || lower.includes('тоник') || lower.includes('газ.')) {
+        return 'liquid';
+    }
+    if (lower.includes('сироп') || lower.includes('пюре') || lower.includes('сок') ||
+        lower.includes('концентрат') || lower.includes('экстракт') || lower.includes('премикс') ||
+        lower.includes('кордиал') || lower.includes('шраб') || lower.includes('варенье')) {
+        return 'flavor';
+    }
+    if (lower.includes('пена') || lower.includes('крем') || lower.includes('топпинг') ||
+        lower.includes('сахарная') || lower.includes('какао') || lower.includes('маршмеллоу') ||
+        lower.includes('лепестки') || lower.includes('посыпка')) {
+        return 'topping';
+    }
+    return 'base';
+}
+
+function getColorCategory(ing) {
+    const lower = ing.toLowerCase();
+    if (/(томат|черри|помидор|вишн|малин|клубник|смородин|брусник|клюкв|ежевик|голубик|гранат|св[её]кла|паприка|перец красный|перец чили|перец болгарский красный|клубничн|малинов|брусничн|клюквен|гранатов|земляник|черешн|рябин|ирга|калин|шиповник|крыжовник|облепих|барбарис|томатн|кетчуп)/.test(lower)) return 'red';
+    if (/(молоко|сливки|сметана|сахар|соль|мука|крахмал|пудра|творог|моцарелла|рикотта|фета|брынза|кокосовое молоко|кокосовые сливки|кокосовая|кокос|яйцо белок|сгущ[её]нка|сгущенка|молочная|сыворотка|пахта|кефир|йогурт|простокваша|ряженка|айран|топл[её]ное|сухое молоко|масло сливочное|сливочное масло|белый шоколад|белый перец|перец белый|белые грибы|сыр|пармезан|чеддер|горгонзола|камамбер|бри|фондю|сулугуни|адыгейский|творожный|фета|цветная капуста|цветок|миндальное молоко|соевое молоко|овсяное молоко|рисовое молоко|кокосовое молоко|кокосовый)/.test(lower)) return 'white';
+    if (/(банан|лимон|ананас|кукуруза|куркума|горчица|яйцо|яичный|яйца|пашот|бананов|ананасов|лимонн|майонез|горчичн|кукурузн|мед|м[её]д)/.test(lower)) return 'yellow';
+    if (/(апельсин|мандарин|морковь|тыква|абрикос|персик|папайя|морковн|апельсинов|мандаринов|тыквенн|абрикосов|персиков|облепиха|облепихов|мангов|маракуйя|каламанси|грейпфрут|грейпфрутов|масло подсолнечное|масло кукурузное|масло растительное|масло оливковое|оливковое)/.test(lower)) return 'orange';
+    if (/(огурец|авокадо|шпинат|базилик|петрушка|кинза|сельдерей|зел[её]ный лук|зеленый лук|зел[её]ный горошек|киви|лайм|мята|брокколи|спаржа|фисташки|зел[её]ный перец|зеленый перец|зел[её]ная|зеленая|руккола|салат|айсберг|щавель|укроп|лук порей|лук шнитт|лук батун|луковица|капуста|цукини|кабачок|баклажан|редис|репа|зелень|хмели|сунели|шалот|чеснок|тимьян|розмарин|эстрагон|чабрец|кориандр|фенхель|оливка|маслины|сол[её]ный огурец|маринованный огурец|гриб|шампиньон|вешенка|трюфель|зел[её]ный|зеленый|фисташков|фейхоа|лук|зелен)/.test(lower)) return 'green';
+    if (/(черник|голубик|ежевик|смородин ч[её]рная|смородина ч[её]рная|чернослив|слива|черничн|голубичн|ежевичн|смородинов|синий|черноплодная|ирга|ч[её]рная смородина)/.test(lower)) return 'blue';
+    if (/(шоколад|кофе|какао|корица|мускат|гвоздика|миндаль|грецкий|фундук|кешью|арахис|пекан|макадамия|каштаны|кедровый|орех|патока|карамель|солод|ржаной|ч[её]рный перец|черный перец|ч[её]рный хлеб|шоколадн|кофейн|коричн|карамельн|пекан|какао|мак|семечки|семена|кунжут|льнян|тыквенн|подсолнечник|кунжутное|кунжутн|м[её]д гречишный|гречишн|мёд гречишный)/.test(lower)) return 'brown';
+    const cat = getCategory(ing);
+    const map = { berry: 'red', fruit: 'orange', vegetable: 'green', liquid: 'blue', bulk: 'white', other: 'neutral' };
+    return map[cat] || 'neutral';
+}
+
+function getColorHex(cat) {
+    const map = { red: '#ff4444', white: '#ffffff', yellow: '#ffd700', orange: '#ff8c00', green: '#32cd32', blue: '#1e90ff', brown: '#8b4513', neutral: '#aaaaaa' };
+    return map[cat] || '#aaaaaa';
+}
+
+function renderIngredientsForFormat(ingredients, format, isClickable, q) {
+    if (format === 'color_coded') {
+        return renderColorCoded(ingredients, isClickable, q);
+    }
+    if (format === 'spatial') {
+        return renderSpatial(ingredients, isClickable, q);
+    }
+    return renderLogical(ingredients, isClickable, q);
+}
+
+function renderLogical(pool, isClickable, q) {
+    const fb = state.feedbackShown;
+    const correctSet = new Set(q.item._ingredients);
+    return `<div class="options-grid">${pool.map((ing, idx) => {
+        let cls = '';
+        let dataCrumble = '';
+        let gramHTML = '';
+        if (fb) {
+            const isCorrectIng = correctSet.has(ing);
+            const wasSelected = state.selectedOptions.has(idx);
+            if (isCorrectIng && wasSelected) cls = 'correct-reveal';
+            else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
+            else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+            if (q.showGrams && isCorrectIng) {
+                const correctGram = q.item._grams[ing];
+                const userGram = state.gramInputs[idx];
+                const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
+                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+            }
+        } else {
+            cls = state.selectedOptions.has(idx) ? 'selected' : '';
+            if (q.showGrams && state.selectedOptions.has(idx)) {
+                gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+            }
+        }
+        return `<button class="option-btn ${cls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
+    }).join('')}</div>`;
+}
+
+function renderColorCoded(pool, isClickable, q) {
+    const fb = state.feedbackShown;
+    const correctSet = new Set(q.item._ingredients);
+    const categories = { base: [], liquid: [], flavor: [], topping: [] };
+    pool.forEach((ing, idx) => {
+        const cat = categorizeIngredient(ing);
+        categories[cat].push({ ing, idx });
+    });
+
+    const catLabels = {
+        base: ['Основа', 'cat-base'],
+        liquid: ['Жидкость', 'cat-liquid'],
+        flavor: ['Вкус', 'cat-flavor'],
+        topping: ['Топпинг', 'cat-topping']
+    };
+
+    let html = '';
+    for (const [cat, items] of Object.entries(categories)) {
+        if (items.length === 0) continue;
+        const [label, cls] = catLabels[cat];
+        html += `<div class="color-category"><span class="color-category-label ${cls}">${label}</span><div class="options-grid">`;
+        for (const { ing, idx } of items) {
+            let btnCls = '';
+            let dataCrumble = '';
+            let gramHTML = '';
+            if (fb) {
+                const isCorrectIng = correctSet.has(ing);
+                const wasSelected = state.selectedOptions.has(idx);
+                if (isCorrectIng && wasSelected) btnCls = 'correct-reveal';
+                else if (isCorrectIng && !wasSelected) btnCls = 'correct-unselected';
+                else { btnCls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+                if (q.showGrams && isCorrectIng) {
+                    const correctGram = q.item._grams[ing];
+                    const userGram = state.gramInputs[idx];
+                    const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                }
+            } else {
+                btnCls = state.selectedOptions.has(idx) ? 'selected' : '';
+                if (q.showGrams && state.selectedOptions.has(idx)) {
+                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+                }
+            }
+            html += `<button class="option-btn ${btnCls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
+        }
+        html += `</div></div>`;
+    }
+    return html;
+}
+
+function renderSpatial(pool, isClickable, q) {
+    const fb = state.feedbackShown;
+    const correctSet = new Set(q.item._ingredients);
+    const zones = { base: [], liquid: [], flavor: [], topping: [] };
+    pool.forEach((ing, idx) => {
+        zones[categorizeIngredient(ing)].push({ ing, idx });
+    });
+
+    const zoneLabels = { base: 'Основа', liquid: 'Жидкости', flavor: 'Вкусовые', topping: 'Сверху' };
+
+    let html = '<div class="spatial-container">';
+    for (const [zone, items] of Object.entries(zones)) {
+        if (items.length === 0) continue;
+        html += `<div class="spatial-zone"><div class="spatial-zone-label">${zoneLabels[zone]}</div>`;
+        for (const { ing, idx } of items) {
+            let cls = '';
+            let dataCrumble = '';
+            let gramHTML = '';
+            if (fb) {
+                const isCorrectIng = correctSet.has(ing);
+                const wasSelected = state.selectedOptions.has(idx);
+                if (isCorrectIng && wasSelected) cls = 'correct-reveal';
+                else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
+                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+                if (q.showGrams && isCorrectIng) {
+                    const correctGram = q.item._grams[ing];
+                    const userGram = state.gramInputs[idx];
+                    const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                }
+            } else {
+                cls = state.selectedOptions.has(idx) ? 'selected' : '';
+                if (q.showGrams && state.selectedOptions.has(idx)) {
+                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+                }
+            }
+            html += `<button class="option-btn ${cls}" ${dataCrumble} style="width:100%;margin-bottom:4px;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
+        }
+        html += `</div>`;
+    }
+    html += `</div>`;
+    return html;
+}
+
+// ====================== LESSON RENDERING ======================
+function renderLesson() {
+    const q = state.questions[state.currentQIdx];
+    if (!q) {
+        finishLesson();
+        return;
+    }
+
+    const fb = state.feedbackShown;
+    const progress = ((state.currentQIdx + (fb ? 1 : 0)) / state.questions.length) * 100;
+    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+    const correctSet = new Set(q.item._ingredients);
+
+    let questionHTML = '';
+    let resultStripHTML = '';
+
+    if (fb) {
+        const ic = state._lastCorrect;
+        let extraInfo = '';
+        if (!ic && q.showGrams) {
+            extraInfo = ' (проверьте граммовки)';
+        }
+        resultStripHTML = `<div class="inline-result ${ic ? 'correct' : 'wrong'}">
+            <span class="result-icon">${ic ? '✓' : '✗'}</span>
+            ${ic ? 'Верно!' : 'Неверно' + extraInfo}
+        </div>`;
+    }
+
+    const catInfo = state.section === 'kitchen' ? getDishCategory(q.item.name) : getSectionCategory(state.section);
+    const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
+
+    if (q.type === 'select') {
+        const dishName = q.item.name;
+        const ingredientsHTML = renderIngredientsForFormat(q.pool, q.format, !fb, q);
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-panel" style="${cementStyle()}">
+                    ${categoryBadge}
+                    <div class="question-title">
+                        Выбери состав: <span class="question-dish-name">${dishName}</span>
+                        ${q.showGrams ? '<div style="font-size:12px;color:rgba(42,42,42,0.6);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
+                    </div>
+                </div>
+                ${resultStripHTML}
+                ${ingredientsHTML}
+            </div>
+        `;
+    } else if (q.type === 'missing') {
+        const dishName = q.item.name;
+
+        const byCat = {};
+        q.shown.forEach(ing => {
+            const cat = getCategory(ing);
+            if (!byCat[cat]) byCat[cat] = [];
+            byCat[cat].push(ing);
+        });
+        const missingCat = q.missingCategory || getCategory(q.missing);
+        if (!byCat[missingCat]) byCat[missingCat] = [];
+
+        const catLabels = { vegetable: 'Овощи', fruit: 'Фрукты', berry: 'Ягоды', liquid: 'Жидкости', bulk: 'Сыпучее', other: 'Другое' };
+        const cats = ['vegetable', 'fruit', 'berry', 'liquid', 'bulk', 'other'];
+
+        const columnsHTML = cats.map(cat => {
+            if (!byCat[cat]) return '';
+            const items = byCat[cat].map(ing => `<span class="missing-item" style="${cementStyle()}">${ing}</span>`).join('');
+            const missingSlot = missingCat === cat ? (fb
+                ? `<span class="missing-item" style="background:${state._lastCorrect ? '#a8d5a2' : '#e8a8a5'};color:${state._lastCorrect ? '#1b5e20' : '#b71c1c'}">${q.missing}</span>`
+                : `<span class="missing-slot">?</span>`) : '';
+            return `<div class="sort-column" style="${cementStyle()}">
+                <div class="sort-column-label">${catLabels[cat]}</div>
+                <div class="sort-column-items">${items}${missingSlot}</div>
+            </div>`;
+        }).join('');
+
+        const choicesHTML = q.choices.map((c, idx) => {
+            let cls = '';
+            let dataCrumble = '';
+            if (fb) {
+                if (c === q.missing) cls = 'correct-reveal';
+                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+            } else {
+                cls = state.selectedChoice === idx ? 'selected' : '';
+            }
+            return `<button class="choice-btn ${cls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `selectChoice(${idx})`}">${c}</button>`;
+        }).join('');
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-panel" style="${cementStyle()}">
+                    ${categoryBadge}
+                    <div class="question-title">
+                        Чего не хватает в <span class="question-dish-name">${dishName}</span>?
+                    </div>
+                </div>
+                ${resultStripHTML}
+                <div class="sort-columns">${columnsHTML}</div>
+                <div class="choice-grid">${choicesHTML}</div>
+            </div>
+        `;
+    } else if (q.type === 'color_fill') {
+        const dishName = q.item.name;
+        const cats = ['red', 'white', 'yellow', 'orange', 'green', 'blue', 'brown', 'neutral'];
+
+        const selectedByCat = {};
+        for (const idx of state.selectedOptions) {
+            const ing = q.choices[idx];
+            const cat = getColorCategory(ing);
+            if (!selectedByCat[cat]) selectedByCat[cat] = [];
+            selectedByCat[cat].push({ ing, idx });
+        }
+
+        const columnsHTML = cats.map(cat => {
+            const shown = q.shownByCat[cat] || [];
+            const slots = (q.missingByCat[cat] || []).length;
+            if (shown.length === 0 && slots === 0) return '';
+            const selected = selectedByCat[cat] || [];
+            const colorClass = `color-cat-${cat}`;
+            const hex = getColorHex(cat);
+            const shownHTML = shown.map(ing => `<span class="option-btn ${colorClass} color-fill-tablet" style="${cementStyle()}">${ing}</span>`).join('');
+            let slotsHTML = '';
+            if (!fb) {
+                for (let i = 0; i < slots; i++) {
+                    if (selected[i]) {
+                        slotsHTML += `<span class="option-btn ${colorClass} color-fill-tablet selected" style="${cementStyle()}">${selected[i].ing}</span>`;
+                    } else {
+                        slotsHTML += `<span class="option-btn ${colorClass} color-fill-tablet" style="border:2px dashed var(--concrete-dark); opacity:0.7;">?</span>`;
+                    }
+                }
+            } else {
+                const selectedIngSet = new Set(selected.map(s => s.ing));
+                (q.missingByCat[cat] || []).forEach(ing => {
+                    const isSelected = selectedIngSet.has(ing);
+                    const bg = isSelected ? '#a8d5a2' : '#e8a8a5';
+                    const col = isSelected ? '#1b5e20' : '#b71c1c';
+                    slotsHTML += `<span class="option-btn color-fill-tablet" style="background:${bg};color:${col}; border:2px solid ${col};">${ing}</span>`;
+                });
+            }
+            return `<div class="color-fill-column" style="border-color:${hex}">
+                <div class="color-fill-header" style="background:${hex}"></div>
+                <div class="color-fill-items">${shownHTML}${slotsHTML}</div>
+            </div>`;
+        }).join('');
+
+        const choicesHTML = q.choices.map((c, idx) => {
+            const cat = getColorCategory(c);
+            const colorClass = `color-cat-${cat}`;
+            let cls = '';
+            let dataCrumble = '';
+            if (fb) {
+                if (q.missing.includes(c)) cls = 'correct-reveal';
+                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+            } else {
+                cls = state.selectedOptions.has(idx) ? 'selected' : '';
+            }
+            return `<button class="option-btn ${colorClass} color-fill-interactive ${cls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleColorChoice(${idx})`}">${c}</button>`;
+        }).join('');
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-panel" style="${cementStyle()}">
+                    ${categoryBadge}
+                    <div class="question-title">
+                        Добавь недостающие ингредиенты в <span class="question-dish-name">${dishName}</span>
+                    </div>
+                </div>
+                ${resultStripHTML}
+                <div class="color-fill-categories">${columnsHTML}</div>
+                <div class="color-fill-choices">${choicesHTML}</div>
+            </div>
+        `;
+    } else if (q.type === 'truefalse') {
+        const dishName = q.item.name;
+
+        let yesClass = 'tf-btn tf-yes';
+        let noClass = 'tf-btn tf-no';
+        if (fb) {
+            yesClass += q.answer === true ? ' tf-correct' : ' tf-wrong';
+            noClass += q.answer === false ? ' tf-correct' : ' tf-wrong';
+            yesClass += ' disabled';
+            noClass += ' disabled';
+        }
+
+        questionHTML = `
+            <div class="question-area">
+                <div class="question-panel" style="${cementStyle()}">
+                    ${categoryBadge}
+                    <div class="question-title">
+                        <span class="question-dish-name">${q.ingredient}</span>
+                        входит в <span class="question-dish-name">${dishName}</span>?
+                    </div>
+                </div>
+                ${resultStripHTML}
+                <div class="tf-buttons">
+                    <button class="${yesClass}" style="${cementStyle()}" onclick="${fb ? '' : 'checkTFAnswer(true)'}">Да</button>
+                    <button class="${noClass}" style="${cementStyle()}" onclick="${fb ? '' : 'checkTFAnswer(false)'}">Нет</button>
+                </div>
+            </div>
+        `;
+    }
+
+    const bottomBg = fb ? (state._lastCorrect ? '#a8d5a2' : '#e8a8a5') : '';
+    const bottomColor = fb ? (state._lastCorrect ? '#1b5e20' : '#b71c1c') : '';
+    const bottomHTML = fb
+        ? `<div class="bottom-area">
+            <button class="check-btn active" onclick="nextQuestion()" style="background:${bottomBg};color:${bottomColor}">
+                ${state.hearts <= 0 ? 'Результаты' : 'Дальше'}
+            </button>
+           </div>`
+        : (q.type === 'truefalse' ? '' : `<div class="bottom-area">
+            <button class="check-btn ${(q.type === 'color_fill' ? state.selectedOptions.size === q.totalSlots : (q.type === 'select' ? state.selectedOptions.size > 0 : state.selectedChoice !== null)) ? 'active' : 'disabled'}"
+                    onclick="${(q.type === 'color_fill' ? (state.selectedOptions.size === q.totalSlots ? 'checkColorFillAnswer()' : '') : (q.type === 'select' ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : '')))}">
+                Проверить
+            </button>
+           </div>`);
+
+    app.innerHTML = `
+        <div class="lesson-screen">
+            <div class="lesson-header">
+                <button class="close-btn" onclick="confirmQuit()">✕</button>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width:${progress}%"></div>
+                </div>
+                <div class="hearts-display" id="hearts-display">${heartsStr}</div>
+            </div>
+            ${questionHTML}
+            ${bottomHTML}
+        </div>
+    `;
+
+    if (fb && !state._lastCorrect) {
+        const display = document.getElementById('hearts-display');
+        if (display) display.classList.add('heart-break');
+    }
+}
+
+function setGram(idx, value) {
+    state.gramInputs[idx] = value === '' ? undefined : parseFloat(value);
+}
+
+function toggleOption(idx) {
+    if (state.feedbackShown) return;
+    if (state.selectedOptions.has(idx)) {
+        state.selectedOptions.delete(idx);
+        delete state.gramInputs[idx];
+    } else {
+        state.selectedOptions.add(idx);
+    }
+    const btns = document.querySelectorAll('.option-btn');
+    if (btns[idx]) {
+        btns[idx].classList.add('crack-effect');
+        setTimeout(() => btns[idx].classList.remove('crack-effect'), 400);
+    }
+    render();
+}
+
+function selectChoice(idx) {
+    if (state.feedbackShown) return;
+    state.selectedChoice = idx;
+    const btns = document.querySelectorAll('.choice-btn');
+    if (btns[idx]) {
+        btns[idx].classList.add('crack-effect');
+        setTimeout(() => btns[idx].classList.remove('crack-effect'), 400);
+    }
+    render();
+}
+
+function toggleColorChoice(idx) {
+    if (state.feedbackShown) return;
+    const q = state.questions[state.currentQIdx];
+    if (state.selectedOptions.has(idx)) {
+        state.selectedOptions.delete(idx);
+    } else {
+        const ing = q.choices[idx];
+        const cat = getColorCategory(ing);
+        const catSlots = (q.missingByCat[cat] || []).length;
+        const catSelected = [...state.selectedOptions].filter(i => getColorCategory(q.choices[i]) === cat).length;
+        if (catSelected < catSlots) {
+            state.selectedOptions.add(idx);
+        }
+    }
+    render();
+}
+
+// Break a concrete tablet into flying fragments
+function breakTablet(btn) {
+    const rect = btn.getBoundingClientRect();
+    btn.classList.add('crack-overlay');
+
+    setTimeout(() => {
+        const count = 12 + Math.floor(Math.random() * 8);
+        for (let i = 0; i < count; i++) {
+            const frag = document.createElement('div');
+            frag.className = 'concrete-fragment';
+            const isChunk = i < 5;
+            const w = isChunk ? (15 + Math.random() * 25) : (4 + Math.random() * 10);
+            const h = isChunk ? (10 + Math.random() * 20) : (3 + Math.random() * 8);
+            frag.style.width = w + 'px';
+            frag.style.height = h + 'px';
+            frag.style.left = (rect.left + Math.random() * rect.width) + 'px';
+            frag.style.top = (rect.top + Math.random() * rect.height) + 'px';
+            if (isChunk) {
+                const p1 = Math.random() * 30;
+                const p2 = 70 + Math.random() * 30;
+                const p3 = Math.random() * 30;
+                const p4 = 70 + Math.random() * 30;
+                frag.style.clipPath = `polygon(${p1}% 0%, ${p2}% ${p3}%, 100% ${p4}%, ${100-p1}% 100%, ${p3}% ${p2}%, 0% ${100-p4}%)`;
+            }
+            const fx = (Math.random() - 0.5) * 200;
+            const fy = 40 + Math.random() * 120;
+            const fr = (Math.random() - 0.5) * 540;
+            frag.style.setProperty('--fx', fx + 'px');
+            frag.style.setProperty('--fy', fy + 'px');
+            frag.style.setProperty('--fr', fr + 'deg');
+            const dur = 0.5 + Math.random() * 0.5;
+            frag.style.animation = `fragmentFly ${dur}s cubic-bezier(.2,0,.8,.4) forwards`;
+            document.body.appendChild(frag);
+            setTimeout(() => frag.remove(), 1200);
+        }
+        btn.style.visibility = 'hidden';
+    }, 350);
+}
+
+// ====================== ANSWER CHECKING ======================
+function checkSelectAnswer() {
+    const q = state.questions[state.currentQIdx];
+    const selectedItems = [...state.selectedOptions].map(i => q.pool[i]);
+    const correctSet = new Set(q.item._ingredients);
+    const selectedSet = new Set(selectedItems);
+    let isCorrect = correctSet.size === selectedSet.size && [...correctSet].every(c => selectedSet.has(c));
+
+    // Check grams if applicable
+    let gramsCorrect = true;
+    if (q.showGrams && isCorrect) {
+        for (const idx of state.selectedOptions) {
+            const ing = q.pool[idx];
+            if (q.item._grams[ing] !== undefined) {
+                const userGram = state.gramInputs[idx];
+                if (userGram === undefined || Math.abs(userGram - q.item._grams[ing]) > 2) {
+                    gramsCorrect = false;
+                    break;
+                }
+            }
+        }
+        if (!gramsCorrect) isCorrect = false;
+    }
+
+    const timeTaken = (Date.now() - (state._questionStartTime || Date.now())) / 1000;
+    processAnswer(isCorrect, q.item, q.format, timeTaken);
+}
+
+function checkMissingAnswer() {
+    const q = state.questions[state.currentQIdx];
+    const selected = q.choices[state.selectedChoice];
+    const isCorrect = selected === q.missing;
+
+    const timeTaken = (Date.now() - (state._questionStartTime || Date.now())) / 1000;
+    processAnswer(isCorrect, q.item, q.format, timeTaken);
+}
+
+function checkTFAnswer(userAnswer) {
+    const q = state.questions[state.currentQIdx];
+    const isCorrect = userAnswer === q.answer;
+
+    const timeTaken = (Date.now() - (state._questionStartTime || Date.now())) / 1000;
+    processAnswer(isCorrect, q.item, q.format, timeTaken);
+}
+
+function checkColorFillAnswer() {
+    const q = state.questions[state.currentQIdx];
+    const selected = [...state.selectedOptions].map(i => q.choices[i]);
+    const missingSet = new Set(q.missing);
+    const selectedSet = new Set(selected);
+    const isCorrect = selectedSet.size === missingSet.size && [...missingSet].every(m => selectedSet.has(m));
+
+    const timeTaken = (Date.now() - (state._questionStartTime || Date.now())) / 1000;
+    processAnswer(isCorrect, q.item, q.format, timeTaken);
+}
+
+function processAnswer(isCorrect, item, format, timeTaken) {
+    state.sessionTotal++;
+    recordAnswer(item.name, isCorrect);
+    recordFormatAnswer(format, isCorrect, timeTaken);
+
+    if (isCorrect) {
+        state.sessionCorrect++;
+        state.sessionXP += 10;
+        state._lastCorrect = true;
+    } else {
+        state.hearts--;
+        state._lastCorrect = false;
+        if (!state.mistakeIds.includes(item.name)) {
+            state.mistakeIds.push(item.name);
+        }
+        if (state.phase === 'basic' && !state.basicMistakeIds.includes(item.name)) {
+            state.basicMistakeIds.push(item.name);
+        }
+    }
+
+    state._lastItem = item;
+    state.feedbackShown = true;
+    render();
+
+    setTimeout(() => {
+        document.querySelectorAll('[data-crumble]').forEach(btn => {
+            breakTablet(btn);
+        });
+    }, 50);
+}
+
+function nextQuestion() {
+    if (state.hearts <= 0) {
+        finishLesson();
+        return;
+    }
+
+    state.currentQIdx++;
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.gramInputs = {};
+    state._questionStartTime = Date.now();
+
+    if (state.currentQIdx >= state.questions.length) {
+        if (!state.isPractice && state.phase === 'basic' && state.basicMistakeIds.length > 0) {
+            const allIngredients = getAllIngredients();
+            const mistakeItems = state.basicMistakeIds.map(name => state.allData.find(d => d.name === name)).filter(Boolean);
+            state.questions = shuffle(mistakeItems).flatMap(item => buildRemediationSet(item, allIngredients));
+            state.phase = 'remediation';
+            state.currentQIdx = 0;
+            render();
+            return;
+        }
+        if (!state.isPractice && state.phase === 'remediation' && state.basicMistakeIds.length > 0) {
+            const allIngredients = getAllIngredients();
+            const mistakeItems = state.basicMistakeIds.map(name => state.allData.find(d => d.name === name)).filter(Boolean);
+            state.questions = shuffle(mistakeItems).map(item => {
+                const nd = normalizeItem(item);
+                return buildBasicSelect(nd, buildWrongPool(nd, allIngredients));
+            });
+            state.phase = 'consolidation';
+            state.currentQIdx = 0;
+            render();
+            return;
+        }
+        finishLesson();
+    } else {
+        render();
+    }
+}
+
+function finishLesson() {
+    const xpEarned = state.sessionXP + (state.hearts > 0 ? 15 : 0);
+    addXP(xpEarned);
+
+    if (!state.isPractice && state.currentLessonIdx >= 0 && state.hearts > 0) {
+        saveLessonComplete(state.section, state.currentLessonIdx, state.sessionCorrect, state.sessionTotal);
+    }
+
+    state.screen = 'result';
+    state._finalXP = xpEarned;
+    render();
+
+    if (state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0) {
+        setTimeout(showConfetti, 300);
+    }
+    setTimeout(() => showXPPopup(xpEarned), 500);
+}
+
+function renderResult() {
+    const accuracy = state.sessionTotal > 0
+        ? Math.round((state.sessionCorrect / state.sessionTotal) * 100)
+        : 0;
+
+    const barColor = accuracy >= 80 ? 'var(--green)' : accuracy >= 50 ? 'var(--gold)' : 'var(--red)';
+    const resultEmoji = accuracy === 100 ? '🏆' : accuracy >= 80 ? '🌟' : accuracy >= 50 ? '👍' : '💪';
+    const resultTitle = accuracy === 100 ? 'Идеально!' :
+                        accuracy >= 80 ? 'Отличная работа!' :
+                        accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
+    const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
+                      `Ты заработал ${state._finalXP} XP!`;
+
+    app.innerHTML = `
+        <div class="result-screen">
+            <div class="result-mascot">${resultEmoji}</div>
+            <div class="result-title">${resultTitle}</div>
+            <div class="result-subtitle">${resultSub}</div>
+            <div class="result-stats">
+                <div class="result-stat">
+                    <div class="result-stat-value" style="color:var(--green)">${state.sessionCorrect}</div>
+                    <div class="result-stat-label">Верно</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" style="color:var(--red)">${state.sessionTotal - state.sessionCorrect}</div>
+                    <div class="result-stat-label">Ошибок</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-value" style="color:var(--gold)">${state._finalXP}</div>
+                    <div class="result-stat-label">XP</div>
+                </div>
+            </div>
+            <div class="result-accuracy-bar">
+                <div class="result-accuracy-fill" style="width:0%;background:${barColor}"></div>
+            </div>
+            <p style="color:var(--text-secondary);margin-bottom:24px;font-weight:700">${accuracy}% точность</p>
+            <button class="result-btn primary" onclick="returnToPath()">Продолжить</button>
+            ${state.mistakeIds.length > 0 ? `<button class="result-btn secondary" onclick="retryMistakes()">🔄 Повторить ошибки (${state.mistakeIds.length})</button>` : ''}
+        </div>
+    `;
+
+    setTimeout(() => {
+        const fill = document.querySelector('.result-accuracy-fill');
+        if (fill) fill.style.width = accuracy + '%';
+    }, 100);
+}
+
+function returnToPath() {
+    state.screen = 'path';
+    render();
+}
+
+function retryMistakes() {
+    const mistakeItems = state.allData.filter(d => state.mistakeIds.includes(d.name));
+    if (mistakeItems.length === 0) {
+        returnToPath();
+        return;
+    }
+    state.isPractice = true;
+    state.questions = generateQuestions(mistakeItems);
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.gramInputs = {};
+    state._questionStartTime = Date.now();
+    state.screen = 'lesson';
+    render();
+}
+
+// ====================== QUIT CONFIRMATION ======================
+function confirmQuit() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-title">Выйти из урока?</div>
+            <div class="modal-text">Твой прогресс в этом уроке не сохранится.</div>
+            <button class="modal-btn primary" onclick="this.closest('.modal-overlay').remove()">Остаться</button>
+            <button class="modal-btn secondary" onclick="quitLesson()">Выйти</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function quitLesson() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+    state.screen = 'path';
+    render();
+}
+
+// ====================== INIT ======================
+const saved = getProgress();
+if (saved.profile) {
+    state.profile = saved.profile;
+}
+if (!state.profile) {
+    state.screen = 'onboarding';
+    state.onboardingStep = 'nickname';
+    state.onboardingNickname = '';
+    state.onboardingAvatar = '';
+}
+render();
+</script>
+</body>
+</html>
