@@ -1910,9 +1910,11 @@ function renderPhotoFallback(item, cls = 'dish-photo') {
 }
 
 function renderPhotoFallbackString(name, cls) {
-    const cat = name ? getDishCategory(name) : null;
+    const cat = state.section === 'kitchen'
+        ? (name ? getDishCategory(name) : null)
+        : (state.section ? getSectionCategory(state.section) : (name ? getDishCategory(name) : null));
     const label = cat ? cat.label : 'Блюдо';
-    const emoji = cat ? (cat.cls === 'breakfast' ? '🍳' : cat.cls === 'lunch' ? '🥗' : cat.cls === 'sandwich' ? '🥪' : '🍽️') : '🍽️';
+    const emoji = cat ? (cat.cls === 'breakfast' ? '🍳' : cat.cls === 'lunch' ? '🥗' : cat.cls === 'sandwich' ? '🥪' : cat.cls === 'dessert' ? '🍰' : cat.cls === 'drink' ? '☕' : cat.cls === 'drink_pf' ? '🧪' : cat.cls === 'kitchen_pf' ? '🧪' : '🍽️') : '🍽️';
     return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${emoji}</span><span class="dish-fallback-label">${label}</span></div>`;
 }
 
