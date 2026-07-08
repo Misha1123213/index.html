@@ -1106,6 +1106,46 @@
             font-size: 18px;
             font-weight: 800;
         }
+        .weak-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .weak-badge {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .weak-accuracy {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .weak-empty {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+        .mini-graph-wrap {
+            margin-top: 10px;
+        }
+        .mini-graph {
+            width: 100%;
+            height: 60px;
+            display: block;
+        }
+        .mini-graph-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 6px;
+        }
 
         /* Gram selector */
         .gram-selector {
@@ -1692,31 +1732,48 @@ function recordAnswer(itemName, correct) {
 function getWeakItems(section) {
     const p = getProgress();
     if (!p.itemStrength) return [];
+    const ad = getAdaptiveData();
+    const weakCats = getWeakBuckets(ad.categories, 3);
     const sectionData = state.allData;
     return sectionData
         .filter(d => {
             const s = p.itemStrength[d.name];
             return s && s.strength < 3;
         })
-        .sort((a, b) => {
-            const sa = (p.itemStrength[a.name] || {}).strength || 3;
-            const sb = (p.itemStrength[b.name] || {}).strength || 3;
-            return sa - sb;
-        });
+        .map(d => {
+            const s = p.itemStrength[d.name];
+            let penalty = 0;
+            const cats = getQuestionCategories({ pool: d._ingredients || [] });
+            for (const c of cats) {
+                if (weakCats.includes(c)) penalty += 0.4;
+            }
+            return { item: d, effectiveStrength: s.strength - penalty };
+        })
+        .sort((a, b) => a.effectiveStrength - b.effectiveStrength)
+        .map(x => x.item);
 }
 
 // ====================== ADAPTIVE ENGINE ======================
 const FORMATS = ['logical', 'color_coded', 'spatial'];
+const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill'];
+const EMA_ALPHA = 0.25; // higher = faster reaction to recent answers
 
 function getAdaptiveData() {
     const p = getProgress();
     if (!p.adaptive) p.adaptive = {
         totalQuestions: 0,
-        formats: {}
+        formats: {},
+        types: {},
+        categories: {},
+        globalHistory: []
     };
+    // migrate old storage that lacks new sections
+    if (!p.adaptive.types) p.adaptive.types = {};
+    if (!p.adaptive.categories) p.adaptive.categories = {};
+    if (!p.adaptive.globalHistory) p.adaptive.globalHistory = [];
     for (const f of FORMATS) {
         if (!p.adaptive.formats[f]) {
-            p.adaptive.formats[f] = { correct: 0, attempts: 0, totalTime: 0 };
+            p.adaptive.formats[f] = { correct: 0, attempts: 0, totalTime: 0, emaAccuracy: null, emaTime: null };
         }
     }
     return p.adaptive;
@@ -1728,23 +1785,74 @@ function saveAdaptiveData(ad) {
     saveProgress(p);
 }
 
-function recordFormatAnswer(format, correct, timeTaken) {
+function updateBucket(bucket, correct, timeTaken) {
+    bucket.attempts++;
+    if (correct) bucket.correct++;
+    bucket.totalTime += timeTaken;
+    const acc = correct ? 1 : 0;
+    if (bucket.emaAccuracy == null) {
+        bucket.emaAccuracy = acc;
+        bucket.emaTime = timeTaken;
+    } else {
+        bucket.emaAccuracy = bucket.emaAccuracy * (1 - EMA_ALPHA) + acc * EMA_ALPHA;
+        bucket.emaTime = bucket.emaTime * (1 - EMA_ALPHA) + timeTaken * EMA_ALPHA;
+    }
+}
+
+function getQuestionCategories(q) {
+    const cats = new Set();
+    const source = (q && (q.pool || q.choices || q.shown || (q.item && q.item._ingredients))) || [];
+    for (const ing of source) {
+        if (ing) cats.add(getCategory(ing));
+    }
+    return Array.from(cats);
+}
+
+function recordAdaptiveAnswer(format, correct, timeTaken, q) {
     const ad = getAdaptiveData();
     ad.totalQuestions++;
-    const fd = ad.formats[format];
-    fd.attempts++;
-    if (correct) fd.correct++;
-    fd.totalTime += timeTaken;
+
+    // format
+    updateBucket(ad.formats[format], correct, timeTaken);
+
+    // type
+    const type = (q && q.type) || 'select';
+    if (!ad.types[type]) ad.types[type] = { correct: 0, attempts: 0, totalTime: 0, emaAccuracy: null, emaTime: null };
+    updateBucket(ad.types[type], correct, timeTaken);
+
+    // categories of ingredients shown in the question
+    const cats = getQuestionCategories(q);
+    for (const cat of cats) {
+        if (!ad.categories[cat]) ad.categories[cat] = { correct: 0, attempts: 0, totalTime: 0, emaAccuracy: null, emaTime: null };
+        updateBucket(ad.categories[cat], correct, timeTaken);
+    }
+
+    // global accuracy history for mini-chart
+    ad.globalHistory.push(correct ? 1 : 0);
+    if (ad.globalHistory.length > 40) ad.globalHistory.shift();
+
     saveAdaptiveData(ad);
+}
+
+function recordFormatAnswer(format, correct, timeTaken) {
+    // keep signature unchanged; pull current question from state
+    const q = state.questions[state.currentQIdx];
+    recordAdaptiveAnswer(format, correct, timeTaken, q);
+}
+
+function getBucketScore(bucket) {
+    if (!bucket || bucket.attempts === 0) return 0;
+    const rawAccuracy = bucket.correct / bucket.attempts;
+    const emaAccuracy = bucket.emaAccuracy != null ? bucket.emaAccuracy : rawAccuracy;
+    // mix raw and EMA so long-term accuracy still matters, but recent form shifts score faster
+    const accuracy = (rawAccuracy + emaAccuracy) / 2;
+    const time = bucket.emaTime != null ? bucket.emaTime : (bucket.totalTime / bucket.attempts);
+    return accuracy * (1 / Math.max(time, 0.5));
 }
 
 function getFormatScore(format) {
     const ad = getAdaptiveData();
-    const fd = ad.formats[format];
-    if (!fd || fd.attempts === 0) return 0;
-    const accuracy = fd.correct / fd.attempts;
-    const avgTime = fd.totalTime / fd.attempts;
-    return accuracy * (1 / Math.max(avgTime, 0.5));
+    return getBucketScore(ad.formats[format]);
 }
 
 function getExplorationScore(format) {
@@ -1755,11 +1863,25 @@ function getExplorationScore(format) {
     return base + usageBonus;
 }
 
+function getWeakBuckets(obj, minAttempts = 3) {
+    const list = [];
+    for (const [key, b] of Object.entries(obj || {})) {
+        if (b.attempts >= minAttempts) {
+            list.push({ key, score: getBucketScore(b), attempts: b.attempts });
+        }
+    }
+    list.sort((a, b) => a.score - b.score);
+    return list.slice(0, 4).map(x => x.key);
+}
+
 function pickFormat() {
     const scores = FORMATS.map(f => ({ format: f, score: getExplorationScore(f) }));
     scores.sort((a, b) => b.score - a.score);
     const dominant = scores[0].format;
-    if (Math.random() < 0.7) return dominant;
+    const weakest = scores[scores.length - 1].format;
+    const r = Math.random();
+    if (r < 0.6) return dominant;          // play to strength
+    if (r < 0.8) return weakest;            // deliberate training of weak format
     return FORMATS[Math.floor(Math.random() * FORMATS.length)];
 }
 
@@ -2201,6 +2323,83 @@ function renderBranchSelection() {
 }
 
 // ====================== LEARNING STATS DASHBOARD ======================
+function getCategoryLabel(cat) {
+    const labels = {
+        berry: '🫐 Ягоды',
+        fruit: '🍎 Фрукты',
+        vegetable: '🥬 Овощи / зелень',
+        bulk: '🌾 Сыпучее',
+        liquid: '💧 Жидкости',
+        other: '🥩 Прочее'
+    };
+    return labels[cat] || cat;
+}
+
+function getTypeLabel(type) {
+    const labels = {
+        select: '☑️ Выбор',
+        missing: '❓ Пропуск',
+        truefalse: '✅ Верно/неверно',
+        color_fill: '🎨 Цветовые группы'
+    };
+    return labels[type] || type;
+}
+
+function buildWeakBucketsHTML(obj, labelFn) {
+    const weak = [];
+    for (const [key, b] of Object.entries(obj || {})) {
+        if (b.attempts >= 3) {
+            weak.push({ key, score: getBucketScore(b), accuracy: b.correct / b.attempts });
+        }
+    }
+    weak.sort((a, b) => a.score - b.score);
+    if (weak.length === 0) {
+        return '<div class="weak-empty">Пока мало данных — продолжайте тренироваться</div>';
+    }
+    return weak.slice(0, 4).map(w => `
+        <div class="weak-badge">
+            <span>${labelFn(w.key)}</span>
+            <span class="weak-accuracy">${Math.round(w.accuracy * 100)}%</span>
+        </div>
+    `).join('');
+}
+
+function buildMiniGraphHTML(history) {
+    if (!history || history.length < 5) {
+        return '<div class="weak-empty">График появится после 5 ответов</div>';
+    }
+    const width = 260;
+    const height = 60;
+    const pad = 4;
+    const step = width / (history.length - 1);
+    // rolling average window 5
+    const rolling = [];
+    for (let i = 0; i < history.length; i++) {
+        const start = Math.max(0, i - 4);
+        const slice = history.slice(start, i + 1);
+        rolling.push(slice.reduce((a, b) => a + b, 0) / slice.length);
+    }
+    const points = rolling.map((v, i) => {
+        const x = pad + i * step;
+        const y = pad + (1 - v) * (height - 2 * pad);
+        return `${x},${y}`;
+    }).join(' ');
+    const startY = pad + (1 - rolling[0]) * (height - 2 * pad);
+    const endY = pad + (1 - rolling[rolling.length - 1]) * (height - 2 * pad);
+    return `
+        <svg class="mini-graph" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--gold)" stroke-width="2" points="${points}"/>
+            <circle cx="${pad}" cy="${startY}" r="2.5" fill="var(--gold)"/>
+            <circle cx="${width - pad}" cy="${endY}" r="2.5" fill="var(--gold)"/>
+        </svg>
+        <div class="mini-graph-labels">
+            <span>${Math.round(rolling[0] * 100)}%</span>
+            <span>→</span>
+            <span>${Math.round(rolling[rolling.length - 1] * 100)}%</span>
+        </div>
+    `;
+}
+
 function showLearningStats() {
     const dom = getDominantFormat();
     const chapterProg = getChapterProgress();
@@ -2237,6 +2436,10 @@ function showLearningStats() {
         `;
     }
 
+    const weakCategoriesHTML = buildWeakBucketsHTML(ad.categories, getCategoryLabel);
+    const weakTypesHTML = buildWeakBucketsHTML(ad.types, getTypeLabel);
+    const miniGraphHTML = buildMiniGraphHTML(ad.globalHistory);
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
@@ -2254,11 +2457,23 @@ function showLearningStats() {
             <div class="strength-card">
                 <div class="strength-label">Аналитика</div>
                 <div class="strength-value">${ad.totalQuestions} вопросов</div>
-                <div class="strength-desc">Постоянная калибровка по логическим, цветовым и пространственным вопросам</div>
+                <div class="strength-desc">Слежу за форматом подачи, типом вопроса и категориями ингредиентов</div>
             </div>
             <div class="strength-card">
                 <div class="strength-label">Формат-оценки</div>
                 <div class="format-scores">${formatScoresHTML}</div>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Слабые категории ингредиентов</div>
+                <div class="weak-badges">${weakCategoriesHTML}</div>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Сложные типы вопросов</div>
+                <div class="weak-badges">${weakTypesHTML}</div>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Динамика точности</div>
+                <div class="mini-graph-wrap">${miniGraphHTML}</div>
             </div>
             <div class="strength-card">
                 <div class="strength-label">Объем пройденных позиций</div>
