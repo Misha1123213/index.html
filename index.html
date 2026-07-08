@@ -4059,6 +4059,9 @@ if (!state.profile) {
     state.onboardingAvatar = null;
 }
 render();
+loadAvatarConfig().then(() => {
+    if (state.screen !== 'onboarding' && state.screen !== 'avatarEditor') render();
+});
 </script>
 </body>
 </html>
