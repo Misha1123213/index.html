@@ -642,27 +642,6 @@
             box-shadow: 2px 3px 8px rgba(0,0,0,0.3);
             filter: brightness(1.15);
         }
-        /* Crack overlay on wrong answer tablets before they break */
-        .option-btn.crack-overlay::after,
-        .choice-btn.crack-overlay::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            background: url('img/concrete-cracks.png') center/cover no-repeat;
-            opacity: 0.7;
-            pointer-events: none;
-            animation: crackAppear 0.3s ease-out forwards;
-            z-index: 2;
-        }
-        @keyframes crackAppear {
-            0% { opacity: 0; transform: scale(0.9); }
-            100% { opacity: 0.7; transform: scale(1); }
-        }
-        /* Break apart into fragments animation */
-        .option-btn.crumble-away,
-        .choice-btn.crumble-away {
-            animation: none;
-        }
         /* Crack effect on click */
         .option-btn.crack-effect::after,
         .choice-btn.crack-effect::after {
@@ -680,19 +659,6 @@
             0% { opacity: 0; transform: scale(0.85); }
             40% { opacity: 0.5; transform: scale(1); }
             100% { opacity: 0; transform: scale(1.05); }
-        }
-
-        /* Concrete fragment for break animation */
-        .concrete-fragment {
-            position: fixed;
-            background: var(--concrete);
-            z-index: 9999;
-            pointer-events: none;
-            border-radius: 1px;
-        }
-        @keyframes fragmentFly {
-            0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
-            100% { transform: translate(var(--fx), var(--fy)) rotate(var(--fr)); opacity: 0; }
         }
 
         /* True/False buttons - concrete tablet */
@@ -808,7 +774,6 @@
         .choice-btn.selected { outline: 3px solid #333; color: var(--concrete-text); box-shadow: 0 0 16px rgba(255,255,255,0.5), 2px 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5); transform: translateY(-2px) scale(1.03); filter: brightness(1.25); }
         .choice-btn.correct-reveal { background: #a8d5a2; color: #1b5e20; }
         .choice-btn.wrong-reveal { background: #e8a8a5; color: #b71c1c; }
-        .choice-btn.crumble-away { animation: none; }
 
         /* Check button - concrete tablet */
         .bottom-area {
@@ -3340,7 +3305,6 @@ function renderLogical(pool, isClickable, q) {
     const correctSet = new Set(q.item._ingredients);
     return `<div class="options-grid">${pool.map((ing, idx) => {
         let cls = '';
-        let dataCrumble = '';
         let gramHTML = '';
         if (fb) {
             const isCorrectIng = correctSet.has(ing);
@@ -3348,7 +3312,7 @@ function renderLogical(pool, isClickable, q) {
             if (isCorrectIng && wasSelected) cls = 'correct-reveal';
             else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
             else if (wasSelected) cls = 'wrong-selected';
-            else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+            else { cls = 'wrong-reveal'; }
             if (q.showGrams && isCorrectIng) {
                 const correctGram = q.item._grams[ing];
                 const userGram = state.gramInputs[idx];
@@ -3361,7 +3325,7 @@ function renderLogical(pool, isClickable, q) {
                 gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
             }
         }
-        return `<button class="option-btn ${cls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
+        return `<button class="option-btn ${cls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
     }).join('')}</div>`;
 }
 
@@ -3388,14 +3352,13 @@ function renderColorCoded(pool, isClickable, q) {
         html += `<div class="color-category"><span class="color-category-label ${cls}">${label}</span><div class="options-grid">`;
         for (const { ing, idx } of items) {
             let btnCls = '';
-            let dataCrumble = '';
             let gramHTML = '';
             if (fb) {
                 const isCorrectIng = correctSet.has(ing);
                 const wasSelected = state.selectedOptions.has(idx);
                 if (isCorrectIng && wasSelected) btnCls = 'correct-reveal';
                 else if (isCorrectIng && !wasSelected) btnCls = 'correct-unselected';
-                else { btnCls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+                else { btnCls = 'wrong-reveal'; }
                 if (q.showGrams && isCorrectIng) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
@@ -3408,7 +3371,7 @@ function renderColorCoded(pool, isClickable, q) {
                     gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
                 }
             }
-            html += `<button class="option-btn ${btnCls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
+            html += `<button class="option-btn ${btnCls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
         }
         html += `</div></div>`;
     }
@@ -3431,14 +3394,13 @@ function renderSpatial(pool, isClickable, q) {
         html += `<div class="spatial-zone"><div class="spatial-zone-label">${zoneLabels[zone]}</div>`;
         for (const { ing, idx } of items) {
             let cls = '';
-            let dataCrumble = '';
             let gramHTML = '';
             if (fb) {
                 const isCorrectIng = correctSet.has(ing);
                 const wasSelected = state.selectedOptions.has(idx);
                 if (isCorrectIng && wasSelected) cls = 'correct-reveal';
                 else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
-                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+                else { cls = 'wrong-reveal'; }
                 if (q.showGrams && isCorrectIng) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
@@ -3451,7 +3413,7 @@ function renderSpatial(pool, isClickable, q) {
                     gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
                 }
             }
-            html += `<button class="option-btn ${cls}" ${dataCrumble} style="width:100%;margin-bottom:4px;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
+            html += `<button class="option-btn ${cls}" style="width:100%;margin-bottom:4px;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
         }
         html += `</div>`;
     }
@@ -3539,14 +3501,13 @@ function renderLesson() {
 
         const choicesHTML = q.choices.map((c, idx) => {
             let cls = '';
-            let dataCrumble = '';
             if (fb) {
                 if (c === q.missing) cls = 'correct-reveal';
-                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+                else { cls = 'wrong-reveal'; }
             } else {
                 cls = state.selectedChoice === idx ? 'selected' : '';
             }
-            return `<button class="choice-btn ${cls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `selectChoice(${idx})`}">${c}</button>`;
+            return `<button class="choice-btn ${cls}" style="${cementStyle()}" onclick="${fb ? '' : `selectChoice(${idx})`}">${c}</button>`;
         }).join('');
 
         questionHTML = `
@@ -3611,14 +3572,13 @@ function renderLesson() {
             const cat = getColorCategory(c);
             const colorClass = `color-cat-${cat}`;
             let cls = '';
-            let dataCrumble = '';
             if (fb) {
                 if (q.missing.includes(c)) cls = 'correct-reveal';
-                else { cls = 'wrong-reveal crumble-away'; dataCrumble = 'data-crumble="1"'; }
+                else { cls = 'wrong-reveal'; }
             } else {
                 cls = state.selectedOptions.has(idx) ? 'selected' : '';
             }
-            return `<button class="option-btn ${colorClass} color-fill-interactive ${cls}" ${dataCrumble} style="${cementStyle()}" onclick="${fb ? '' : `toggleColorChoice(${idx})`}">${c}</button>`;
+            return `<button class="option-btn ${colorClass} color-fill-interactive ${cls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleColorChoice(${idx})`}">${c}</button>`;
         }).join('');
 
         questionHTML = `
@@ -3749,45 +3709,6 @@ function toggleColorChoice(idx) {
     render();
 }
 
-// Break a concrete tablet into flying fragments
-function breakTablet(btn) {
-    const rect = btn.getBoundingClientRect();
-    btn.classList.add('crack-overlay');
-
-    setTimeout(() => {
-        const count = 12 + Math.floor(Math.random() * 8);
-        for (let i = 0; i < count; i++) {
-            const frag = document.createElement('div');
-            frag.className = 'concrete-fragment';
-            const isChunk = i < 5;
-            const w = isChunk ? (15 + Math.random() * 25) : (4 + Math.random() * 10);
-            const h = isChunk ? (10 + Math.random() * 20) : (3 + Math.random() * 8);
-            frag.style.width = w + 'px';
-            frag.style.height = h + 'px';
-            frag.style.left = (rect.left + Math.random() * rect.width) + 'px';
-            frag.style.top = (rect.top + Math.random() * rect.height) + 'px';
-            if (isChunk) {
-                const p1 = Math.random() * 30;
-                const p2 = 70 + Math.random() * 30;
-                const p3 = Math.random() * 30;
-                const p4 = 70 + Math.random() * 30;
-                frag.style.clipPath = `polygon(${p1}% 0%, ${p2}% ${p3}%, 100% ${p4}%, ${100-p1}% 100%, ${p3}% ${p2}%, 0% ${100-p4}%)`;
-            }
-            const fx = (Math.random() - 0.5) * 200;
-            const fy = 40 + Math.random() * 120;
-            const fr = (Math.random() - 0.5) * 540;
-            frag.style.setProperty('--fx', fx + 'px');
-            frag.style.setProperty('--fy', fy + 'px');
-            frag.style.setProperty('--fr', fr + 'deg');
-            const dur = 0.5 + Math.random() * 0.5;
-            frag.style.animation = `fragmentFly ${dur}s cubic-bezier(.2,0,.8,.4) forwards`;
-            document.body.appendChild(frag);
-            setTimeout(() => frag.remove(), 1200);
-        }
-        btn.style.visibility = 'hidden';
-    }, 350);
-}
-
 // ====================== ANSWER CHECKING ======================
 function checkSelectAnswer() {
     const q = state.questions[state.currentQIdx];
@@ -3883,11 +3804,6 @@ function processAnswer(isCorrect, item, format, timeTaken) {
     state.feedbackShown = true;
     render();
 
-    setTimeout(() => {
-        document.querySelectorAll('[data-crumble]').forEach(btn => {
-            breakTablet(btn);
-        });
-    }, 50);
 }
 
 function nextQuestion() {
