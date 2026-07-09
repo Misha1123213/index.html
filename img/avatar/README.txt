@@ -1,23 +1,29 @@
 Avatar asset pipeline
 =====================
 
-1. Place the sprite sheet image here as `spritesheet.png`.
-2. Run:
+All avatar layers (face, ears, eyes, brows, nose, mouth, hair, accessory,
+feature) are generated programmatically by `generate_avatar_assets.py`
+using PIL — clean, bold "character creator" line art in a consistent
+style, always drawn directly onto the shared 512x512 canvas.
 
-       python extract_sprites.py
+Run from img/avatar/:
 
-3. The script creates:
-   - `config.json`  — list of available asset IDs per category
-   - `face/1.png`, `hair/1.png`, ... — individual PNG layers on a 512x512 transparent canvas
+    python3 generate_avatar_assets.py
 
-If the generated pieces are misaligned or cropped wrong, edit `layout.json`
-(which is created automatically) and rerun the script. The layout uses
-normalized coordinates (0..1) over the sprite sheet:
+This regenerates every PNG in every category folder and rewrites
+config.json with the resulting id lists. There is no external sprite
+sheet to source from anymore — edit the shape/style definitions inside
+the script (FACE_SHAPES, EAR_SPECS, hair style branches in make_hair,
+etc.) and rerun.
 
-   left, top, right, bottom  — bounding box of the category region
-   rows, cols                — grid inside that region (set to 0 to use auto-connected-components)
-
-Dependencies: Python 3, Pillow, NumPy. SciPy is optional but makes extraction faster.
+Canvas coordinate system (512x512, all categories share it so the app's
+layer stack — position:absolute, 100% width/height — lines up correctly):
+  - face midline: x = 256
+  - eyes centered at (212, 250) and (300, 250)
+  - brows at y ~ 224, nose ~ 260-300, mouth ~ 322
+  - ears at x ~ 146 / 366, y ~ 258
+  - hair anchored from y ~ 92 (crown) down, wide enough to read behind
+    the ears regardless of face shape
 
 Layer order in the app (bottom to top):
 face → ears → eyes → brows → nose → mouth → hair → accessory → feature

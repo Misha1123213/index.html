@@ -1,0 +1,1 @@
+- [Avatar layer canvas system](avatar-layer-canvas.md) — all img/avatar/<category>/*.png must be full 512x512 canvases with content pre-positioned; CSS just stretches each to 100% and stacks them.
