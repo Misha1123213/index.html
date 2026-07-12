@@ -1868,6 +1868,11 @@
             height: 100% !important;
             background: transparent;
         }
+        .avatar-editor-option-none {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
         .avatar-editor-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1945,9 +1950,10 @@ const AVATAR_LAYERS = [
     { key: 'nose', label: 'Нос' },
     { key: 'mouth', label: 'Рот' },
     { key: 'hair', label: 'Причёска' },
-    { key: 'accessory', label: 'Аксессуар' },
-    { key: 'feature', label: 'Особенность' }
+    { key: 'accessory', label: 'Аксессуар', optional: true },
+    { key: 'feature', label: 'Особенность', optional: true }
 ];
+const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
 const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1', accessory: null, feature: null };
 const DEFAULT_AVATAR_EMOJI = '☕';
 let avatarConfig = null;
@@ -2781,9 +2787,13 @@ function renderAvatarEditorContent(mode) {
     const catsHTML = AVATAR_LAYERS.map(l => `
         <button class="avatar-editor-cat ${category === l.key ? 'active' : ''}" onclick="selectAvatarCategory('${l.key}')">${l.label}</button>
     `).join('');
-    const optionsHTML = options.length === 0
+    const isOptional = OPTIONAL_LAYERS.includes(category);
+    const noneHTML = isOptional
+        ? `<div class="avatar-editor-option avatar-editor-option-none ${!editor.avatar[category] ? 'selected' : ''}" onclick="clearAvatarOption('${category}')">Нет</div>`
+        : '';
+    const optionsHTML = options.length === 0 && !isOptional
         ? '<div class="avatar-editor-empty" style="padding:24px 0;text-align:center;color:var(--text-dim);font-size:13px">Нет вариантов для этой категории</div>'
-        : options.map(id => {
+        : noneHTML + options.map(id => {
             const selected = editor.avatar[category] === id;
             const previewAvatar = { ...editor.avatar, [category]: id };
             return `<div class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatarOption('${category}', '${id}')">${renderAvatar(previewAvatar, 48)}</div>`;
@@ -2866,6 +2876,14 @@ function selectAvatarCategory(key) {
 function selectAvatarOption(category, id) {
     if (!state.avatarEditor) return;
     state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: id };
+    tapFeedback();
+    render();
+}
+
+function clearAvatarOption(category) {
+    if (!state.avatarEditor) return;
+    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: null };
+    tapFeedback();
     render();
 }
 
