@@ -89,6 +89,64 @@
         .streak-count { color: var(--gold); }
         .xp-count { color: var(--text-primary); }
         .hearts-count { color: var(--red); }
+        .settings-btn {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-family: inherit;
+            transition: transform 0.15s ease, background 0.15s ease;
+            flex-shrink: 0;
+        }
+        .settings-btn:hover { background: rgba(255,255,255,0.12); }
+        .settings-btn:active { transform: scale(0.9) rotate(30deg); }
+
+        /* Settings toggles */
+        .settings-list { display: flex; flex-direction: column; gap: 8px; }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .settings-row-icon { font-size: 24px; flex-shrink: 0; }
+        .settings-row-text { flex: 1; min-width: 0; }
+        .settings-row-label { font-size: 15px; font-weight: 700; }
+        .settings-row-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .toggle {
+            width: 52px; height: 30px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.2s ease;
+        }
+        .toggle.on { background: var(--green); }
+        .toggle-knob {
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .toggle.on .toggle-knob { transform: translateX(22px); }
+        .settings-hint {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-align: center;
+            margin-top: 16px;
+        }
 
         /* Home screen */
         .home-screen { padding: 20px 16px 40px; }
@@ -1813,6 +1871,94 @@ function addXP(amount) {
     saveProgress(p);
 }
 
+// ====================== SETTINGS ======================
+const DEFAULT_SETTINGS = {
+    sound: true,
+    vibration: true,
+    confetti: true,
+    tapFeedback: true,
+};
+let _settingsCache = null;
+function getSettings() {
+    if (_settingsCache) return _settingsCache;
+    const p = getProgress();
+    _settingsCache = { ...DEFAULT_SETTINGS, ...(p.settings || {}) };
+    return _settingsCache;
+}
+function updateSetting(key, value) {
+    const p = getProgress();
+    const next = { ...DEFAULT_SETTINGS, ...(p.settings || {}), [key]: value };
+    p.settings = next;
+    saveProgress(p);
+    _settingsCache = next;
+    return next;
+}
+
+// ====================== SOUND & HAPTICS ======================
+let _audioCtx = null;
+function getAudioCtx() {
+    if (_audioCtx) return _audioCtx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    _audioCtx = new Ctx();
+    return _audioCtx;
+}
+// Play a short synthesized tone sequence — no audio asset files needed.
+function playTones(notes) {
+    if (!getSettings().sound) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = n.type || 'sine';
+        osc.frequency.setValueAtTime(n.freq, now + n.at);
+        const vol = n.vol == null ? 0.18 : n.vol;
+        gain.gain.setValueAtTime(0.0001, now + n.at);
+        gain.gain.exponentialRampToValueAtTime(vol, now + n.at + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + n.at + n.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + n.at);
+        osc.stop(now + n.at + n.dur + 0.02);
+    });
+}
+const SOUNDS = {
+    tap: () => playTones([{ freq: 320, dur: 0.06, at: 0, type: 'triangle', vol: 0.09 }]),
+    correct: () => playTones([
+        { freq: 587.33, dur: 0.12, at: 0, type: 'sine' },
+        { freq: 880, dur: 0.18, at: 0.09, type: 'sine' },
+    ]),
+    wrong: () => playTones([
+        { freq: 196, dur: 0.18, at: 0, type: 'sawtooth', vol: 0.14 },
+        { freq: 155.56, dur: 0.24, at: 0.1, type: 'sawtooth', vol: 0.14 },
+    ]),
+    finish: () => playTones([
+        { freq: 523.25, dur: 0.14, at: 0, type: 'triangle' },
+        { freq: 659.25, dur: 0.14, at: 0.12, type: 'triangle' },
+        { freq: 783.99, dur: 0.14, at: 0.24, type: 'triangle' },
+        { freq: 1046.5, dur: 0.28, at: 0.36, type: 'triangle' },
+    ]),
+};
+function playSound(name) {
+    const fn = SOUNDS[name];
+    if (fn) fn();
+}
+function haptic(pattern) {
+    if (!getSettings().vibration) return;
+    if (navigator.vibrate) {
+        try { navigator.vibrate(pattern); } catch {}
+    }
+}
+// Subtle combined feedback for selecting an option/choice.
+function tapFeedback() {
+    if (!getSettings().tapFeedback) return;
+    playSound('tap');
+    haptic(12);
+}
+
 function recordAnswer(itemName, correct) {
     const p = getProgress();
     if (!p.itemStrength) p.itemStrength = {};
@@ -2213,6 +2359,7 @@ function renderHome() {
                 <span class="icon">⚡</span>
                 <span class="xp-count">${stats.totalXP} XP</span>
             </div>
+            <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">⚙️</button>
         </div>
         <div class="home-screen">
             <div class="mascot-area">
@@ -2722,6 +2869,54 @@ function showLearningStats() {
         </div>
     `;
     document.body.appendChild(overlay);
+}
+
+// ====================== SETTINGS MODAL ======================
+const SETTINGS_UI = [
+    { key: 'sound', icon: '🔊', label: 'Звук', desc: 'Звуковые эффекты при ответах и нажатиях' },
+    { key: 'vibration', icon: '📳', label: 'Вибрация', desc: 'Тактильная отдача (на телефонах)' },
+    { key: 'tapFeedback', icon: '👆', label: 'Отклик при нажатии', desc: 'Лёгкий звук и вибро при выборе варианта' },
+    { key: 'confetti', icon: '🎉', label: 'Конфетти', desc: 'Празднование за идеальный урок' },
+];
+function showSettings() {
+    const s = getSettings();
+    const rowsHTML = SETTINGS_UI.map(item => `
+        <div class="settings-row">
+            <div class="settings-row-icon">${item.icon}</div>
+            <div class="settings-row-text">
+                <div class="settings-row-label">${item.label}</div>
+                <div class="settings-row-desc">${item.desc}</div>
+            </div>
+            <button class="toggle ${s[item.key] ? 'on' : ''}" role="switch" aria-checked="${s[item.key] ? 'true' : 'false'}" aria-label="${item.label}" onclick="toggleSetting('${item.key}', this)">
+                <span class="toggle-knob"></span>
+            </button>
+        </div>
+    `).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+        <div class="stats-modal">
+            <div class="stats-modal-header">
+                <div class="stats-modal-title">⚙️ Настройки</div>
+                <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="settings-list">${rowsHTML}</div>
+            <p class="settings-hint">Настройки сохраняются на этом устройстве.</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+function toggleSetting(key, btn) {
+    const next = updateSetting(key, !getSettings()[key]);
+    const on = next[key];
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    // Give immediate feedback so the user can hear/feel the change.
+    if (key === 'sound' && on) playSound('tap');
+    if (key === 'vibration' && on) haptic(30);
+    if (key === 'tapFeedback' && on) tapFeedback();
 }
 
 // ====================== SECTION SELECTION ======================
@@ -3673,6 +3868,7 @@ function toggleOption(idx) {
     } else {
         state.selectedOptions.add(idx);
     }
+    tapFeedback();
     const btns = document.querySelectorAll('.option-btn');
     if (btns[idx]) {
         btns[idx].classList.add('crack-effect');
@@ -3684,6 +3880,7 @@ function toggleOption(idx) {
 function selectChoice(idx) {
     if (state.feedbackShown) return;
     state.selectedChoice = idx;
+    tapFeedback();
     const btns = document.querySelectorAll('.choice-btn');
     if (btns[idx]) {
         btns[idx].classList.add('crack-effect');
@@ -3706,6 +3903,7 @@ function toggleColorChoice(idx) {
             state.selectedOptions.add(idx);
         }
     }
+    tapFeedback();
     render();
 }
 
@@ -3774,9 +3972,13 @@ function processAnswer(isCorrect, item, format, timeTaken) {
         state.sessionCorrect++;
         state.sessionXP += 10;
         state._lastCorrect = true;
+        playSound('correct');
+        haptic(40);
     } else {
         state.hearts--;
         state._lastCorrect = false;
+        playSound('wrong');
+        haptic([60, 50, 90]);
         if (!state.mistakeIds.includes(item.name)) {
             state.mistakeIds.push(item.name);
         }
@@ -3861,7 +4063,10 @@ function finishLesson() {
     state._finalXP = xpEarned;
     render();
 
-    if (state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0) {
+    const perfect = state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0;
+    playSound('finish');
+    haptic(perfect ? [40, 60, 40, 60, 120] : 60);
+    if (perfect && getSettings().confetti) {
         setTimeout(showConfetti, 300);
     }
     setTimeout(() => showXPPopup(xpEarned), 500);
