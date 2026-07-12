@@ -1789,6 +1789,11 @@
             height: 100%;
             object-fit: contain;
             pointer-events: none;
+            /* Source art is solid black. Dark theme -> white, light theme -> black. */
+            filter: invert(1);
+        }
+        :root[data-theme="light"] .avatar-layer {
+            filter: none;
         }
 
         .avatar-editor-screen {
@@ -1942,19 +1947,19 @@ let state = {
 // Cement texture images for variety
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
 const AVATAR_EMOJIS = ['🦉','🐻','🦊','🐼','🐯','🐰','🐧','🐸','🐶','🐱','🦁','🐨'];
+// Editable categories shown in the avatar editor. Ears are still rendered
+// (see AVATAR_RENDER_ORDER) but are not user-editable.
 const AVATAR_LAYERS = [
     { key: 'face', label: 'Лицо' },
-    { key: 'ears', label: 'Уши' },
     { key: 'eyes', label: 'Глаза' },
     { key: 'brows', label: 'Брови' },
     { key: 'nose', label: 'Нос' },
     { key: 'mouth', label: 'Рот' },
-    { key: 'hair', label: 'Причёска' },
-    { key: 'accessory', label: 'Аксессуар', optional: true },
-    { key: 'feature', label: 'Особенность', optional: true }
+    { key: 'hair', label: 'Причёска' }
 ];
+const AVATAR_RENDER_ORDER = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair'];
 const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
-const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1', accessory: null, feature: null };
+const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1' };
 const DEFAULT_AVATAR_EMOJI = '☕';
 let avatarConfig = null;
 let cementCounter = 0;
@@ -2581,7 +2586,7 @@ function renderAvatar(avatar, size = 32) {
         const emoji = avatar.avatarEmoji || DEFAULT_AVATAR_EMOJI;
         return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${emoji}</span>`;
     }
-    const order = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair', 'accessory', 'feature'];
+    const order = AVATAR_RENDER_ORDER;
     const parts = order.map(layer => {
         const id = avatar[layer];
         if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) return '';
