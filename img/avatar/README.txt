@@ -1,29 +1,23 @@
-Avatar asset pipeline
-=====================
+Avatar assets
+=============
 
-All avatar layers (face, ears, eyes, brows, nose, mouth, hair, accessory,
-feature) are generated programmatically by `generate_avatar_assets.py`
-using PIL — clean, bold "character creator" line art in a consistent
-style, always drawn directly onto the shared 512x512 canvas.
+The PNGs in these category folders (face, ears, eyes, brows, nose, mouth,
+hair, accessory, feature) are the real hand-drawn character-creator
+sprites provided by the project owner. Each source sprite was composited
+onto a shared 128x142 canvas at a fixed anchor per layer, so every PNG has
+identical dimensions and the app's layer stack (position: absolute, 100%
+width/height, object-fit: contain) lines them up regardless of which
+options are combined.
 
-Run from img/avatar/:
-
-    python3 generate_avatar_assets.py
-
-This regenerates every PNG in every category folder and rewrites
-config.json with the resulting id lists. There is no external sprite
-sheet to source from anymore — edit the shape/style definitions inside
-the script (FACE_SHAPES, EAR_SPECS, hair style branches in make_hair,
-etc.) and rerun.
-
-Canvas coordinate system (512x512, all categories share it so the app's
-layer stack — position:absolute, 100% width/height — lines up correctly):
-  - face midline: x = 256
-  - eyes centered at (212, 250) and (300, 250)
-  - brows at y ~ 224, nose ~ 260-300, mouth ~ 322
-  - ears at x ~ 146 / 366, y ~ 258
-  - hair anchored from y ~ 92 (crown) down, wide enough to read behind
-    the ears regardless of face shape
+config.json lists the available ids per layer and the app reads it at
+runtime (loadAvatarConfig).
 
 Layer order in the app (bottom to top):
 face → ears → eyes → brows → nose → mouth → hair → accessory → feature
+
+accessory and feature are optional (the editor shows a "Нет" / none tile).
+
+WARNING: generate_avatar_assets.py is the OLD placeholder generator. It
+draws programmatic line-art and, if run, will OVERWRITE these real sprites
+and rewrite config.json. Do NOT run it unless you intend to discard the
+real artwork. It is kept only for reference.
