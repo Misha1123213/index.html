@@ -147,6 +147,150 @@
             text-align: center;
             margin-top: 16px;
         }
+        /* Segmented control (theme / daily goal) */
+        .seg-control {
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 10px;
+            padding: 3px;
+            flex-shrink: 0;
+        }
+        .seg-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .seg-btn.active { background: var(--green); color: #fff; }
+
+        /* Daily goal ring card */
+        .daily-goal-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            border: 1px solid var(--concrete-border);
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            font-family: inherit;
+            color: var(--concrete-text);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            text-align: left;
+        }
+        .goal-ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+        .goal-ring { width: 64px; height: 64px; }
+        .goal-ring-fill { transition: stroke-dashoffset 0.8s cubic-bezier(0.34,1.2,0.64,1); }
+        .goal-ring-center {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 16px; color: var(--concrete-text);
+        }
+        .goal-info { flex: 1; min-width: 0; }
+        .goal-title { font-size: 16px; font-weight: 800; }
+        .goal-sub { font-size: 13px; font-weight: 700; opacity: 0.75; margin-top: 2px; }
+
+        /* Achievements */
+        .ach-badge {
+            display: inline-block;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 800;
+            margin-left: 4px;
+        }
+        .ach-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .ach-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .ach-card.locked { opacity: 0.45; }
+        .ach-card.unlocked { border-color: var(--gold); background: rgba(255,193,7,0.08); }
+        .ach-icon { font-size: 34px; line-height: 1; margin-bottom: 8px; }
+        .ach-title { font-size: 14px; font-weight: 800; }
+        .ach-desc { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+
+        /* Achievement toast */
+        .achievement-toast {
+            position: fixed;
+            top: 20px; left: 50%;
+            transform: translate(-50%, -140%);
+            display: flex; align-items: center; gap: 14px;
+            background: linear-gradient(135deg, #2a2a2a, #3a3320);
+            border: 2px solid var(--gold);
+            border-radius: 16px;
+            padding: 14px 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            z-index: 2000;
+            max-width: 90%;
+            transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease;
+            opacity: 0;
+        }
+        .achievement-toast.show { transform: translate(-50%, 0); opacity: 1; }
+        .achievement-toast-icon { font-size: 40px; animation: achPop 0.6s ease; }
+        @keyframes achPop { 0% { transform: scale(0.2) rotate(-25deg); } 60% { transform: scale(1.3) rotate(10deg); } 100% { transform: scale(1) rotate(0); } }
+        .achievement-toast-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); font-weight: 700; }
+        .achievement-toast-title { font-size: 17px; font-weight: 900; color: #fff; }
+
+        /* Light theme */
+        :root[data-theme="light"] {
+            --bg-dark: #f4f1ec;
+            --bg-card: rgba(255,255,255,0.92);
+            --bg-card-hover: rgba(245,245,245,0.95);
+            --bg-modal: #ffffff;
+            --text-primary: #1f1f1f;
+            --text-secondary: #5a5a5a;
+            --text-dim: #9a9a9a;
+            --border: rgba(0,0,0,0.12);
+            --border-light: rgba(0,0,0,0.2);
+            --shadow: rgba(0,0,0,0.18);
+        }
+        :root[data-theme="light"] body { background-image: none; background-color: var(--bg-dark); }
+        :root[data-theme="light"] body::before { background: rgba(244,241,236,0.6); }
+        :root[data-theme="light"] .top-bar { background: rgba(255,255,255,0.95); }
+        :root[data-theme="light"] .settings-btn,
+        :root[data-theme="light"] .settings-row,
+        :root[data-theme="light"] .strength-card,
+        :root[data-theme="light"] .ach-card { background: rgba(0,0,0,0.04); }
+        :root[data-theme="light"] .achievement-toast { background: linear-gradient(135deg, #fff, #fdf3d6); }
+        :root[data-theme="light"] .achievement-toast-title { color: #1f1f1f; }
+
+        /* Live button interactions */
+        button { transition: transform 0.12s ease; }
+        .section-card:active, .stats-btn:active, .daily-goal-card:active,
+        .modal-btn:active, .result-btn:active, .seg-btn:active,
+        .onboarding-btn:active, .avatar-editor-btn:active { transform: scale(0.96); }
+        .section-card, .stats-btn, .daily-goal-card { will-change: transform; }
+
+        /* Screen enter transition (only on real screen changes) */
+        @keyframes screenIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        #app.screen-enter > div { animation: screenIn 0.28s ease; }
+
+        /* Reduced motion */
+        :root.no-anim *, :root.no-anim *::before, :root.no-anim *::after {
+            animation-duration: 0.001s !important;
+            transition-duration: 0.001s !important;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #app.screen-enter > div { animation: none; }
+        }
 
         /* Home screen */
         .home-screen { padding: 20px 16px 40px; }
@@ -1867,8 +2011,79 @@ function addXP(amount) {
         }
         p.lastDate = today;
     }
+    // Track XP earned toward today's goal
+    if (p.dailyDate !== today) {
+        p.dailyDate = today;
+        p.dailyXP = 0;
+        p.dailyGoalMet = false;
+    }
+    const before = p.dailyXP || 0;
+    p.dailyXP = before + amount;
+    const goal = getSettings().dailyGoal;
+    const justMetGoal = !p.dailyGoalMet && p.dailyXP >= goal && before < goal;
+    if (justMetGoal) p.dailyGoalMet = true;
     p.totalLessons = (p.totalLessons || 0) + 1;
     saveProgress(p);
+    return { justMetGoal };
+}
+
+// ====================== DAILY GOAL ======================
+function getDailyProgress() {
+    const p = getProgress();
+    const today = new Date().toDateString();
+    const goal = getSettings().dailyGoal;
+    const xp = p.dailyDate === today ? (p.dailyXP || 0) : 0;
+    return { xp, goal, pct: Math.min(100, Math.round((xp / goal) * 100)), met: xp >= goal };
+}
+
+// ====================== ACHIEVEMENTS ======================
+const ACHIEVEMENTS = [
+    { id: 'first_lesson', icon: '🎓', title: 'Первый шаг', desc: 'Пройди первый урок', check: s => s.totalLessons >= 1 },
+    { id: 'lessons_10', icon: '📚', title: 'Прилежный', desc: 'Пройди 10 уроков', check: s => s.totalLessons >= 10 },
+    { id: 'lessons_50', icon: '🏫', title: 'Ветеран', desc: 'Пройди 50 уроков', check: s => s.totalLessons >= 50 },
+    { id: 'streak_3', icon: '🔥', title: 'В огне', desc: '3 дня подряд', check: s => s.streak >= 3 },
+    { id: 'streak_7', icon: '🔥', title: 'Неделя без пропусков', desc: '7 дней подряд', check: s => s.streak >= 7 },
+    { id: 'streak_30', icon: '🌋', title: 'Железная воля', desc: '30 дней подряд', check: s => s.streak >= 30 },
+    { id: 'xp_100', icon: '⚡', title: 'Сотня', desc: 'Набери 100 XP', check: s => s.totalXP >= 100 },
+    { id: 'xp_500', icon: '💫', title: 'Знаток', desc: 'Набери 500 XP', check: s => s.totalXP >= 500 },
+    { id: 'xp_1000', icon: '👑', title: 'Мастер', desc: 'Набери 1000 XP', check: s => s.totalXP >= 1000 },
+    { id: 'correct_100', icon: '🎯', title: 'Меткий', desc: '100 верных ответов', check: s => s.totalCorrect >= 100 },
+    { id: 'perfect_1', icon: '🌟', title: 'Идеально!', desc: 'Пройди урок без ошибок', check: s => s.perfectLessons >= 1 },
+    { id: 'perfect_10', icon: '🏆', title: 'Перфекционист', desc: '10 идеальных уроков', check: s => s.perfectLessons >= 10 },
+    { id: 'goal_met', icon: '✅', title: 'Цель дня', desc: 'Выполни дневную цель', check: s => s.dailyGoalMet },
+];
+function getAchievementStats() {
+    const p = getProgress();
+    return {
+        totalXP: p.totalXP || 0,
+        streak: p.streak || 0,
+        totalLessons: p.totalLessons || 0,
+        totalCorrect: p.totalCorrect || 0,
+        perfectLessons: p.perfectLessons || 0,
+        dailyGoalMet: !!p.dailyGoalMet && p.dailyDate === new Date().toDateString(),
+    };
+}
+function getUnlockedAchievements() {
+    const p = getProgress();
+    return p.achievements || {};
+}
+// Returns array of achievement objects unlocked since last check.
+function checkAchievements() {
+    const p = getProgress();
+    const unlocked = p.achievements || {};
+    const stats = getAchievementStats();
+    const newly = [];
+    for (const a of ACHIEVEMENTS) {
+        if (!unlocked[a.id] && a.check(stats)) {
+            unlocked[a.id] = Date.now();
+            newly.push(a);
+        }
+    }
+    if (newly.length) {
+        p.achievements = unlocked;
+        saveProgress(p);
+    }
+    return newly;
 }
 
 // ====================== SETTINGS ======================
@@ -1877,7 +2092,11 @@ const DEFAULT_SETTINGS = {
     vibration: true,
     confetti: true,
     tapFeedback: true,
+    animations: true,
+    theme: 'dark',
+    dailyGoal: 30,
 };
+const DAILY_GOAL_OPTIONS = [10, 20, 30, 50];
 let _settingsCache = null;
 function getSettings() {
     if (_settingsCache) return _settingsCache;
@@ -1941,6 +2160,16 @@ const SOUNDS = {
         { freq: 783.99, dur: 0.14, at: 0.24, type: 'triangle' },
         { freq: 1046.5, dur: 0.28, at: 0.36, type: 'triangle' },
     ]),
+    achievement: () => playTones([
+        { freq: 659.25, dur: 0.12, at: 0, type: 'sine' },
+        { freq: 830.61, dur: 0.12, at: 0.1, type: 'sine' },
+        { freq: 987.77, dur: 0.14, at: 0.2, type: 'sine' },
+        { freq: 1318.51, dur: 0.32, at: 0.32, type: 'sine' },
+    ]),
+    goal: () => playTones([
+        { freq: 783.99, dur: 0.12, at: 0, type: 'triangle' },
+        { freq: 1046.5, dur: 0.22, at: 0.1, type: 'triangle' },
+    ]),
 };
 function playSound(name) {
     const fn = SOUNDS[name];
@@ -1966,6 +2195,7 @@ function recordAnswer(itemName, correct) {
     s.attempts++;
     if (correct) {
         s.strength = Math.min(5, s.strength + 1);
+        p.totalCorrect = (p.totalCorrect || 0) + 1;
     } else {
         s.strength = Math.max(0, s.strength - 1.5);
     }
@@ -2234,6 +2464,46 @@ function showXPPopup(amount) {
     setTimeout(() => popup.remove(), 1600);
 }
 
+// ====================== THEME ======================
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+}
+function applyAnimationPref() {
+    document.documentElement.classList.toggle('no-anim', !getSettings().animations);
+}
+
+// ====================== ACHIEVEMENT POPUP ======================
+let _achievementQueue = [];
+let _achievementShowing = false;
+function celebrateAchievements(list) {
+    if (!list || !list.length) return;
+    _achievementQueue.push(...list);
+    if (!_achievementShowing) showNextAchievement();
+}
+function showNextAchievement() {
+    if (!_achievementQueue.length) { _achievementShowing = false; return; }
+    _achievementShowing = true;
+    const a = _achievementQueue.shift();
+    playSound('achievement');
+    haptic([30, 40, 30, 40, 80]);
+    if (getSettings().confetti) showConfetti();
+    const el = document.createElement('div');
+    el.className = 'achievement-toast';
+    el.innerHTML = `
+        <div class="achievement-toast-icon">${a.icon}</div>
+        <div class="achievement-toast-text">
+            <div class="achievement-toast-label">Достижение разблокировано!</div>
+            <div class="achievement-toast-title">${a.title}</div>
+        </div>
+    `;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => { el.remove(); showNextAchievement(); }, 400);
+    }, 2600);
+}
+
 // Normalize item data: handle both old format (correct: string[], pool: string[])
 // and new format (correct: [{ingredient, grams}], wrong: string[])
 function normalizeItem(item) {
@@ -2326,8 +2596,11 @@ function migrateProfileAvatar(profile) {
     return { ...profile, avatar: cloneAvatar(profile.avatar) };
 }
 
+let _lastRenderedScreen = null;
 function render() {
     cementCounter = 0;
+    const screenChanged = state.screen !== _lastRenderedScreen;
+    _lastRenderedScreen = state.screen;
     switch (state.screen) {
         case 'onboarding': renderOnboarding(); break;
         case 'home': renderHome(); break;
@@ -2339,6 +2612,66 @@ function render() {
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
     }
+    // Play the enter transition only on real screen changes, not on the
+    // frequent in-lesson re-renders.
+    app.classList.toggle('screen-enter', screenChanged && getSettings().animations);
+}
+
+function renderDailyGoalCard() {
+    const d = getDailyProgress();
+    const r = 34, c = 2 * Math.PI * r;
+    const offset = c * (1 - d.pct / 100);
+    const ringColor = d.met ? 'var(--green)' : 'var(--gold)';
+    return `
+        <button class="daily-goal-card" style="${cementStyle()}" onclick="showSettings()">
+            <div class="goal-ring-wrap">
+                <svg class="goal-ring" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="${r}" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="8"/>
+                    <circle cx="40" cy="40" r="${r}" fill="none" stroke="${ringColor}" stroke-width="8"
+                        stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
+                        transform="rotate(-90 40 40)" class="goal-ring-fill"/>
+                </svg>
+                <div class="goal-ring-center">${d.met ? '✅' : `${d.pct}%`}</div>
+            </div>
+            <div class="goal-info">
+                <div class="goal-title">Цель дня</div>
+                <div class="goal-sub">${d.met ? 'Цель выполнена! 🎉' : `${d.xp} / ${d.goal} XP`}</div>
+            </div>
+        </button>
+    `;
+}
+function renderAchievementBadge() {
+    const total = ACHIEVEMENTS.length;
+    const got = Object.keys(getUnlockedAchievements()).length;
+    return `<span class="ach-badge">${got}/${total}</span>`;
+}
+function showAchievements() {
+    const unlocked = getUnlockedAchievements();
+    const cardsHTML = ACHIEVEMENTS.map(a => {
+        const on = !!unlocked[a.id];
+        return `
+            <div class="ach-card ${on ? 'unlocked' : 'locked'}">
+                <div class="ach-icon">${on ? a.icon : '🔒'}</div>
+                <div class="ach-title">${a.title}</div>
+                <div class="ach-desc">${a.desc}</div>
+            </div>
+        `;
+    }).join('');
+    const got = Object.keys(unlocked).length;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+        <div class="stats-modal">
+            <div class="stats-modal-header">
+                <div class="stats-modal-title">🏅 Достижения</div>
+                <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <p class="settings-hint" style="margin:0 0 16px">Открыто ${got} из ${ACHIEVEMENTS.length}</p>
+            <div class="ach-grid">${cardsHTML}</div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
 }
 
 function renderHome() {
@@ -2367,6 +2700,7 @@ function renderHome() {
                 <div class="app-title">MET Академия</div>
                 <div class="app-subtitle">Изучай составы блюд</div>
             </div>
+            ${renderDailyGoalCard()}
             <div class="daily-stats">
                 <div class="daily-stat-card" style="${cementStyle()}">
                     <div class="stat-value streak-count">🔥 ${stats.streak}</div>
@@ -2386,6 +2720,9 @@ function renderHome() {
             </button>
             <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">
                 🏆 Рейтинг
+            </button>
+            <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">
+                🏅 Достижения ${renderAchievementBadge()}
             </button>
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('kitchen')">
                 <div class="card-img-wrap">
@@ -2877,10 +3214,10 @@ const SETTINGS_UI = [
     { key: 'vibration', icon: '📳', label: 'Вибрация', desc: 'Тактильная отдача (на телефонах)' },
     { key: 'tapFeedback', icon: '👆', label: 'Отклик при нажатии', desc: 'Лёгкий звук и вибро при выборе варианта' },
     { key: 'confetti', icon: '🎉', label: 'Конфетти', desc: 'Празднование за идеальный урок' },
+    { key: 'animations', icon: '✨', label: 'Анимации', desc: 'Плавные переходы и «живые» кнопки' },
 ];
-function showSettings() {
-    const s = getSettings();
-    const rowsHTML = SETTINGS_UI.map(item => `
+function renderToggleRow(s, item) {
+    return `
         <div class="settings-row">
             <div class="settings-row-icon">${item.icon}</div>
             <div class="settings-row-text">
@@ -2891,7 +3228,36 @@ function showSettings() {
                 <span class="toggle-knob"></span>
             </button>
         </div>
-    `).join('');
+    `;
+}
+function showSettings() {
+    const s = getSettings();
+    const rowsHTML = SETTINGS_UI.map(item => renderToggleRow(s, item)).join('');
+    const themeHTML = `
+        <div class="settings-row">
+            <div class="settings-row-icon">🎨</div>
+            <div class="settings-row-text">
+                <div class="settings-row-label">Тема</div>
+                <div class="settings-row-desc">Тёмная или светлая</div>
+            </div>
+            <div class="seg-control">
+                <button class="seg-btn ${s.theme !== 'light' ? 'active' : ''}" onclick="changeTheme('dark', this)">🌙 Тёмная</button>
+                <button class="seg-btn ${s.theme === 'light' ? 'active' : ''}" onclick="changeTheme('light', this)">☀️ Светлая</button>
+            </div>
+        </div>
+    `;
+    const goalHTML = `
+        <div class="settings-row">
+            <div class="settings-row-icon">🎯</div>
+            <div class="settings-row-text">
+                <div class="settings-row-label">Дневная цель</div>
+                <div class="settings-row-desc">Сколько XP набирать в день</div>
+            </div>
+            <div class="seg-control">
+                ${DAILY_GOAL_OPTIONS.map(g => `<button class="seg-btn ${s.dailyGoal === g ? 'active' : ''}" onclick="changeDailyGoal(${g}, this)">${g}</button>`).join('')}
+            </div>
+        </div>
+    `;
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -2902,7 +3268,7 @@ function showSettings() {
                 <div class="stats-modal-title">⚙️ Настройки</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
-            <div class="settings-list">${rowsHTML}</div>
+            <div class="settings-list">${rowsHTML}${themeHTML}${goalHTML}</div>
             <p class="settings-hint">Настройки сохраняются на этом устройстве.</p>
         </div>
     `;
@@ -2913,10 +3279,26 @@ function toggleSetting(key, btn) {
     const on = next[key];
     btn.classList.toggle('on', on);
     btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    if (key === 'animations') applyAnimationPref();
     // Give immediate feedback so the user can hear/feel the change.
     if (key === 'sound' && on) playSound('tap');
     if (key === 'vibration' && on) haptic(30);
     if (key === 'tapFeedback' && on) tapFeedback();
+}
+function changeTheme(theme, btn) {
+    updateSetting('theme', theme);
+    applyTheme(theme);
+    const group = btn.parentElement.querySelectorAll('.seg-btn');
+    group.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tapFeedback();
+}
+function changeDailyGoal(goal, btn) {
+    updateSetting('dailyGoal', goal);
+    const group = btn.parentElement.querySelectorAll('.seg-btn');
+    group.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tapFeedback();
 }
 
 // ====================== SECTION SELECTION ======================
@@ -4053,7 +4435,13 @@ function nextQuestion() {
 
 function finishLesson() {
     const xpEarned = state.sessionXP + (state.hearts > 0 ? 15 : 0);
-    addXP(xpEarned);
+    const perfect = state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0;
+    if (perfect) {
+        const p = getProgress();
+        p.perfectLessons = (p.perfectLessons || 0) + 1;
+        saveProgress(p);
+    }
+    const { justMetGoal } = addXP(xpEarned);
 
     if (!state.isPractice && state.currentLessonIdx >= 0 && state.hearts > 0) {
         saveLessonComplete(state.section, state.currentLessonIdx, state.sessionCorrect, state.sessionTotal);
@@ -4063,13 +4451,17 @@ function finishLesson() {
     state._finalXP = xpEarned;
     render();
 
-    const perfect = state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0;
     playSound('finish');
     haptic(perfect ? [40, 60, 40, 60, 120] : 60);
     if (perfect && getSettings().confetti) {
         setTimeout(showConfetti, 300);
     }
     setTimeout(() => showXPPopup(xpEarned), 500);
+    if (justMetGoal) {
+        setTimeout(() => { playSound('goal'); haptic([50, 40, 90]); }, 900);
+    }
+    const newly = checkAchievements();
+    if (newly.length) setTimeout(() => celebrateAchievements(newly), justMetGoal ? 1600 : 1200);
 }
 
 function renderResult() {
@@ -4179,6 +4571,9 @@ if (!state.profile) {
     state.onboardingNickname = '';
     state.onboardingAvatar = null;
 }
+applyTheme(getSettings().theme);
+applyAnimationPref();
+checkAchievements(); // silently backfill already-earned achievements
 render();
 loadAvatarConfig().then(() => {
     if (state.screen !== 'onboarding' && state.screen !== 'avatarEditor') render();
