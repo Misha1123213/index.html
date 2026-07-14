@@ -2114,6 +2114,68 @@
             text-align: center;
         }
         @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        /* ====================== COURSE EDITOR & SECTIONS ====================== */
+        .section-save-row { display: flex; flex-direction: column; gap: 10px; }
+        .editor-items { display: flex; flex-direction: column; gap: 12px; margin: 8px 0; }
+        .editor-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .editor-item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .editor-item-name { flex: 1; }
+        .editor-item-delete {
+            background: rgba(255, 75, 75, 0.15);
+            border: none;
+            color: #ff4b4b;
+            border-radius: 10px;
+            width: 36px; height: 36px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .editor-image-row { display: flex; gap: 8px; align-items: stretch; }
+        .editor-image-row .platform-input { flex: 1; }
+        .editor-img-btn {
+            background: var(--bg-card-hover);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            width: 42px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .editor-item label { margin-top: 8px; }
+        .section-management { margin: 16px 0; }
+        .section-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .section-row-name { font-weight: 700; font-size: 15px; }
+        .section-row-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .section-row-action {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            width: 32px; height: 32px;
+        }
+        .section-empty { font-size: 13px; color: var(--text-dim); padding: 8px 0; }
+        .card-img-placeholder img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+        .home-screen { position: relative; z-index: 1; }
+        #venue-bg { transition: opacity 0.5s; }
     </style>
 </head>
 <body>
@@ -2155,6 +2217,7 @@ let state = {
     venue: null,
     staff: null,
     platformDraft: null,
+    currentSectionId: null,
 };
 window.state = state;
 
@@ -2633,7 +2696,11 @@ function getChapterTotals() {
         drink_pf: { file: 'drink_pf.json', label: '🧪 ПФ Напитков' },
         kitchen_pf: { file: 'kitchen_pf.json', label: '🧪 ПФ Кухни' }
     };
-    if (state.venue) {
+    if (state.venue && state.venue.sections) {
+        for (const section of state.venue.sections) {
+            chapters['venue_' + section.id] = { file: null, label: `🏪 ${section.name || 'Раздел'}` };
+        }
+    } else if (state.venue) {
         chapters.venue_progress = { file: null, label: `🏪 ${state.venue.name || 'Заведение'}` };
     }
     return chapters;
@@ -2835,7 +2902,9 @@ function render() {
         case 'roleSelect': renderRoleSelect(); break;
         case 'ownerRegister': renderOwnerRegister(); break;
         case 'ownerSetup': renderOwnerSetup(); break;
+        case 'courseEditor': renderCourseEditor(); break;
         case 'ownerDashboard': renderOwnerDashboard(); break;
+        case 'sectionPicker': renderSectionPicker(); break;
         case 'staffRegister': renderStaffRegister(); break;
         case 'staffJoin': renderStaffJoin(); break;
         case 'home': renderHome(); break;
