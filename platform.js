@@ -107,9 +107,6 @@ function initPlatform() {
   applyAnimationPref();
   checkAchievements();
   render();
-  loadAvatarConfig().then(() => {
-    if (!isPlatformScreen()) render();
-  });
 }
 
 function getVenueSections() {
@@ -196,7 +193,7 @@ function registerOwner() {
   };
 
   const auth = { role: 'owner', name: name, venueId: venue.id, code: code };
-  state.profile = { nickname: name, avatar: cloneAvatar() };
+  state.profile = { nickname: name };
   state.auth = auth;
   state.venue = venue;
   state.platformDraft = null;
@@ -235,7 +232,7 @@ function joinStaffVenue() {
   venue.staff.push(staff);
 
   const auth = { role: 'staff', name, venueId: venue.id, code: code };
-  state.profile = { nickname: name, avatar: cloneAvatar() };
+  state.profile = { nickname: name };
   state.auth = auth;
   state.venue = venue;
   state.staff = staff;
@@ -466,10 +463,9 @@ function renderPlatformHome() {
 
   app.innerHTML = `
     <div class="top-bar">
-      <button class="profile-chip" onclick="openAvatarEditor()">
-        ${renderAvatar(state.profile && state.profile.avatar, 32)}
+      <div class="profile-chip">
         <span>${state.profile && state.profile.nickname || 'Ты'}</span>
-      </button>
+      </div>
       <div style="flex:1"></div>
       <div class="top-bar-stat">
         <span class="icon">🔥</span>
