@@ -3,11 +3,11 @@
 // No backend required: everything is stored in localStorage.
 
 const VENUE_STYLES = [
-  { id: 'modern', label: 'Современный', theme: 'dark', accent: '#58CC02' },
-  { id: 'classic', label: 'Классический', theme: 'light', accent: '#8B5E3C' },
-  { id: 'rustic', label: 'Лофт / Рустик', theme: 'dark', accent: '#FF9600' },
-  { id: 'minimal', label: 'Минимализм', theme: 'light', accent: '#1CB0F6' },
-  { id: 'neon', label: 'Неон', theme: 'dark', accent: '#CE82FF' },
+  { id: 'modern', label: 'Современный', theme: 'dark', accent: '#58CC02', mood: 'modern minimalist coffee shop interior' },
+  { id: 'classic', label: 'Классический', theme: 'light', accent: '#8B5E3C', mood: 'classic cozy european cafe interior' },
+  { id: 'rustic', label: 'Лофт / Рустик', theme: 'dark', accent: '#FF9600', mood: 'rustic loft brick wall coffee shop' },
+  { id: 'minimal', label: 'Минимализм', theme: 'light', accent: '#1CB0F6', mood: 'clean minimal white coffee shop' },
+  { id: 'neon', label: 'Неон', theme: 'dark', accent: '#CE82FF', mood: 'neon cyberpunk bar interior' },
 ];
 
 function generateVenueCode() {
@@ -18,38 +18,84 @@ function generateId() {
   return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
 
-function applyVenueStyle(styleId) {
+function applyVenueStyle(styleId, imageUrl) {
   const style = VENUE_STYLES.find(s => s.id === styleId) || VENUE_STYLES[0];
   document.documentElement.style.setProperty('--venue-accent', style.accent);
   document.body.classList.remove('style-modern', 'style-classic', 'style-rustic', 'style-minimal', 'style-neon');
   document.body.classList.add('style-' + style.id);
+  applyVenueBackground(style, imageUrl);
   if (style.theme) {
     updateSetting('theme', style.theme);
     applyTheme(style.theme);
   }
 }
 
+function applyVenueBackground(style, imageUrl) {
+  let existing = document.getElementById('venue-bg');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = 'venue-bg';
+    existing.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;';
+    document.body.prepend(existing);
+  }
+  const gradients = {
+    modern: 'linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,58,30,0.92) 50%, rgba(0,0,0,0.95) 100%)',
+    classic: 'linear-gradient(135deg, rgba(243,231,215,0.95) 0%, rgba(214,192,166,0.95) 100%)',
+    rustic: 'linear-gradient(135deg, rgba(44,30,20,0.95) 0%, rgba(74,50,33,0.92) 50%, rgba(26,18,13,0.95) 100%)',
+    minimal: 'linear-gradient(135deg, rgba(248,249,250,0.95) 0%, rgba(233,236,239,0.95) 100%)',
+    neon: 'linear-gradient(135deg, rgba(13,2,33,0.95) 0%, rgba(42,10,59,0.92) 50%, rgba(0,0,0,0.95) 100%)',
+  };
+  if (imageUrl) {
+    existing.style.background = `${gradients[style.id] || gradients.modern}, url('${imageUrl}') center/cover no-repeat`;
+    existing.style.backgroundBlendMode = 'overlay';
+    existing.style.opacity = '0.35';
+  } else {
+    existing.style.background = gradients[style.id] || gradients.modern;
+    existing.style.backgroundBlendMode = 'normal';
+    existing.style.opacity = '0.18';
+  }
+}
+
+function venueMoodImageUrl(style, venueName) {
+  const prompt = encodeURIComponent(`${style.mood}, ${venueName || 'cafe'}`);
+  return `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
+}
+
 function isPlatformScreen() {
-  return ['roleSelect', 'ownerRegister', 'ownerSetup', 'ownerDashboard', 'staffRegister', 'staffJoin'].includes(state.screen);
+  return ['roleSelect', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
+}
+
+function normalizeVenue(venue) {
+  if (!venue) return null;
+  if (!venue.sections) venue.sections = [];
+  if (venue.items && !venue.sections.length) {
+    venue.sections.push({
+      id: generateId(),
+      name: 'Основное меню',
+      items: venue.items || [],
+      createdAt: venue.createdAt || Date.now(),
+    });
+  }
+  delete venue.items;
+  return venue;
 }
 
 function initPlatform() {
   const p = getProgress();
   state.auth = p.auth || null;
-  state.venue = p.venue || null;
+  state.venue = normalizeVenue(p.venue || null);
   state.staff = p.staff || null;
 
-  if (state.auth && state.venue && state.venue.style) {
-    applyVenueStyle(state.venue.style);
+  if (state.venue && state.venue.style) {
+    applyVenueStyle(state.venue.style, state.venue.bgImage || null);
   }
 
-  if (state.auth) {
-    loadVenueIntoState();
+  if (state.auth && state.venue) {
     window.renderHome = renderPlatformHome;
     if (state.auth.role === 'owner') {
-      state.screen = (state.venue && state.venue.items && state.venue.items.length) ? 'home' : 'ownerSetup';
+      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
     } else {
-      state.screen = (state.venue && state.venue.items && state.venue.items.length) ? 'home' : 'staffJoin';
+      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'staffJoin';
     }
   } else if (p.profile) {
     state.screen = 'home';
@@ -66,14 +112,25 @@ function initPlatform() {
   });
 }
 
-function loadVenueIntoState() {
-  const venue = state.venue;
-  if (!venue || !venue.items || !venue.items.length) return;
-  state.allData = venue.items.map(normalizeItem);
+function getVenueSections() {
+  return (state.venue && state.venue.sections) || [];
+}
+
+function getVenueSection(sectionId) {
+  return getVenueSections().find(s => s.id === sectionId) || getVenueSections()[0] || null;
+}
+
+function loadVenueIntoState(sectionId) {
+  const sections = getVenueSections();
+  if (!sections.length) return;
+  const section = sectionId ? (sections.find(s => s.id === sectionId) || sections[0]) : sections[0];
+  if (!section) return;
+  state.currentSectionId = section.id;
+  state.allData = (section.items || []).map(normalizeItem);
   buildLessons();
-  state.section = 'venue_progress';
-  state.sectionLabel = venue.name || 'Меню заведения';
-  state.isDrinksChapter = venue.items.some(it => it._hasGrams);
+  state.section = 'venue_' + section.id;
+  state.sectionLabel = section.name;
+  state.isDrinksChapter = (section.items || []).some(it => it._hasGrams);
 }
 
 function selectRole(role) {
@@ -112,7 +169,7 @@ function registerOwner() {
     name: venueName,
     style: style,
     code: code,
-    items: [],
+    sections: [],
     staff: [],
     createdAt: Date.now(),
   };
@@ -145,9 +202,8 @@ function joinStaffVenue() {
   const name = (draft.name || '').trim();
   if (!code || !name) return;
 
-  // In localStorage mode, the venue is searched in the same storage.
   const p = getProgress();
-  const venue = p.venue;
+  let venue = normalizeVenue(p.venue || null);
   if (!venue || venue.code !== code) {
     showPlatformToast('Код не найден на этом устройстве. Владелец и сотрудник должны использовать один браузер (до появления сервера).');
     return;
@@ -165,7 +221,7 @@ function joinStaffVenue() {
   state.platformDraft = null;
 
   saveProgress({ auth: auth, venue: venue, staff: staff, profile: state.profile });
-  applyVenueStyle(venue.style);
+  applyVenueStyle(venue.style, venue.bgImage || null);
   loadVenueIntoState();
   window.renderHome = renderPlatformHome;
   state.screen = 'home';
@@ -173,9 +229,9 @@ function joinStaffVenue() {
   playSound('correct');
 }
 
-function startVenueCourse() {
-  if (!state.venue || !state.venue.items.length) return;
-  loadVenueIntoState();
+function startVenueCourse(sectionId) {
+  if (!state.venue || !state.venue.sections.length) return;
+  loadVenueIntoState(sectionId);
   state.screen = 'path';
   render();
 }
@@ -280,7 +336,7 @@ function renderOwnerSetup() {
 
         <div class="upload-actions">
           <button class="onboarding-btn secondary" onclick="parseTTKPaste()">Распознать текст</button>
-          <button class="onboarding-btn ${parsedCount ? '' : 'disabled'}" onclick="saveVenueCourse()">Сохранить курс (${parsedCount})</button>
+          ${parsedCount ? `<button class="onboarding-btn" onclick="openCourseEditor()">Редактор (${parsedCount})</button>` : ''}
         </div>
 
         ${parsedCount ? `<div class="parsed-preview">Распознано позиций: <strong>${parsedCount}</strong></div>` : ''}
@@ -293,9 +349,9 @@ function renderOwnerSetup() {
 
 function renderOwnerDashboard() {
   const venue = state.venue;
-  const itemCount = venue.items ? venue.items.length : 0;
+  const sections = getVenueSections();
+  const itemCount = sections.reduce((sum, s) => sum + (s.items ? s.items.length : 0), 0);
   const staffCount = venue.staff ? venue.staff.length : 0;
-  const hasItems = itemCount > 0;
   app.innerHTML = `
     <div class="top-bar">
       <button class="close-btn" onclick="ownerBackToHome()">← Назад</button>
@@ -314,12 +370,30 @@ function renderOwnerDashboard() {
           <div class="dashboard-stat-label">Позиций в меню</div>
         </div>
         <div class="dashboard-stat">
+          <div class="dashboard-stat-value">${sections.length}</div>
+          <div class="dashboard-stat-label">Разделов</div>
+        </div>
+        <div class="dashboard-stat">
           <div class="dashboard-stat-value">${staffCount}</div>
           <div class="dashboard-stat-label">Сотрудников</div>
         </div>
       </div>
-      <button class="stats-btn" style="${cementStyle()}" onclick="startVenueCourse()" ${hasItems ? '' : 'disabled'}>📚 Изучить курс</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">🔄 Загрузить ТТК заново</button>
+      <div class="section-management">
+        <div class="platform-label">Разделы</div>
+        ${sections.length ? sections.map(s => `
+          <div class="section-row">
+            <div>
+              <div class="section-row-name">${s.name}</div>
+              <div class="section-row-meta">${s.items ? s.items.length : 0} позиций • ${Math.ceil((s.items ? s.items.length : 0) / 8)} уроков</div>
+            </div>
+            <button class="section-row-action" onclick="editSection('${s.id}')">✎</button>
+            <button class="section-row-action" onclick="deleteSection('${s.id}')">🗑</button>
+          </div>
+        `).join('') : '<div class="section-empty">Пока нет разделов</div>'}
+        <button class="onboarding-btn secondary" onclick="promptNewSection()">+ Новый раздел</button>
+      </div>
+      <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">🔄 Загрузить ТТК</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">✨ Сгенерировать фон заведения</button>
     </div>
   `;
 }
@@ -364,8 +438,10 @@ function renderPlatformHome() {
   const stats = getGlobalStats();
   const venue = state.venue;
   const isOwner = state.auth && state.auth.role === 'owner';
-  const hasItems = venue && venue.items && venue.items.length;
-  const itemCount = hasItems ? venue.items.length : 0;
+  const sections = getVenueSections();
+  const hasSections = sections.length > 0;
+  const itemCount = sections.reduce((sum, s) => sum + (s.items ? s.items.length : 0), 0);
+  const bgImage = venue && venue.bgImage ? `url('${venue.bgImage}')` : '';
 
   app.innerHTML = `
     <div class="top-bar">
@@ -384,7 +460,7 @@ function renderPlatformHome() {
       </div>
       <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">⚙️</button>
     </div>
-    <div class="home-screen">
+    <div class="home-screen" ${bgImage ? `style="--venue-bg:${bgImage}"` : ''}>
       <div class="mascot-area">
         <span class="mascot">${state.auth && state.auth.role === 'owner' ? '🏪' : '👨‍🍳'}</span>
         <div class="app-title">${venue ? venue.name : 'MET Академия'}</div>
@@ -408,21 +484,23 @@ function renderPlatformHome() {
       <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">📊 Характеристика обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">🏆 Рейтинг</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">🏅 Достижения ${renderAchievementBadge()}</button>
-      <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse()" ${hasItems ? '' : 'disabled'}>
-        <div class="card-img-wrap">
-          <div class="card-img-placeholder">${venue ? getVenueEmoji(venue.style) : '🍽️'}</div>
-        </div>
-        <div class="card-info">
-          ${venue ? venue.name : 'Курс заведения'}
-          <small>${hasItems ? `${itemCount} позиций • ${Math.ceil(itemCount / 8)} уроков` : 'Сначала загрузите ТТК'}</small>
-        </div>
-        <div class="card-arrow">›</div>
-      </button>
+      ${hasSections ? sections.map(s => `
+        <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
+          <div class="card-img-wrap">
+            <div class="card-img-placeholder">${s.image ? `<img src="${s.image}" alt="">` : getSectionEmoji(s.name)}</div>
+          </div>
+          <div class="card-info">
+            ${s.name}
+            <small>${s.items ? s.items.length : 0} позиций • ${Math.ceil((s.items ? s.items.length : 0) / 8)} уроков</small>
+          </div>
+          <div class="card-arrow">›</div>
+        </button>
+      `).join('') : `<div class="parsed-preview" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${isOwner ? 'Загрузите ТТК, чтобы создать первый раздел' : 'Владелец ещё не загрузил меню'}</div>`}
       ${isOwner ? `<button class="section-card" style="${cementStyle()}" onclick="ownerDashboard()">
         <div class="card-img-wrap"><div class="card-img-placeholder">🏪</div></div>
         <div class="card-info">
           Управление заведением
-          <small>Код, сотрудники, загрузка ТТК</small>
+          <small>Код, сотрудники, разделы, фон</small>
         </div>
         <div class="card-arrow">›</div>
       </button>` : ''}
@@ -431,9 +509,307 @@ function renderPlatformHome() {
   `;
 }
 
+function getSectionEmoji(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('кофе') || n.includes('напит')) return '☕';
+  if (n.includes('бар')) return '🍸';
+  if (n.includes('десерт') || n.includes('выпеч')) return '🍰';
+  if (n.includes('кухн') || n.includes('блюд') || n.includes('завтрак') || n.includes('обед') || n.includes('ужин')) return '🍽️';
+  if (n.includes('салат')) return '🥗';
+  if (n.includes('суп')) return '🍲';
+  return '📋';
+}
+
 function getVenueEmoji(style) {
   const map = { modern: '☕', classic: '🍷', rustic: '🍺', minimal: '🥛', neon: '🍸' };
   return map[style] || '🍽️';
+}
+
+// ====================== COURSE EDITOR ======================
+
+function openCourseEditor() {
+  const draft = state.platformDraft || {};
+  if (!draft.parsedItems || !draft.parsedItems.length) {
+    showPlatformToast('Сначала распознайте ТТК');
+    return;
+  }
+  state.screen = 'courseEditor';
+  render();
+}
+
+function renderCourseEditor() {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  const sectionName = draft.sectionName || 'Основное меню';
+  const hasExisting = state.venue && state.venue.sections && state.venue.sections.length;
+  const sectionOptions = hasExisting
+    ? `<option value="">Новый раздел</option>` + state.venue.sections.map(s => `<option value="${s.name}">${s.name}</option>`).join('')
+    : `<option value="">Основное меню</option>`;
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="state.screen='ownerSetup'; render()">← Назад</button>
+      </div>
+      <div class="platform-title">📝 Редактор курса</div>
+      <div class="platform-subtitle">Проверьте и отредактируйте распознанные позиции</div>
+      <div class="platform-form">
+        <label class="platform-label">Сохранить в раздел</label>
+        <div class="section-save-row">
+          <select class="platform-input" id="editor-section-select" onchange="onEditorSectionChange(this.value)">
+            ${sectionOptions}
+          </select>
+          <input class="platform-input" type="text" id="editor-section-name" value="${sectionName}" placeholder="Название раздела" oninput="updatePlatformDraft('sectionName', this.value)">
+        </div>
+        <div class="editor-items">
+          ${items.map((it, idx) => renderCourseEditorItem(it, idx)).join('')}
+        </div>
+        <button class="onboarding-btn secondary" onclick="addParsedItem()">+ Добавить позицию</button>
+        <button class="onboarding-btn" onclick="saveCourseFromEditor()">💾 Сохранить курс (${items.length})</button>
+      </div>
+    </div>
+  `;
+}
+
+function onEditorSectionChange(val) {
+  if (val) updatePlatformDraft('sectionName', val);
+}
+
+function renderCourseEditorItem(it, idx) {
+  const hasGrams = it.correct && it.correct[0] && typeof it.correct[0] === 'object';
+  const components = (it.correct || []).map(c => typeof c === 'object' ? c.ingredient : c).join(', ');
+  const grams = hasGrams ? (it.correct || []).map(c => c.grams || '').join(', ') : '';
+  const image = it.image || '';
+  return `
+    <div class="editor-item" data-idx="${idx}">
+      <div class="editor-item-header">
+        <input class="platform-input editor-item-name" type="text" value="${escapeHtml(it.name)}" placeholder="Название позиции" oninput="updateParsedItem(${idx}, 'name', this.value)">
+        <button class="editor-item-delete" onclick="deleteParsedItem(${idx})">🗑</button>
+      </div>
+      <label class="platform-label">Состав (через запятую)</label>
+      <input class="platform-input" type="text" value="${escapeHtml(components)}" placeholder="Ингредиент 1, Ингредиент 2" oninput="updateParsedItemComponents(${idx}, this.value)">
+      <label class="platform-label">Граммовки (через запятую, опционально)</label>
+      <input class="platform-input" type="text" value="${escapeHtml(grams)}" placeholder="10, 20, 30" oninput="updateParsedItemGrams(${idx}, this.value)">
+      <label class="platform-label">Фото (URL или загрузите файл)</label>
+      <div class="editor-image-row">
+        <input class="platform-input" type="text" value="${escapeHtml(image)}" placeholder="https://..." oninput="updateParsedItemImage(${idx}, this.value)">
+        <input type="file" id="editor-img-${idx}" accept="image/*" style="display:none" onchange="handleEditorImage(${idx}, this.files[0])">
+        <button class="editor-img-btn" onclick="document.getElementById('editor-img-${idx}').click()">📷</button>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+function updateParsedItem(idx, field, value) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items[idx]) return;
+  items[idx][field] = value.trim();
+}
+
+function updateParsedItemComponents(idx, value) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items[idx]) return;
+  const comps = value.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+  const oldCorrect = items[idx].correct || [];
+  const hasGrams = oldCorrect[0] && typeof oldCorrect[0] === 'object';
+  if (hasGrams) {
+    items[idx].correct = comps.map((c, i) => ({ ingredient: c, grams: (oldCorrect[i] && oldCorrect[i].grams) || 0 }));
+  } else {
+    items[idx].correct = comps;
+  }
+  items[idx].info_text = `💡 Точный состав по ТТК:\n• ${items[idx].correct.map(c => typeof c === 'object' ? c.ingredient : c).join('\n• ')}`;
+}
+
+function updateParsedItemGrams(idx, value) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items[idx]) return;
+  const grams = value.split(/[,;|]/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+  const comps = (items[idx].correct || []).map(c => typeof c === 'object' ? c.ingredient : c);
+  items[idx].correct = comps.map((c, i) => ({ ingredient: c, grams: grams[i] || 0 }));
+  items[idx].info_text = `💡 Точный состав по ТТК:\n• ${items[idx].correct.map(c => `${c.ingredient} (${c.grams}г)`).join('\n• ')}`;
+}
+
+function updateParsedItemImage(idx, value) {
+  updateParsedItem(idx, 'image', value);
+}
+
+function handleEditorImage(idx, file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => updateParsedItemImage(idx, e.target.result);
+  reader.readAsDataURL(file);
+}
+
+function deleteParsedItem(idx) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  items.splice(idx, 1);
+  render();
+}
+
+function addParsedItem() {
+  const draft = state.platformDraft || {};
+  draft.parsedItems = draft.parsedItems || [];
+  draft.parsedItems.push({
+    type: 'composition',
+    name: '',
+    correct: [],
+    info_text: '💡 Точный состав по ТТК:\n• ',
+  });
+  render();
+}
+
+function saveCourseFromEditor() {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items.length) return;
+
+  const validItems = items.filter(it => it.name && it.correct && it.correct.length);
+  if (!validItems.length) {
+    showPlatformToast('Нет позиций для сохранения');
+    return;
+  }
+
+  const sectionName = (draft.sectionName || 'Основное меню').trim();
+  const venue = state.venue;
+  venue.sections = venue.sections || [];
+
+  let target = venue.sections.find(s => s.name === sectionName);
+  if (!target) {
+    target = { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
+    venue.sections.push(target);
+  }
+
+  const allComponents = new Set();
+  validItems.forEach(it => {
+    it.correct.forEach(c => allComponents.add(typeof c === 'object' ? c.ingredient : c));
+  });
+  const allComponentsArray = [...allComponents];
+
+  target.items = validItems.map(item => {
+    const hasGrams = item.correct[0] && typeof item.correct[0] === 'object';
+    const correctNames = item.correct.map(c => typeof c === 'object' ? c.ingredient : c);
+    const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, allComponentsArray.length - correctNames.length));
+    if (hasGrams) {
+      return {
+        type: 'composition',
+        name: item.name,
+        correct: item.correct,
+        wrong: distractors,
+        info_text: item.info_text,
+        image: item.image || null,
+      };
+    } else {
+      const pool = shuffle([...correctNames, ...distractors]);
+      return {
+        type: 'composition',
+        name: item.name,
+        correct: correctNames,
+        pool: pool,
+        info_text: item.info_text,
+        image: item.image || null,
+      };
+    }
+  });
+
+  state.platformDraft = null;
+  saveProgress({ venue: venue });
+  window.renderHome = renderPlatformHome;
+  state.screen = 'home';
+  render();
+  showPlatformToast(`Курс «${target.name}» сохранён`);
+  playSound('correct');
+}
+
+function promptNewSection() {
+  const name = window.prompt('Название нового раздела:', 'Новый раздел');
+  if (name && name.trim()) {
+    createSection(name.trim());
+  }
+}
+
+function createSection(name) {
+  const venue = state.venue;
+  venue.sections = venue.sections || [];
+  venue.sections.push({ id: generateId(), name, items: [], createdAt: Date.now() });
+  saveProgress({ venue: venue });
+  render();
+}
+
+function editSection(sectionId) {
+  const section = getVenueSection(sectionId);
+  if (!section) return;
+  const draft = state.platformDraft || {};
+  draft.parsedItems = (section.items || []).map(item => {
+    const copy = JSON.parse(JSON.stringify(item));
+    if (copy._normalized) delete copy._normalized;
+    if (copy._ingredients) delete copy._ingredients;
+    if (copy._grams) delete copy._grams;
+    if (copy._pool) delete copy._pool;
+    if (copy._wrongPool) delete copy._wrongPool;
+    if (copy._hasGrams) delete copy._hasGrams;
+    if (copy._image) { copy.image = copy._image; delete copy._image; }
+    return copy;
+  });
+  draft.sectionName = section.name;
+  state.platformDraft = draft;
+  state.screen = 'courseEditor';
+  render();
+}
+
+function deleteSection(sectionId) {
+  const venue = state.venue;
+  if (!venue || !venue.sections) return;
+  venue.sections = venue.sections.filter(s => s.id !== sectionId);
+  saveProgress({ venue: venue });
+  render();
+}
+
+function generateVenueMoodImage() {
+  const venue = state.venue;
+  const style = VENUE_STYLES.find(s => s.id === venue.style) || VENUE_STYLES[0];
+  const url = venueMoodImageUrl(style, venue.name);
+  venue.bgImage = url;
+  saveProgress({ venue: venue });
+  const img = new Image();
+  img.onload = () => {
+    applyVenueBackground(style, url);
+    render();
+    showPlatformToast('Фон заведения обновлён');
+  };
+  img.onerror = () => showPlatformToast('Не удалось загрузить изображение. Попробуйте ещё раз.');
+  img.src = url;
+}
+
+function applyVenueBackground(style, imageUrl) {
+  let existing = document.getElementById('venue-bg');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = 'venue-bg';
+    existing.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;';
+    document.body.prepend(existing);
+  }
+  const gradients = {
+    modern: 'linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,58,30,0.92) 50%, rgba(0,0,0,0.95) 100%)',
+    classic: 'linear-gradient(135deg, rgba(243,231,215,0.95) 0%, rgba(214,192,166,0.95) 100%)',
+    rustic: 'linear-gradient(135deg, rgba(44,30,20,0.95) 0%, rgba(74,50,33,0.92) 50%, rgba(26,18,13,0.95) 100%)',
+    minimal: 'linear-gradient(135deg, rgba(248,249,250,0.95) 0%, rgba(233,236,239,0.95) 100%)',
+    neon: 'linear-gradient(135deg, rgba(13,2,33,0.95) 0%, rgba(42,10,59,0.92) 50%, rgba(0,0,0,0.95) 100%)',
+  };
+  if (imageUrl) {
+    existing.style.background = `${gradients[style.id] || gradients.modern}, url('${imageUrl}') center/cover no-repeat`;
+    existing.style.backgroundBlendMode = 'overlay';
+    existing.style.opacity = '0.35';
+  } else {
+    existing.style.background = gradients[style.id] || gradients.modern;
+    existing.style.opacity = '0.18';
+  }
 }
 
 // ====================== PARSERS ======================
@@ -569,9 +945,7 @@ function parseTTKCSV(text) {
       components = rawComponents.map((c, idx) => {
         const g = rawGrams[idx];
         const componentName = cleanName(c);
-        if (g !== undefined && !isNaN(g)) {
-          grams[componentName] = g;
-        }
+        if (g !== undefined && !isNaN(g)) grams[componentName] = g;
         return componentName;
       });
     } else {
@@ -633,6 +1007,7 @@ function setParsedItems(items, sourceName) {
   state.platformDraft = state.platformDraft || {};
   state.platformDraft.parsedItems = items;
   state.platformDraft.fileName = sourceName;
+  state.platformDraft.sectionName = (state.platformDraft.sectionName || 'Основное меню');
   if (items.length) {
     showPlatformToast(`Распознано ${items.length} позиций`);
   } else {
@@ -646,16 +1021,25 @@ function saveVenueCourse() {
   const items = draft.parsedItems || [];
   if (!items.length) return;
 
+  const validItems = items.filter(it => it.name && it.correct && it.correct.length);
+  if (!validItems.length) return;
+
   const venue = state.venue;
+  venue.sections = venue.sections || [];
+  const sectionName = (draft.sectionName || 'Основное меню').trim();
+  let target = venue.sections.find(s => s.name === sectionName);
+  if (!target) {
+    target = { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
+    venue.sections.push(target);
+  }
+
   const allComponents = new Set();
-  items.forEach(it => {
-    it.correct.forEach(c => {
-      allComponents.add(typeof c === 'object' ? c.ingredient : c);
-    });
+  validItems.forEach(it => {
+    it.correct.forEach(c => allComponents.add(typeof c === 'object' ? c.ingredient : c));
   });
   const allComponentsArray = [...allComponents];
 
-  venue.items = items.map(item => {
+  target.items = validItems.map(item => {
     const hasGrams = item.correct[0] && typeof item.correct[0] === 'object';
     const correctNames = item.correct.map(c => typeof c === 'object' ? c.ingredient : c);
     const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, allComponentsArray.length - correctNames.length));
@@ -683,10 +1067,10 @@ function saveVenueCourse() {
 
   state.platformDraft = null;
   saveProgress({ venue: venue });
-  loadVenueIntoState();
+  window.renderHome = renderPlatformHome;
   state.screen = 'home';
   render();
-  showPlatformToast('Курс сохранён!');
+  showPlatformToast(`Курс «${target.name}» сохранён`);
   playSound('correct');
 }
 
