@@ -9,4 +9,4 @@ The "Start application" workflow runs `python3 server.py`, which serves the proj
 ## Data files
 
 - `dishes.json`, `drinks.json`, `desserts.json`, `drink_pf.json`, `kitchen_pf.json` — menu content consumed by `index.html`.
-- `img/` — images and avatar assets.
+- `img/` — images.
