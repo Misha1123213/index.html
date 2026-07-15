@@ -14,6 +14,10 @@ function generateVenueCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function isValidVenueCode(code) {
+  return /^\d{6}$/.test(String(code || '').trim());
+}
+
 function generateId() {
   return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
@@ -156,7 +160,8 @@ function validatePlatformButton() {
   if (!btn) return;
   let valid = true;
   if (state.screen === 'ownerRegister') {
-    valid = !!(draft.name && draft.name.trim() && draft.venueName && draft.venueName.trim());
+    const pin = (draft.pin || '').trim();
+    valid = !!(draft.name && draft.name.trim() && draft.venueName && draft.venueName.trim()) && (!pin || isValidVenueCode(pin));
   } else if (state.screen === 'staffRegister') {
     valid = !!(draft.name && draft.name.trim());
   } else if (state.screen === 'staffJoin') {
@@ -182,9 +187,10 @@ function registerOwner() {
   const name = (draft.name || '').trim();
   const venueName = (draft.venueName || '').trim();
   const style = draft.style || 'modern';
+  const customPin = (draft.pin || '').trim();
   if (!name || !venueName) return;
 
-  const code = generateVenueCode();
+  const code = isValidVenueCode(customPin) ? customPin : generateVenueCode();
   const venue = {
     id: generateId(),
     name: venueName,
@@ -282,7 +288,7 @@ function renderRoleSelect() {
   app.innerHTML = `
     <div class="platform-screen role-select">
       <div class="platform-mascot">☕</div>
-      <div class="platform-title">MET Академия</div>
+      <div class="platform-title">Cognitio</div>
       <div class="platform-subtitle">Платформа для изучения составов блюд и напитков</div>
       <div class="role-cards">
         <button class="role-card" onclick="selectRole('owner')">
@@ -304,8 +310,9 @@ function renderOwnerRegister() {
   const draft = state.platformDraft || {};
   const name = draft.name || '';
   const venueName = draft.venueName || '';
+  const pin = draft.pin || '';
   const style = draft.style || 'modern';
-  const valid = name.trim() && venueName.trim();
+  const valid = name.trim() && venueName.trim() && (!pin.trim() || isValidVenueCode(pin));
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
@@ -317,6 +324,8 @@ function renderOwnerRegister() {
         <input class="platform-input" type="text" id="owner-name" value="${name}" placeholder="Иван" maxlength="30" oninput="updatePlatformDraft('name', this.value); validatePlatformButton()">
         <label class="platform-label">Название заведения</label>
         <input class="platform-input" type="text" id="venue-name" value="${venueName}" placeholder="Кофейня 'Зерно'" maxlength="40" oninput="updatePlatformDraft('venueName', this.value); validatePlatformButton()">
+        <label class="platform-label">Пин-код для сотрудников (6 цифр, опционально)</label>
+        <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-pin" value="${pin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('pin', v); validatePlatformButton()">
         <label class="platform-label">Стиль заведения</label>
         <div class="style-grid">
           ${VENUE_STYLES.map(s => `
@@ -448,7 +457,7 @@ function renderStaffJoin() {
       <div class="platform-title">🔑 Код заведения</div>
       <div class="platform-subtitle">Введите 6-значный код, который вам дал владелец</div>
       <div class="platform-form">
-        <input class="platform-input code-input" type="text" id="venue-code" value="${code}" placeholder="123456" maxlength="6" oninput="updatePlatformDraft('code', this.value); validatePlatformButton()">
+        <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="venue-code" value="${code}" placeholder="123456" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
         <button id="platform-primary-btn" class="onboarding-btn ${code.trim().length === 6 ? '' : 'disabled'}" onclick="joinStaffVenue()">Присоединиться</button>
       </div>
     </div>
@@ -484,7 +493,7 @@ function renderPlatformHome() {
     <div class="home-screen" ${bgImage ? `style="--venue-bg:${bgImage}"` : ''}>
       <div class="mascot-area">
         <span class="mascot">${state.auth && state.auth.role === 'owner' ? '🏪' : '👨‍🍳'}</span>
-        <div class="app-title">${venue ? venue.name : 'MET Академия'}</div>
+        <div class="app-title">${venue ? venue.name : 'Cognitio'}</div>
         <div class="app-subtitle">${venue ? 'Изучай меню своего заведения' : 'Платформа обучения'}</div>
       </div>
       ${renderDailyGoalCard()}
