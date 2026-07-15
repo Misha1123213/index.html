@@ -276,7 +276,7 @@
         button { transition: transform 0.12s ease; }
         .section-card:active, .stats-btn:active, .daily-goal-card:active,
         .modal-btn:active, .result-btn:active, .seg-btn:active,
-        .onboarding-btn:active, .avatar-editor-btn:active { transform: scale(0.96); }
+        .onboarding-btn:active { transform: scale(0.96); }
         .section-card, .stats-btn, .daily-goal-card { will-change: transform; }
 
         /* Screen enter transition (only on real screen changes) */
@@ -1551,7 +1551,7 @@
             font-weight: 700;
         }
 
-        /* Onboarding: nickname + avatar */
+        /* Onboarding: nickname */
         .onboarding-screen {
             min-height: 100vh;
             display: flex;
@@ -1595,32 +1595,6 @@
         }
         .nickname-input:focus {
             border-color: var(--green);
-        }
-        .avatar-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            max-width: 320px;
-            margin-bottom: 32px;
-        }
-        .avatar-btn {
-            width: 68px;
-            height: 68px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            background: rgba(255,255,255,0.08);
-            font-size: 34px;
-            cursor: pointer;
-            transition: 0.12s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .avatar-btn:hover { transform: scale(1.05); }
-        .avatar-btn.selected {
-            border-color: var(--green);
-            background: rgba(88,204,2,0.15);
-            transform: scale(1.08);
         }
         .onboarding-btn {
             width: 100%;
@@ -1671,10 +1645,6 @@
             align-items: center;
             text-align: center;
         }
-        .podium-avatar {
-            font-size: 44px;
-            margin-bottom: 4px;
-        }
         .podium-rank {
             width: 32px;
             height: 32px;
@@ -1709,7 +1679,7 @@
         }
         .leaderboard-row {
             display: grid;
-            grid-template-columns: 36px 44px 1fr auto;
+            grid-template-columns: 36px 1fr auto;
             align-items: center;
             gap: 12px;
             padding: 12px 14px;
@@ -1723,10 +1693,6 @@
         .leaderboard-rank {
             font-weight: 800;
             font-size: 16px;
-            text-align: center;
-        }
-        .leaderboard-avatar {
-            font-size: 28px;
             text-align: center;
         }
         .leaderboard-name {
@@ -1752,154 +1718,13 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 12px 6px 6px;
+            padding: 6px 14px;
             border-radius: 24px;
             background: rgba(255,255,255,0.08);
-            cursor: pointer;
-            border: none;
             color: var(--text-primary);
             font-family: inherit;
             font-size: 14px;
             font-weight: 700;
-        }
-        .profile-chip:active { transform: scale(0.97); }
-        .profile-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--concrete);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-        .avatar-stack {
-            position: relative;
-            display: inline-flex;
-            border-radius: 50%;
-            overflow: hidden;
-            background: var(--concrete);
-            vertical-align: middle;
-        }
-        .avatar-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-            /* Source art is solid black. Dark theme -> white, light theme -> black. */
-            filter: invert(1);
-        }
-        :root[data-theme="light"] .avatar-layer {
-            filter: none;
-        }
-
-        .avatar-editor-screen {
-            min-height: 100vh;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            display: flex;
-            flex-direction: column;
-        }
-        .avatar-editor-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-        }
-        .avatar-editor-title {
-            font-size: 18px;
-            font-weight: 800;
-        }
-        .avatar-editor-preview {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-        }
-        .avatar-editor-preview .avatar-stack {
-            width: 140px !important;
-            height: 140px !important;
-            background: var(--bg-light);
-        }
-        .avatar-editor-categories {
-            display: flex;
-            gap: 8px;
-            padding: 0 16px 12px;
-            overflow-x: auto;
-        }
-        .avatar-editor-cat {
-            flex: 0 0 auto;
-            padding: 8px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.05);
-            color: var(--text-primary);
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .avatar-editor-cat.active {
-            background: var(--green);
-            border-color: var(--green);
-            color: #fff;
-        }
-        .avatar-editor-options {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            padding: 0 16px 16px;
-            overflow-y: auto;
-        }
-        .avatar-editor-option {
-            aspect-ratio: 1;
-            border-radius: 16px;
-            border: 3px solid transparent;
-            background: var(--bg-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            overflow: hidden;
-        }
-        .avatar-editor-option.selected {
-            border-color: var(--green);
-        }
-        .avatar-editor-option .avatar-stack {
-            width: 100% !important;
-            height: 100% !important;
-            background: transparent;
-        }
-        .avatar-editor-option-none {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-secondary);
-        }
-        .avatar-editor-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 16px;
-            border-top: 1px solid var(--border);
-        }
-        .avatar-editor-btn {
-            padding: 14px;
-            border-radius: 14px;
-            border: none;
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .avatar-editor-btn.secondary {
-            background: rgba(255,255,255,0.1);
-            color: var(--text-primary);
-        }
-        .avatar-editor-btn.primary {
-            background: var(--green);
-            color: #fff;
         }
 
         /* Cement texture applied dynamically via JS */
@@ -1940,28 +1765,10 @@ let state = {
     profile: null,
     onboardingStep: 'nickname',
     onboardingNickname: '',
-    onboardingAvatar: null,
-    avatarEditor: null,
 };
 
 // Cement texture images for variety
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
-const AVATAR_EMOJIS = ['🦉','🐻','🦊','🐼','🐯','🐰','🐧','🐸','🐶','🐱','🦁','🐨'];
-// Editable categories shown in the avatar editor. Ears are still rendered
-// (see AVATAR_RENDER_ORDER) but are not user-editable.
-const AVATAR_LAYERS = [
-    { key: 'face', label: 'Лицо' },
-    { key: 'eyes', label: 'Глаза' },
-    { key: 'brows', label: 'Брови' },
-    { key: 'nose', label: 'Нос' },
-    { key: 'mouth', label: 'Рот' },
-    { key: 'hair', label: 'Причёска' }
-];
-const AVATAR_RENDER_ORDER = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair'];
-const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
-const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1' };
-const DEFAULT_AVATAR_EMOJI = '☕';
-let avatarConfig = null;
 let cementCounter = 0;
 function nextCement() {
     const img = CEMENT_IMAGES[cementCounter % CEMENT_IMAGES.length];
@@ -2574,39 +2381,6 @@ function renderPhotoFallbackString(name, cls) {
 // ====================== RENDERING ======================
 const app = document.getElementById('app');
 
-function renderAvatar(avatar, size = 32) {
-    if (!avatar) {
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${DEFAULT_AVATAR_EMOJI}</span>`;
-    }
-    if (typeof avatar === 'string') {
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${avatar}</span>`;
-    }
-    // if assets are not generated yet, show the migrated emoji or default
-    if (!avatarConfig || Object.keys(avatarConfig).length === 0) {
-        const emoji = avatar.avatarEmoji || DEFAULT_AVATAR_EMOJI;
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${emoji}</span>`;
-    }
-    const order = AVATAR_RENDER_ORDER;
-    const parts = order.map(layer => {
-        const id = avatar[layer];
-        if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) return '';
-        return `<img class="avatar-layer" src="img/avatar/${layer}/${id}.png" alt="" onerror="this.style.display='none'">`;
-    }).join('');
-    return `<div class="avatar-stack" style="width:${size}px;height:${size}px">${parts}</div>`;
-}
-
-function cloneAvatar(avatar) {
-    return { ...DEFAULT_AVATAR, ...(avatar || {}) };
-}
-
-function migrateProfileAvatar(profile) {
-    if (!profile || !profile.avatar) return profile;
-    if (typeof profile.avatar === 'string') {
-        return { ...profile, avatar: cloneAvatar(), avatarEmoji: profile.avatar };
-    }
-    return { ...profile, avatar: cloneAvatar(profile.avatar) };
-}
-
 let _lastRenderedScreen = null;
 function render() {
     cementCounter = 0;
@@ -2619,7 +2393,6 @@ function render() {
         case 'path': renderPath(); break;
         case 'browse': renderBrowse(); break;
         case 'leaderboard': renderLeaderboard(); break;
-        case 'avatarEditor': renderAvatarEditor(); break;
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
     }
@@ -2687,13 +2460,12 @@ function showAchievements() {
 
 function renderHome() {
     const stats = getGlobalStats();
-    const profile = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const profile = state.profile || { nickname: 'Ты' };
     app.innerHTML = `
         <div class="top-bar">
-            <button class="profile-chip" onclick="openAvatarEditor()">
-                ${renderAvatar(profile.avatar, 32)}
+            <div class="profile-chip">
                 <span>${profile.nickname}</span>
-            </button>
+            </div>
             <div style="flex:1"></div>
             <div class="top-bar-stat">
                 <span class="icon">🔥</span>
@@ -2772,85 +2544,17 @@ function renderHome() {
     `;
 }
 
-function loadAvatarConfig() {
-    if (avatarConfig) return Promise.resolve(avatarConfig);
-    return fetch('img/avatar/config.json')
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null)
-        .then(cfg => {
-            avatarConfig = cfg || {};
-            return avatarConfig;
-        });
-}
-
-function renderAvatarEditorContent(mode) {
-    const editor = state.avatarEditor;
-    if (!editor) return '';
-    const cfg = avatarConfig || {};
-    const category = editor.category;
-    const options = cfg[category] || [];
-    const catsHTML = AVATAR_LAYERS.map(l => `
-        <button class="avatar-editor-cat ${category === l.key ? 'active' : ''}" onclick="selectAvatarCategory('${l.key}')">${l.label}</button>
-    `).join('');
-    const isOptional = OPTIONAL_LAYERS.includes(category);
-    const noneHTML = isOptional
-        ? `<div class="avatar-editor-option avatar-editor-option-none ${!editor.avatar[category] ? 'selected' : ''}" onclick="clearAvatarOption('${category}')">Нет</div>`
-        : '';
-    const optionsHTML = options.length === 0 && !isOptional
-        ? '<div class="avatar-editor-empty" style="padding:24px 0;text-align:center;color:var(--text-dim);font-size:13px">Нет вариантов для этой категории</div>'
-        : noneHTML + options.map(id => {
-            const selected = editor.avatar[category] === id;
-            const previewAvatar = { ...editor.avatar, [category]: id };
-            return `<div class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatarOption('${category}', '${id}')">${renderAvatar(previewAvatar, 48)}</div>`;
-        }).join('');
-    const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
-    return `
-        <div class="avatar-editor-preview">${renderAvatar(editor.avatar, 140)}</div>
-        <div class="avatar-editor-categories">${catsHTML}</div>
-        <div class="avatar-editor-options">${optionsHTML}</div>
-        <div class="avatar-editor-actions">
-            <button class="avatar-editor-btn secondary" onclick="backAvatarEditor()">Назад</button>
-            <button class="avatar-editor-btn primary" onclick="${mode === 'onboarding' ? 'finishOnboarding()' : 'saveAvatarEditor()'}">${doneLabel}</button>
-        </div>
-    `;
-}
 
 function renderOnboarding() {
-    if (state.onboardingStep === 'nickname') {
-        app.innerHTML = `
-            <div class="onboarding-screen">
-                <div class="onboarding-mascot">☕</div>
-                <div class="onboarding-title">Как тебя зовут?</div>
-                <div class="onboarding-subtitle">Создай персонажа, как в Duolingo</div>
-                <input class="nickname-input" type="text" placeholder="Введи никнейм" maxlength="20" value="${state.onboardingNickname}" oninput="setOnboardingNickname(this.value)">
-                <button class="onboarding-btn ${state.onboardingNickname.trim() ? '' : 'disabled'}" onclick="goToAvatar()">
-                    Продолжить
-                </button>
-            </div>
-        `;
-        return;
-    }
-
-    if (!state.avatarEditor) {
-        state.avatarEditor = { avatar: cloneAvatar(state.onboardingAvatar), category: 'face', mode: 'onboarding' };
-    }
-
-    if (avatarConfig === null) {
-        app.innerHTML = `
-            <div class="onboarding-screen">
-                <div class="onboarding-title">Загружаю варианты...</div>
-                <div class="onboarding-subtitle">Секундочку</div>
-            </div>
-        `;
-        return;
-    }
-
     app.innerHTML = `
-        <div class="avatar-editor-screen">
-            <div class="avatar-editor-header">
-                <div class="avatar-editor-title">Собери персонажа</div>
-            </div>
-            ${renderAvatarEditorContent('onboarding')}
+        <div class="onboarding-screen">
+            <div class="onboarding-mascot">☕</div>
+            <div class="onboarding-title">Как тебя зовут?</div>
+            <div class="onboarding-subtitle">Введи имя, чтобы начать обучение</div>
+            <input class="nickname-input" type="text" placeholder="Введи никнейм" maxlength="20" value="${state.onboardingNickname}" oninput="setOnboardingNickname(this.value)">
+            <button class="onboarding-btn ${state.onboardingNickname.trim() ? '' : 'disabled'}" onclick="finishOnboarding()">
+                Продолжить
+            </button>
         </div>
     `;
 }
@@ -2863,107 +2567,27 @@ function setOnboardingNickname(value) {
     }
 }
 
-function goToAvatar() {
-    if (!state.onboardingNickname.trim()) return;
-    state.onboardingAvatar = cloneAvatar();
-    state.avatarEditor = { avatar: cloneAvatar(), category: 'face', mode: 'onboarding' };
-    state.onboardingStep = 'avatar';
-    loadAvatarConfig().then(render);
-    render();
-}
-
-function selectAvatarCategory(key) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.category = key;
-    render();
-}
-
-function selectAvatarOption(category, id) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: id };
-    tapFeedback();
-    render();
-}
-
-function clearAvatarOption(category) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: null };
-    tapFeedback();
-    render();
-}
-
-function backAvatarEditor() {
-    if (!state.avatarEditor) return;
-    if (state.avatarEditor.mode === 'onboarding') {
-        state.avatarEditor = null;
-        state.onboardingStep = 'nickname';
-        state.onboardingAvatar = null;
-    } else {
-        state.avatarEditor = null;
-        state.screen = 'home';
-    }
-    render();
-}
-
-function saveAvatarEditor() {
-    if (!state.avatarEditor || state.avatarEditor.mode !== 'edit') return;
-    state.profile = { ...state.profile, avatar: state.avatarEditor.avatar };
-    saveProgress({ profile: state.profile });
-    state.avatarEditor = null;
-    state.screen = 'home';
-    render();
-}
-
 function finishOnboarding() {
     if (!state.onboardingNickname.trim()) return;
-    const avatar = state.avatarEditor ? state.avatarEditor.avatar : (state.onboardingAvatar || cloneAvatar());
     state.profile = {
         nickname: state.onboardingNickname.trim(),
-        avatar: avatar,
     };
     saveProgress({ profile: state.profile });
     state.screen = 'home';
-    state.avatarEditor = null;
     state.onboardingStep = 'nickname';
     render();
 }
 
-function openAvatarEditor() {
-    state.avatarEditor = { avatar: cloneAvatar(state.profile && state.profile.avatar), category: 'face', mode: 'edit' };
-    state.screen = 'avatarEditor';
-    loadAvatarConfig().then(render);
-    render();
-}
-
-function renderAvatarEditor() {
-    if (!state.avatarEditor) {
-        state.screen = 'home';
-        render();
-        return;
-    }
-    app.innerHTML = `
-        <div class="avatar-editor-screen">
-            <div class="avatar-editor-header">
-                <button class="close-btn" onclick="backAvatarEditor()" style="position:static;margin:0">← Назад</button>
-                <div class="avatar-editor-title">Редактор аватара</div>
-                <div style="width:44px"></div>
-            </div>
-            ${avatarConfig === null ? '<div class="onboarding-screen"><div class="onboarding-title">Загружаю варианты...</div></div>' : renderAvatarEditorContent('edit')}
-        </div>
-    `;
-}
-
 function getLeaderboard() {
-    const user = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const user = state.profile || { nickname: 'Ты' };
     const userXP = getGlobalStats().totalXP;
     const names = ['Алекс', 'Миша', 'Катя', 'Саша', 'Дима', 'Лена', 'Ваня', 'Оля', 'Ира', 'Паша', 'Тима', 'Ника', 'Глеб', 'Юля', 'Вера', 'Макс', 'Аня', 'Лёша', 'Зоя', 'Рома', 'Соня', 'Артём', 'Настя', 'Петя'];
     const users = names.map((n, i) => ({
         name: n,
-        avatar: AVATAR_EMOJIS[i % AVATAR_EMOJIS.length],
         xp: Math.max(0, userXP + Math.floor((Math.random() - 0.5) * 1200)),
         isUser: false,
     }));
-    users.push({ name: user.nickname, avatar: user.avatar, xp: userXP, isUser: true });
+    users.push({ name: user.nickname, xp: userXP, isUser: true });
     users.sort((a, b) => b.xp - a.xp);
     return users.slice(0, 20).map((u, i) => ({ ...u, rank: i + 1 }));
 }
@@ -2981,7 +2605,6 @@ function renderLeaderboard() {
                 const actualRank = u.rank;
                 return `
                     <div class="podium-item">
-                        <div class="podium-avatar">${renderAvatar(u.avatar, 44)}</div>
                         <div class="podium-rank ${rank}">${actualRank}</div>
                         <div class="podium-name">${u.name}</div>
                         <div class="podium-xp">${u.xp} XP</div>
@@ -2996,7 +2619,6 @@ function renderLeaderboard() {
             ${rest.map(u => `
                 <div class="leaderboard-row ${u.isUser ? 'current' : ''}">
                     <div class="leaderboard-rank">${u.rank}</div>
-                    <div class="leaderboard-avatar">${renderAvatar(u.avatar, 28)}</div>
                     <div class="leaderboard-name">${u.name}</div>
                     <div class="leaderboard-xp">${u.xp} XP</div>
                 </div>
@@ -4586,21 +4208,17 @@ function quitLesson() {
 // ====================== INIT ======================
 const saved = getProgress();
 if (saved.profile) {
-    state.profile = migrateProfileAvatar(saved.profile);
+    state.profile = saved.profile;
 }
 if (!state.profile) {
     state.screen = 'onboarding';
     state.onboardingStep = 'nickname';
     state.onboardingNickname = '';
-    state.onboardingAvatar = null;
 }
 applyTheme(getSettings().theme);
 applyAnimationPref();
 checkAchievements(); // silently backfill already-earned achievements
 render();
-loadAvatarConfig().then(() => {
-    if (state.screen !== 'onboarding' && state.screen !== 'avatarEditor') render();
-});
 </script>
 </body>
 </html>
