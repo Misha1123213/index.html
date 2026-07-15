@@ -148,12 +148,33 @@ function backToRoleSelect() {
 function updatePlatformDraft(key, value) {
   state.platformDraft = state.platformDraft || {};
   state.platformDraft[key] = value;
-  render();
+}
+
+function validatePlatformButton() {
+  const draft = state.platformDraft || {};
+  const btn = document.getElementById('platform-primary-btn');
+  if (!btn) return;
+  let valid = true;
+  if (state.screen === 'ownerRegister') {
+    valid = !!(draft.name && draft.name.trim() && draft.venueName && draft.venueName.trim());
+  } else if (state.screen === 'staffRegister') {
+    valid = !!(draft.name && draft.name.trim());
+  } else if (state.screen === 'staffJoin') {
+    valid = (draft.code || '').trim().length === 6;
+  } else if (state.screen === 'courseEditor') {
+    valid = !!(draft.parsedItems && draft.parsedItems.length && draft.sectionName && draft.sectionName.trim());
+  }
+  btn.classList.toggle('disabled', !valid);
 }
 
 function selectVenueStyle(styleId) {
-  updatePlatformDraft('style', styleId);
+  state.platformDraft = state.platformDraft || {};
+  state.platformDraft.style = styleId;
   applyVenueStyle(styleId);
+  document.querySelectorAll('.style-card').forEach(el => {
+    el.classList.toggle('selected', el.dataset.style === styleId);
+  });
+  validatePlatformButton();
 }
 
 function registerOwner() {
@@ -293,19 +314,19 @@ function renderOwnerRegister() {
       <div class="platform-title">🏪 Создать заведение</div>
       <div class="platform-form">
         <label class="platform-label">Ваше имя</label>
-        <input class="platform-input" type="text" id="owner-name" value="${name}" placeholder="Иван" maxlength="30" oninput="updatePlatformDraft('name', this.value)">
+        <input class="platform-input" type="text" id="owner-name" value="${name}" placeholder="Иван" maxlength="30" oninput="updatePlatformDraft('name', this.value); validatePlatformButton()">
         <label class="platform-label">Название заведения</label>
-        <input class="platform-input" type="text" id="venue-name" value="${venueName}" placeholder="Кофейня 'Зерно'" maxlength="40" oninput="updatePlatformDraft('venueName', this.value)">
+        <input class="platform-input" type="text" id="venue-name" value="${venueName}" placeholder="Кофейня 'Зерно'" maxlength="40" oninput="updatePlatformDraft('venueName', this.value); validatePlatformButton()">
         <label class="platform-label">Стиль заведения</label>
         <div class="style-grid">
           ${VENUE_STYLES.map(s => `
-            <button class="style-card ${style === s.id ? 'selected' : ''}" onclick="selectVenueStyle('${s.id}')">
+            <button class="style-card ${style === s.id ? 'selected' : ''}" data-style="${s.id}" onclick="selectVenueStyle('${s.id}')">
               <div class="style-dot" style="background:${s.accent}"></div>
               <div class="style-label">${s.label}</div>
             </button>
           `).join('')}
         </div>
-        <button class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="registerOwner()">Создать заведение</button>
+        <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="registerOwner()">Создать заведение</button>
       </div>
     </div>
   `;
@@ -409,8 +430,8 @@ function renderStaffRegister() {
       <div class="platform-title">👨‍🍳 Регистрация сотрудника</div>
       <div class="platform-form">
         <label class="platform-label">Ваше имя</label>
-        <input class="platform-input" type="text" id="staff-name" value="${name}" placeholder="Анна" maxlength="30" oninput="updatePlatformDraft('name', this.value)">
-        <button class="onboarding-btn ${name.trim() ? '' : 'disabled'}" onclick="registerStaff()">Далее</button>
+        <input class="platform-input" type="text" id="staff-name" value="${name}" placeholder="Анна" maxlength="30" oninput="updatePlatformDraft('name', this.value); validatePlatformButton()">
+        <button id="platform-primary-btn" class="onboarding-btn ${name.trim() ? '' : 'disabled'}" onclick="registerStaff()">Далее</button>
       </div>
     </div>
   `;
@@ -427,8 +448,8 @@ function renderStaffJoin() {
       <div class="platform-title">🔑 Код заведения</div>
       <div class="platform-subtitle">Введите 6-значный код, который вам дал владелец</div>
       <div class="platform-form">
-        <input class="platform-input code-input" type="text" id="venue-code" value="${code}" placeholder="123456" maxlength="6" oninput="updatePlatformDraft('code', this.value)">
-        <button class="onboarding-btn ${code.trim().length === 6 ? '' : 'disabled'}" onclick="joinStaffVenue()">Присоединиться</button>
+        <input class="platform-input code-input" type="text" id="venue-code" value="${code}" placeholder="123456" maxlength="6" oninput="updatePlatformDraft('code', this.value); validatePlatformButton()">
+        <button id="platform-primary-btn" class="onboarding-btn ${code.trim().length === 6 ? '' : 'disabled'}" onclick="joinStaffVenue()">Присоединиться</button>
       </div>
     </div>
   `;
@@ -558,20 +579,26 @@ function renderCourseEditor() {
           <select class="platform-input" id="editor-section-select" onchange="onEditorSectionChange(this.value)">
             ${sectionOptions}
           </select>
-          <input class="platform-input" type="text" id="editor-section-name" value="${sectionName}" placeholder="Название раздела" oninput="updatePlatformDraft('sectionName', this.value)">
+          <input class="platform-input" type="text" id="editor-section-name" value="${sectionName}" placeholder="Название раздела" oninput="updatePlatformDraft('sectionName', this.value); validatePlatformButton()">
         </div>
         <div class="editor-items">
           ${items.map((it, idx) => renderCourseEditorItem(it, idx)).join('')}
         </div>
         <button class="onboarding-btn secondary" onclick="addParsedItem()">+ Добавить позицию</button>
-        <button class="onboarding-btn" onclick="saveCourseFromEditor()">💾 Сохранить курс (${items.length})</button>
+        <button id="platform-primary-btn" class="onboarding-btn" onclick="saveCourseFromEditor()">💾 Сохранить курс (${items.length})</button>
       </div>
     </div>
   `;
 }
 
 function onEditorSectionChange(val) {
-  if (val) updatePlatformDraft('sectionName', val);
+  const input = document.getElementById('editor-section-name');
+  if (val) {
+    state.platformDraft = state.platformDraft || {};
+    state.platformDraft.sectionName = val;
+    if (input) input.value = val;
+  }
+  validatePlatformButton();
 }
 
 function renderCourseEditorItem(it, idx) {
