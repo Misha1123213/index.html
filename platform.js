@@ -1,6 +1,7 @@
 // ====================== PLATFORM LAYER ======================
 // Client-side owner / staff flow, TTK upload, course generation.
-// No backend required: everything is stored in localStorage.
+// Supabase sync is optional: when configured, venue data is shared by pin-code.
+// LocalStorage keeps profile, progress and offline cache.
 
 const VENUE_STYLES = [
   { id: 'modern', label: 'Современный', theme: 'dark', accent: '#58CC02', mood: 'modern minimalist coffee shop interior' },
@@ -10,12 +11,77 @@ const VENUE_STYLES = [
   { id: 'neon', label: 'Неон', theme: 'dark', accent: '#CE82FF', mood: 'neon cyberpunk bar interior' },
 ];
 
+let supabaseClient = null;
+function initSupabaseClient() {
+  if (typeof window !== 'undefined' && window.supabase && typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
+    try {
+      const { createClient } = window.supabase;
+      supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) {
+      console.error('Supabase init error', e);
+    }
+  }
+}
+initSupabaseClient();
+
 function generateVenueCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function isValidVenueCode(code) {
   return /^\d{6}$/.test(String(code || '').trim());
+}
+
+async function createRemoteVenue(venue) {
+  if (!supabaseClient) return null;
+  const payload = { ...venue };
+  delete payload.ownerToken;
+  try {
+    const { data, error } = await supabaseClient.rpc('create_venue', { p_code: venue.code, p_data: payload });
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    showPlatformToast('Ошибка создания заведения на сервере: ' + e.message);
+    return null;
+  }
+}
+
+async function fetchRemoteVenue(code) {
+  if (!supabaseClient) return null;
+  try {
+    const { data, error } = await supabaseClient.rpc('get_venue_by_code', { p_code: code });
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    showPlatformToast('Ошибка загрузки заведения: ' + e.message);
+    return null;
+  }
+}
+
+async function syncVenueToRemote(venue, ownerToken) {
+  if (!supabaseClient || !venue || !ownerToken) return null;
+  const payload = { ...venue };
+  delete payload.ownerToken;
+  try {
+    const { data, error } = await supabaseClient.rpc('update_venue', { p_code: venue.code, p_owner_token: ownerToken, p_data: payload });
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    showPlatformToast('Ошибка синхронизации заведения: ' + e.message);
+    return null;
+  }
+}
+
+function syncVenue() {
+  if (!supabaseClient || !state.venue || !state.auth || state.auth.role !== 'owner' || !state.auth.ownerToken) return;
+  syncVenueToRemote(state.venue, state.auth.ownerToken)
+    .then(data => {
+      if (data) {
+        state.venue = normalizeVenue(data);
+        saveProgress({ venue: state.venue });
+      }
+    })
+    .catch(e => console.error('syncVenue error', e));
 }
 
 function exportVenueFile() {
@@ -219,7 +285,7 @@ function selectVenueStyle(styleId) {
   validatePlatformButton();
 }
 
-function registerOwner() {
+async function registerOwner() {
   const draft = state.platformDraft || {};
   const name = (draft.name || '').trim();
   const venueName = (draft.venueName || '').trim();
@@ -238,13 +304,24 @@ function registerOwner() {
     createdAt: Date.now(),
   };
 
-  const auth = { role: 'owner', name: name, venueId: venue.id, code: code };
+  let finalVenue = venue;
+  let ownerToken = null;
+  if (supabaseClient) {
+    const remote = await createRemoteVenue(venue);
+    if (!remote) return;
+    ownerToken = remote.ownerToken;
+    finalVenue = { ...remote };
+    delete finalVenue.ownerToken;
+  }
+
+  const auth = { role: 'owner', name: name, venueId: finalVenue.id, code: code };
+  if (ownerToken) auth.ownerToken = ownerToken;
   state.profile = { nickname: name, avatar: cloneAvatar() };
   state.auth = auth;
-  state.venue = venue;
+  state.venue = finalVenue;
   state.platformDraft = null;
 
-  saveProgress({ auth: auth, venue: venue, profile: state.profile });
+  saveProgress({ auth: auth, venue: finalVenue, profile: state.profile });
   applyVenueStyle(style);
   window.renderHome = renderPlatformHome;
   state.screen = 'ownerSetup';
@@ -260,16 +337,23 @@ function registerStaff() {
   render();
 }
 
-function joinStaffVenue() {
+async function joinStaffVenue() {
   const draft = state.platformDraft || {};
   const code = (draft.code || '').trim();
   const name = (draft.name || '').trim();
   if (!code || !name) return;
 
-  const p = getProgress();
-  let venue = normalizeVenue(p.venue || null);
+  let venue = null;
+  if (supabaseClient) {
+    venue = await fetchRemoteVenue(code);
+    if (venue) venue = normalizeVenue(venue);
+  }
+  if (!venue) {
+    const p = getProgress();
+    venue = normalizeVenue(p.venue || null);
+  }
   if (!venue || venue.code !== code) {
-    showPlatformToast('Код не найден на этом устройстве. Создайте заведение как владелец или попросите файл/QR с данными заведения для импорта.');
+    showPlatformToast('Код не найден. Проверьте пин-код или дождитесь, пока владелец синхронизирует заведение с сервером.');
     return;
   }
 
@@ -798,6 +882,7 @@ function saveCourseFromEditor() {
 
   state.platformDraft = null;
   saveProgress({ venue: venue });
+  syncVenue();
   window.renderHome = renderPlatformHome;
   state.screen = 'home';
   render();
@@ -817,6 +902,7 @@ function createSection(name) {
   venue.sections = venue.sections || [];
   venue.sections.push({ id: generateId(), name, items: [], createdAt: Date.now() });
   saveProgress({ venue: venue });
+  syncVenue();
   render();
 }
 
@@ -846,6 +932,7 @@ function deleteSection(sectionId) {
   if (!venue || !venue.sections) return;
   venue.sections = venue.sections.filter(s => s.id !== sectionId);
   saveProgress({ venue: venue });
+  syncVenue();
   render();
 }
 
@@ -855,6 +942,7 @@ function generateVenueMoodImage() {
   const url = venueMoodImageUrl(style, venue.name);
   venue.bgImage = url;
   saveProgress({ venue: venue });
+  syncVenue();
   const img = new Image();
   img.onload = () => {
     applyVenueBackground(style, url);
@@ -1092,64 +1180,6 @@ function setParsedItems(items, sourceName) {
     showPlatformToast('Не удалось распознать структуру. Проверьте формат.');
   }
   render();
-}
-
-function saveVenueCourse() {
-  const draft = state.platformDraft || {};
-  const items = draft.parsedItems || [];
-  if (!items.length) return;
-
-  const validItems = items.filter(it => it.name && it.correct && it.correct.length);
-  if (!validItems.length) return;
-
-  const venue = state.venue;
-  venue.sections = venue.sections || [];
-  const sectionName = (draft.sectionName || 'Основное меню').trim();
-  let target = venue.sections.find(s => s.name === sectionName);
-  if (!target) {
-    target = { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
-    venue.sections.push(target);
-  }
-
-  const allComponents = new Set();
-  validItems.forEach(it => {
-    it.correct.forEach(c => allComponents.add(typeof c === 'object' ? c.ingredient : c));
-  });
-  const allComponentsArray = [...allComponents];
-
-  target.items = validItems.map(item => {
-    const hasGrams = item.correct[0] && typeof item.correct[0] === 'object';
-    const correctNames = item.correct.map(c => typeof c === 'object' ? c.ingredient : c);
-    const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, allComponentsArray.length - correctNames.length));
-    if (hasGrams) {
-      return {
-        type: 'composition',
-        name: item.name,
-        correct: item.correct,
-        wrong: distractors,
-        info_text: item.info_text,
-        image: item.image || null,
-      };
-    } else {
-      const pool = shuffle([...correctNames, ...distractors]);
-      return {
-        type: 'composition',
-        name: item.name,
-        correct: correctNames,
-        pool: pool,
-        info_text: item.info_text,
-        image: item.image || null,
-      };
-    }
-  });
-
-  state.platformDraft = null;
-  saveProgress({ venue: venue });
-  window.renderHome = renderPlatformHome;
-  state.screen = 'home';
-  render();
-  showPlatformToast(`Курс «${target.name}» сохранён`);
-  playSound('correct');
 }
 
 function loadDemoVenue() {
