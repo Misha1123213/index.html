@@ -32,15 +32,25 @@ function isValidVenueCode(code) {
   return /^\d{6}$/.test(String(code || '').trim());
 }
 
-async function createRemoteVenue(venue) {
+async function createRemoteVenue(venue, ownerPin) {
   if (!supabaseClient) return null;
   const payload = { ...venue };
   delete payload.ownerToken;
   try {
-    const { data, error } = await supabaseClient.rpc('create_venue', { p_code: venue.code, p_data: payload });
+    const { data, error } = await supabaseClient.rpc('create_venue', { p_code: venue.code, p_data: payload, p_owner_pin: ownerPin || venue.code });
     if (error) throw error;
     return data;
   } catch (e) {
+    if (e.message && e.message.includes('create_venue(p_code, p_data)')) {
+      try {
+        const { data, error } = await supabaseClient.rpc('create_venue', { p_code: venue.code, p_data: payload });
+        if (error) throw error;
+        return data;
+      } catch (e2) {
+        showPlatformToast('Ошибка создания заведения на сервере: ' + e2.message);
+        return null;
+      }
+    }
     showPlatformToast('Ошибка создания заведения на сервере: ' + e.message);
     return null;
   }
@@ -169,7 +179,7 @@ function venueMoodImageUrl(style, venueName) {
 }
 
 function isPlatformScreen() {
-  return ['roleSelect', 'ownerOptions', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
+  return ['roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
 }
 
 function normalizeVenue(venue) {
@@ -271,8 +281,8 @@ function validatePlatformButton() {
     valid = !!(draft.name && draft.name.trim() && draft.venueName && draft.venueName.trim()) && (!pin || isValidVenueCode(pin));
   } else if (state.screen === 'staffRegister') {
     valid = !!(draft.name && draft.name.trim());
-  } else if (state.screen === 'staffJoin') {
-    valid = (draft.code || '').trim().length === 6;
+  } else if (state.screen === 'staffJoin' || state.screen === 'ownerLogin') {
+    valid = (draft.code || '').trim().length === 6 && (state.screen !== 'ownerLogin' || (draft.ownerPin || '').trim().length === 6);
   } else if (state.screen === 'courseEditor') {
     valid = !!(draft.parsedItems && draft.parsedItems.length && draft.sectionName && draft.sectionName.trim());
   }
@@ -310,8 +320,9 @@ async function registerOwner() {
 
   let finalVenue = venue;
   let ownerToken = null;
+  const ownerPin = isValidVenueCode(customPin) ? customPin : code;
   if (supabaseClient) {
-    const remote = await createRemoteVenue(venue);
+    const remote = await createRemoteVenue(venue, ownerPin);
     if (!remote) return;
     ownerToken = remote.ownerToken;
     finalVenue = { ...remote };
@@ -480,18 +491,81 @@ function openExistingVenue() {
     render();
     return;
   }
-  const p = getProgress();
-  const savedVenue = normalizeVenue(p.venue || null);
-  const savedAuth = p.auth || null;
-  if (savedVenue && savedAuth && savedAuth.role === 'owner') {
-    state.venue = savedVenue;
-    state.auth = savedAuth;
-    state.profile = p.profile || state.profile;
-    state.screen = 'ownerDashboard';
-    render();
+  state.platformDraft = { role: 'owner' };
+  state.screen = 'ownerLogin';
+  render();
+}
+
+function renderOwnerLogin() {
+  const draft = state.platformDraft || {};
+  const code = draft.code || '';
+  const ownerPin = draft.ownerPin || '';
+  const valid = isValidVenueCode(code) && isValidVenueCode(ownerPin);
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+      </div>
+      <div class="platform-title">🔑 Вход для владельца</div>
+      <div class="platform-form">
+        <label class="platform-label">Код заведения</label>
+        <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-code" value="${code}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
+        <label class="platform-label">Пин владельца</label>
+        <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-pin" value="${ownerPin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('ownerPin', v); validatePlatformButton()">
+        <div class="platform-hint" style="font-size:13px;color:var(--muted);margin-bottom:12px">Изначально пин владельца совпадает с кодом заведения. Можно изменить в настройках.</div>
+        <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="ownerLogin()">Войти</button>
+      </div>
+    </div>
+  `;
+}
+
+async function ownerLogin() {
+  const draft = state.platformDraft || {};
+  const code = (draft.code || '').trim();
+  const ownerPin = (draft.ownerPin || '').trim();
+  if (!isValidVenueCode(code) || !isValidVenueCode(ownerPin)) return;
+
+  if (!supabaseClient) {
+    showPlatformToast('Нет подключения к серверу. Создайте или импортируйте заведение.');
     return;
   }
-  showPlatformToast('Сначала создайте заведение на этом устройстве.');
+
+  let remoteData = null;
+  try {
+    const { data, error } = await supabaseClient.rpc('owner_login', { p_code: code, p_owner_pin: ownerPin });
+    if (error) throw error;
+    if (!data) {
+      showPlatformToast('Код или пин владельца не найдены.');
+      return;
+    }
+    remoteData = data;
+  } catch (e) {
+    if (e.message && e.message.includes('Could not find the function public.owner_login')) {
+      showPlatformToast('Схема Supabase устарела. Обновите SQL-скрипт в проекте.');
+    } else {
+      showPlatformToast('Ошибка входа: ' + e.message);
+    }
+    return;
+  }
+
+  const remoteVenue = normalizeVenue(remoteData);
+  const ownerToken = remoteData.ownerToken || null;
+  if (!remoteVenue || !ownerToken) {
+    showPlatformToast('Не удалось загрузить заведение.');
+    return;
+  }
+
+  const auth = { role: 'owner', name: 'Владелец', venueId: remoteVenue.id, code: code, ownerToken: ownerToken };
+  state.auth = auth;
+  state.venue = remoteVenue;
+  state.profile = { nickname: 'Владелец', avatar: cloneAvatar() };
+  state.platformDraft = null;
+  saveProgress({ auth: auth, venue: remoteVenue, profile: state.profile });
+  applyVenueStyle(remoteVenue.style || 'modern', remoteVenue.bgImage || null);
+  window.renderHome = renderPlatformHome;
+  state.screen = remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length) ? 'home' : 'ownerSetup';
+  render();
+  showPlatformToast('Заведение загружено');
 }
 
 function renderOwnerSetup() {
