@@ -18,6 +18,43 @@ function isValidVenueCode(code) {
   return /^\d{6}$/.test(String(code || '').trim());
 }
 
+function exportVenueFile() {
+  const venue = state.venue;
+  if (!venue) return showPlatformToast('Нет заведения для экспорта');
+  const data = JSON.stringify(venue, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(venue.name || 'venue').replace(/[^a-zA-Z0-9а-яА-ЯёЁ]/g, '_')}-cognitio.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importVenueFile(file, thenScreen) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const venue = JSON.parse(e.target.result);
+      if (!venue || !venue.code || !venue.id || !Array.isArray(venue.sections)) {
+        throw new Error('Неверный файл заведения');
+      }
+      state.venue = normalizeVenue(venue);
+      saveProgress({ venue: state.venue });
+      if (thenScreen) state.screen = thenScreen;
+      render();
+      showPlatformToast('Заведение импортировано');
+    } catch (err) {
+      showPlatformToast(err.message || 'Не удалось импортировать файл');
+    }
+  };
+  reader.onerror = () => showPlatformToast('Не удалось прочитать файл');
+  reader.readAsText(file);
+}
+
 function generateId() {
   return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 }
@@ -232,7 +269,7 @@ function joinStaffVenue() {
   const p = getProgress();
   let venue = normalizeVenue(p.venue || null);
   if (!venue || venue.code !== code) {
-    showPlatformToast('Код не найден на этом устройстве. Владелец и сотрудник должны использовать один браузер (до появления сервера).');
+    showPlatformToast('Код не найден на этом устройстве. Создайте заведение как владелец или попросите файл/QR с данными заведения для импорта.');
     return;
   }
 
@@ -302,6 +339,8 @@ function renderRoleSelect() {
           <div class="role-desc">У меня есть код от владельца</div>
         </button>
       </div>
+      <div class="demo-hint" style="margin-top:20px">Есть файл заведения? <button class="link-btn" onclick="document.getElementById('role-import-file').click()">Импортировать</button></div>
+      <input type="file" id="role-import-file" style="display:none" accept=".json" onchange="importVenueFile(this.files[0], 'staffRegister')">
     </div>
   `;
 }
@@ -424,6 +463,7 @@ function renderOwnerDashboard() {
       </div>
       <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">🔄 Загрузить ТТК</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">✨ Сгенерировать фон заведения</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">📤 Экспортировать заведение</button>
     </div>
   `;
 }
@@ -459,6 +499,8 @@ function renderStaffJoin() {
       <div class="platform-form">
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="venue-code" value="${code}" placeholder="123456" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
         <button id="platform-primary-btn" class="onboarding-btn ${code.trim().length === 6 ? '' : 'disabled'}" onclick="joinStaffVenue()">Присоединиться</button>
+        <div class="demo-hint">Нет данных заведения? <button class="link-btn" onclick="document.getElementById('venue-import-file').click()">Импортировать файл</button></div>
+        <input type="file" id="venue-import-file" style="display:none" accept=".json" onchange="importVenueFile(this.files[0], 'staffJoin')">
       </div>
     </div>
   `;
