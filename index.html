@@ -2901,7 +2901,12 @@ function render() {
     _lastRenderedScreen = state.screen;
     switch (state.screen) {
         case 'onboarding': renderOnboarding(); break;
-        case 'roleSelect': renderRoleSelect(); break;
+        case 'authOptions': renderAuthOptions(); break;
+        case 'login': renderLogin(); break;
+        case 'register': renderRegister(); break;
+        case 'forgotPassword': renderForgotPassword(); break;
+        case 'resetPassword': renderResetPassword(); break;
+        case 'roleSelect': renderAuthOptions(); break;
         case 'ownerOptions': renderOwnerOptions(); break;
         case 'ownerLogin': renderOwnerLogin(); break;
         case 'ownerRegister': renderOwnerRegister(); break;

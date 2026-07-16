@@ -11,6 +11,15 @@ const VENUE_STYLES = [
   { id: 'neon', label: 'Неон', theme: 'dark', accent: '#CE82FF', mood: 'neon cyberpunk bar interior' },
 ];
 
+const AUTH_QUESTIONS = [
+  'Любимое число?',
+  'Кличка питомца?',
+  'Любимый цвет?',
+  'Имя лучшего друга?',
+  'Любимое блюдо?',
+  'Свой вопрос',
+];
+
 let supabaseClient = null;
 function initSupabaseClient() {
   if (typeof window !== 'undefined' && window.supabase && typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
@@ -179,7 +188,7 @@ function venueMoodImageUrl(style, venueName) {
 }
 
 function isPlatformScreen() {
-  return ['roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
+  return ['authOptions', 'login', 'register', 'forgotPassword', 'resetPassword', 'roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
 }
 
 function normalizeVenue(venue) {
@@ -212,12 +221,12 @@ function initPlatform() {
     if (state.auth.role === 'owner') {
       state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
     } else {
-      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'staffJoin';
+      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'home';
     }
   } else if (p.profile) {
     state.screen = 'home';
   } else {
-    state.screen = 'roleSelect';
+    state.screen = 'authOptions';
   }
 
   applyTheme(getSettings().theme);
@@ -262,7 +271,7 @@ function selectRole(role) {
 
 function backToRoleSelect() {
   state.platformDraft = null;
-  state.screen = 'roleSelect';
+  state.screen = 'authOptions';
   render();
 }
 
@@ -276,7 +285,22 @@ function validatePlatformButton() {
   const btn = document.getElementById('platform-primary-btn');
   if (!btn) return;
   let valid = true;
-  if (state.screen === 'ownerRegister') {
+  if (state.screen === 'login') {
+    valid = (draft.login || '').trim().length >= 3 && (draft.password || '').length >= 4;
+  } else if (state.screen === 'register') {
+    const role = draft.role || 'owner';
+    const question = draft.securityQuestion === 'custom' ? (draft.customQuestion || '').trim() : (draft.securityQuestion || '').trim();
+    const base = (draft.login || '').trim().length >= 3 && (draft.password || '').length >= 4 && (draft.password || '') === (draft.passwordRepeat || '') && question.length > 0 && (draft.securityAnswer || '').trim().length > 0;
+    if (role === 'owner') {
+      valid = base && (draft.venueName || '').trim().length > 0 && (!(draft.venueCode || '').trim() || isValidVenueCode(draft.venueCode));
+    } else {
+      valid = base && isValidVenueCode(draft.venueCode);
+    }
+  } else if (state.screen === 'forgotPassword') {
+    valid = (draft.login || '').trim().length >= 3;
+  } else if (state.screen === 'resetPassword') {
+    valid = (draft.securityAnswer || '').trim().length > 0 && (draft.newPassword || '').length >= 4 && (draft.newPassword || '') === (draft.newPasswordRepeat || '');
+  } else if (state.screen === 'ownerRegister') {
     const pin = (draft.pin || '').trim();
     valid = !!(draft.name && draft.name.trim() && draft.venueName && draft.venueName.trim()) && (!pin || isValidVenueCode(pin));
   } else if (state.screen === 'staffRegister') {
@@ -404,7 +428,7 @@ function logoutPlatform() {
   state.auth = null;
   state.staff = null;
   state.profile = null;
-  state.screen = 'roleSelect';
+  state.screen = 'authOptions';
   render();
 }
 
@@ -420,28 +444,326 @@ function ownerBackToHome() {
 
 // ====================== RENDERERS ======================
 
-function renderRoleSelect() {
+function renderAuthOptions() {
   app.innerHTML = `
     <div class="platform-screen role-select">
       <div class="platform-mascot">☕</div>
       <div class="platform-title">Cognitio</div>
-      <div class="platform-subtitle">Платформа для изучения составов блюд и напитков</div>
+      <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
       <div class="role-cards">
-        <button class="role-card" onclick="selectRole('owner')">
-          <div class="role-icon">🏪</div>
-          <div class="role-label">Я владелец</div>
-          <div class="role-desc">Создам заведение, загружу ТТК и приглашу сотрудников</div>
+        <button class="role-card" onclick="state.screen='login'; state.platformDraft={}; render()">
+          <div class="role-icon">🔑</div>
+          <div class="role-label">Войти</div>
         </button>
-        <button class="role-card" onclick="selectRole('staff')">
-          <div class="role-icon">👨‍🍳</div>
-          <div class="role-label">Я сотрудник</div>
-          <div class="role-desc">У меня есть код от владельца</div>
+        <button class="role-card" onclick="state.screen='register'; state.platformDraft={role:'owner'}; render()">
+          <div class="role-icon">✚</div>
+          <div class="role-label">Регистрация</div>
         </button>
       </div>
-      <div class="demo-hint" style="margin-top:20px">Есть файл заведения? <button class="link-btn" onclick="document.getElementById('role-import-file').click()">Импортировать</button></div>
-      <input type="file" id="role-import-file" style="display:none" accept=".json" onchange="importVenueFile(this.files[0], 'staffRegister')">
+      <button class="link-btn" style="margin-top:20px" onclick="state.screen='forgotPassword'; state.platformDraft={}; render()">Забыли пароль?</button>
     </div>
   `;
+}
+
+function renderLogin() {
+  const draft = state.platformDraft || {};
+  const login = (draft.login || '').replace(/"/g, '&quot;');
+  const valid = (draft.login || '').trim().length >= 3 && (draft.password || '').length >= 4;
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+      </div>
+      <div class="platform-title">🔑 Вход</div>
+      <div class="platform-form">
+        <label class="platform-label">Логин</label>
+        <input class="platform-input" type="text" id="auth-login" value="${login}" placeholder="ivan" maxlength="30" oninput="updatePlatformDraft('login', this.value); validatePlatformButton()">
+        <label class="platform-label">Пароль</label>
+        <input class="platform-input" type="password" id="auth-password" oninput="updatePlatformDraft('password', this.value); validatePlatformButton()">
+        <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="loginUser()">Войти</button>
+        <button class="link-btn" style="margin-top:12px" onclick="state.screen='forgotPassword'; state.platformDraft={login:draft.login||''}; render()">Забыли пароль?</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRegister() {
+  const draft = state.platformDraft || {};
+  const role = draft.role || 'owner';
+  const isOwner = role === 'owner';
+  const login = (draft.login || '').replace(/"/g, '&quot;');
+  const answer = (draft.securityAnswer || '').replace(/"/g, '&quot;');
+  const venueName = (draft.venueName || '').replace(/"/g, '&quot;');
+  const venueCode = draft.venueCode || '';
+  const venuePin = draft.venuePin || '';
+  const customQuestion = (draft.customQuestion || '').replace(/"/g, '&quot;');
+  const question = draft.securityQuestion || '';
+  const customSelected = question === 'custom' || question === 'Свой вопрос';
+  const options = AUTH_QUESTIONS.map(q => {
+    const val = q === 'Свой вопрос' ? 'custom' : q;
+    const selected = question === val || (customSelected && val === 'custom');
+    return `<option value="${val}" ${selected ? 'selected' : ''}>${q}</option>`;
+  }).join('');
+
+  const baseValid = (draft.login || '').trim().length >= 3 &&
+                    (draft.password || '').length >= 4 &&
+                    (draft.password || '') === (draft.passwordRepeat || '') &&
+                    question &&
+                    (question !== 'custom' || customQuestion.trim()) &&
+                    (draft.securityAnswer || '').trim().length > 0;
+  let valid = false;
+  if (isOwner) {
+    const hasExistingCode = isValidVenueCode(draft.venueCode);
+    valid = baseValid && ((draft.venueName || '').trim().length > 0 || hasExistingCode) && (!(draft.venueCode || '').trim() || isValidVenueCode(draft.venueCode)) && (!(draft.venuePin || '').trim() || isValidVenueCode(draft.venuePin));
+  } else {
+    valid = baseValid && isValidVenueCode(draft.venueCode);
+  }
+
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+      </div>
+      <div class="platform-title">✚ Регистрация</div>
+      <div class="platform-form">
+        <label class="platform-label">Роль</label>
+        <div class="role-cards" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+          <button class="role-card" type="button" style="border:${isOwner ? '2px solid var(--green)' : 'none'}" onclick="updatePlatformDraft('role','owner'); render()">
+            <div class="role-label">Владелец</div>
+          </button>
+          <button class="role-card" type="button" style="border:${!isOwner ? '2px solid var(--green)' : 'none'}" onclick="updatePlatformDraft('role','staff'); render()">
+            <div class="role-label">Сотрудник</div>
+          </button>
+        </div>
+
+        <label class="platform-label">Логин</label>
+        <input class="platform-input" type="text" id="auth-login" value="${login}" placeholder="ivan" maxlength="30" oninput="updatePlatformDraft('login', this.value); validatePlatformButton()">
+        <label class="platform-label">Пароль</label>
+        <input class="platform-input" type="password" id="auth-password" oninput="updatePlatformDraft('password', this.value); validatePlatformButton()">
+        <label class="platform-label">Повторите пароль</label>
+        <input class="platform-input" type="password" id="auth-password-repeat" oninput="updatePlatformDraft('passwordRepeat', this.value); validatePlatformButton()">
+
+        <label class="platform-label">Контрольный вопрос</label>
+        <select class="platform-input" id="auth-question" style="margin-bottom:8px" onchange="updatePlatformDraft('securityQuestion', this.value); render()">
+          ${options}
+        </select>
+        <input class="platform-input" type="text" id="auth-custom-question" value="${customQuestion}" placeholder="Ваш вопрос" maxlength="60" style="display:${customSelected ? 'block' : 'none'};margin-bottom:12px" oninput="updatePlatformDraft('customQuestion', this.value); validatePlatformButton()">
+        <label class="platform-label">Ответ (подсказка)</label>
+        <input class="platform-input" type="text" id="auth-answer" value="${answer}" placeholder="ответ на вопрос" maxlength="60" oninput="updatePlatformDraft('securityAnswer', this.value); validatePlatformButton()">
+
+        ${isOwner ? `
+          <label class="platform-label">Название заведения</label>
+          <input class="platform-input" type="text" id="auth-venue-name" value="${venueName}" placeholder="Mad Espresso team" maxlength="40" oninput="updatePlatformDraft('venueName', this.value); validatePlatformButton()">
+          <label class="platform-label">Код заведения (6 цифр, опционально)</label>
+          <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="auth-venue-code" value="${venueCode}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('venueCode', v); validatePlatformButton()">
+          <label class="platform-label">Пин владельца (6 цифр, опционально)</label>
+          <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="auth-venue-pin" value="${venuePin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('venuePin', v); validatePlatformButton()">
+        ` : `
+          <label class="platform-label">Код заведения</label>
+          <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="auth-venue-code" value="${venueCode}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('venueCode', v); validatePlatformButton()">
+        `}
+
+        <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="registerUser()">Зарегистрироваться</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderForgotPassword() {
+  const draft = state.platformDraft || {};
+  const login = (draft.login || '').replace(/"/g, '&quot;');
+  const valid = (draft.login || '').trim().length >= 3;
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+      </div>
+      <div class="platform-title">🔑 Восстановление пароля</div>
+      <div class="platform-form">
+        <label class="platform-label">Логин</label>
+        <input class="platform-input" type="text" id="auth-login" value="${login}" placeholder="ivan" maxlength="30" oninput="updatePlatformDraft('login', this.value); validatePlatformButton()">
+        <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="getRecoveryQuestion()">Показать вопрос</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderResetPassword() {
+  const draft = state.platformDraft || {};
+  const question = (draft.securityQuestion || '').replace(/"/g, '&quot;');
+  const answer = (draft.securityAnswer || '').replace(/"/g, '&quot;');
+  const valid = (draft.securityAnswer || '').trim().length > 0 && (draft.newPassword || '').length >= 4 && (draft.newPassword || '') === (draft.newPasswordRepeat || '');
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="state.screen='forgotPassword'; state.platformDraft={login:draft.login||''}; render()">← Назад</button>
+      </div>
+      <div class="platform-title">🔑 Новый пароль</div>
+      <div class="platform-form">
+        <label class="platform-label">Контрольный вопрос</label>
+        <div class="platform-hint" style="margin-bottom:12px">${question}</div>
+        <label class="platform-label">Ответ (подсказка)</label>
+        <input class="platform-input" type="text" id="auth-answer" value="${answer}" placeholder="ответ" maxlength="60" oninput="updatePlatformDraft('securityAnswer', this.value); validatePlatformButton()">
+        <label class="platform-label">Новый пароль</label>
+        <input class="platform-input" type="password" id="auth-new-password" oninput="updatePlatformDraft('newPassword', this.value); validatePlatformButton()">
+        <label class="platform-label">Повторите пароль</label>
+        <input class="platform-input" type="password" id="auth-new-password-repeat" oninput="updatePlatformDraft('newPasswordRepeat', this.value); validatePlatformButton()">
+        <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="resetUserPassword()">Сохранить пароль</button>
+      </div>
+    </div>
+  `;
+}
+
+async function loginUser() {
+  const draft = state.platformDraft || {};
+  const login = (draft.login || '').trim();
+  const password = draft.password || '';
+  if (login.length < 3 || password.length < 4) return;
+  if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
+  try {
+    const { data, error } = await supabaseClient.rpc('login_user', { p_login: login, p_password: password });
+    if (error) throw error;
+    if (!data) { showPlatformToast('Неверный логин или пароль'); return; }
+    handleAuthData(data);
+  } catch (e) {
+    showPlatformToast('Ошибка входа: ' + (e.message || e));
+  }
+}
+
+function handleAuthData(data) {
+  const user = data.user || {};
+  let remoteVenue = normalizeVenue(data.venue);
+  if (!remoteVenue) {
+    showPlatformToast('Не удалось загрузить заведение');
+    return;
+  }
+  const ownerToken = remoteVenue.ownerToken || null;
+  if (ownerToken) delete remoteVenue.ownerToken;
+  const auth = { login: user.login, userId: user.id, role: user.role, venueId: remoteVenue.id, code: user.venue_code, ownerToken };
+  state.auth = auth;
+  state.venue = remoteVenue;
+  state.profile = { nickname: user.login, avatar: cloneAvatar() };
+  state.platformDraft = null;
+  saveProgress({ auth, venue: remoteVenue, profile: state.profile });
+  applyVenueStyle(remoteVenue.style || 'modern', remoteVenue.bgImage || null);
+  window.renderHome = renderPlatformHome;
+  loadVenueIntoState();
+  if (user.role === 'owner') {
+    state.screen = (remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
+  } else {
+    state.screen = 'home';
+  }
+  render();
+  showPlatformToast(user.role === 'owner' ? 'Заведение загружено' : 'Добро пожаловать');
+}
+
+async function registerUser() {
+  const draft = state.platformDraft || {};
+  const login = (draft.login || '').trim();
+  const password = draft.password || '';
+  const passwordRepeat = draft.passwordRepeat || '';
+  const role = draft.role || 'owner';
+  let question = draft.securityQuestion || '';
+  if (question === 'custom' || question === 'Свой вопрос') question = (draft.customQuestion || '').trim();
+  const answer = (draft.securityAnswer || '').trim();
+  const venueName = (draft.venueName || '').trim();
+  const venueCode = (draft.venueCode || '').trim();
+  const venuePin = (draft.venuePin || '').trim();
+
+  if (login.length < 3 || password.length < 4 || password !== passwordRepeat || !question || !answer) {
+    showPlatformToast('Заполните все поля корректно');
+    return;
+  }
+  if (role === 'owner' && !venueCode && !venueName) {
+    showPlatformToast('Введите название заведения');
+    return;
+  }
+  if (role === 'staff' && !isValidVenueCode(venueCode)) {
+    showPlatformToast('Введите код заведения');
+    return;
+  }
+  if (role === 'owner' && venueCode && !isValidVenueCode(venueCode)) {
+    showPlatformToast('Код заведения должен быть 6 цифр');
+    return;
+  }
+  if (role === 'owner' && venuePin && !isValidVenueCode(venuePin)) {
+    showPlatformToast('Пин владельца должен быть 6 цифр');
+    return;
+  }
+
+  if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
+
+  const params = {
+    p_login: login,
+    p_password: password,
+    p_role: role,
+    p_security_question: question,
+    p_security_answer: answer
+  };
+  if (role === 'owner') {
+    if (venueName) params.p_venue_name = venueName;
+    if (venueCode) {
+      params.p_venue_code = venueCode;
+      params.p_venue_pin = venuePin || venueCode;
+    }
+  } else {
+    params.p_venue_code = venueCode;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.rpc('register_user', params);
+    if (error) throw error;
+    if (!data) { showPlatformToast('Ошибка регистрации'); return; }
+    handleAuthData(data);
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (msg.includes('LOGIN_EXISTS')) showPlatformToast('Логин уже занят');
+    else if (msg.includes('CODE_EXISTS')) showPlatformToast('Код заведения уже используется');
+    else if (msg.includes('INVALID_PIN')) showPlatformToast('Неверный пин владельца');
+    else if (msg.includes('VENUE_NOT_FOUND')) showPlatformToast('Заведение не найдено');
+    else showPlatformToast('Ошибка регистрации: ' + msg);
+  }
+}
+
+async function getRecoveryQuestion() {
+  const draft = state.platformDraft || {};
+  const login = (draft.login || '').trim();
+  if (login.length < 3) return;
+  if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
+  try {
+    const { data, error } = await supabaseClient.rpc('get_recovery_question', { p_login: login });
+    if (error) throw error;
+    if (!data) { showPlatformToast('Пользователь не найден'); return; }
+    draft.securityQuestion = data;
+    state.screen = 'resetPassword';
+    render();
+  } catch (e) {
+    showPlatformToast('Ошибка: ' + (e.message || e));
+  }
+}
+
+async function resetUserPassword() {
+  const draft = state.platformDraft || {};
+  const login = (draft.login || '').trim();
+  const answer = (draft.securityAnswer || '').trim();
+  const newPassword = draft.newPassword || '';
+  const newPasswordRepeat = draft.newPasswordRepeat || '';
+  if (!answer || newPassword.length < 4 || newPassword !== newPasswordRepeat) return;
+  if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
+  try {
+    const { data, error } = await supabaseClient.rpc('reset_password', { p_login: login, p_security_answer: answer, p_new_password: newPassword });
+    if (error) throw error;
+    if (data) {
+      showPlatformToast('Пароль обновлён. Войдите с новым паролем.');
+      state.screen = 'login';
+      state.platformDraft = { login };
+      render();
+    } else {
+      showPlatformToast('Неверный ответ на контрольный вопрос');
+    }
+  } catch (e) {
+    showPlatformToast('Ошибка сброса: ' + (e.message || e));
+  }
 }
 
 function renderOwnerRegister() {
