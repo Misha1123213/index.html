@@ -169,7 +169,7 @@ function venueMoodImageUrl(style, venueName) {
 }
 
 function isPlatformScreen() {
-  return ['roleSelect', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
+  return ['roleSelect', 'ownerOptions', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
 }
 
 function normalizeVenue(venue) {
@@ -242,7 +242,11 @@ function loadVenueIntoState(sectionId) {
 
 function selectRole(role) {
   state.platformDraft = { role };
-  state.screen = role === 'owner' ? 'ownerRegister' : 'staffRegister';
+  if (role === 'owner') {
+    state.screen = 'ownerOptions';
+  } else {
+    state.screen = 'staffRegister';
+  }
   render();
 }
 
@@ -434,7 +438,6 @@ function renderOwnerRegister() {
   const name = draft.name || '';
   const venueName = draft.venueName || '';
   const pin = draft.pin || '';
-  const style = draft.style || 'modern';
   const valid = name.trim() && venueName.trim() && (!pin.trim() || isValidVenueCode(pin));
   app.innerHTML = `
     <div class="platform-screen">
@@ -449,25 +452,50 @@ function renderOwnerRegister() {
         <input class="platform-input" type="text" id="venue-name" value="${venueName}" placeholder="Кофейня 'Зерно'" maxlength="40" oninput="updatePlatformDraft('venueName', this.value); validatePlatformButton()">
         <label class="platform-label">Пин-код для сотрудников (6 цифр, опционально)</label>
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-pin" value="${pin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('pin', v); validatePlatformButton()">
-        <label class="platform-label">Стиль заведения</label>
-        <div class="style-grid">
-          ${VENUE_STYLES.map(s => `
-            <button class="style-card ${style === s.id ? 'selected' : ''}" data-style="${s.id}" onclick="selectVenueStyle('${s.id}')">
-              <div class="style-dot" style="background:${s.accent}"></div>
-              <div class="style-label">${s.label}</div>
-            </button>
-          `).join('')}
-        </div>
         <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="registerOwner()">Создать заведение</button>
       </div>
     </div>
   `;
 }
 
+function renderOwnerOptions() {
+  const hasVenue = state.venue && state.auth && state.auth.role === 'owner';
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+      </div>
+      <div class="platform-title">🏪 Я владелец</div>
+      <div class="platform-form">
+        <button class="onboarding-btn" style="margin-bottom:12px" onclick="state.screen='ownerRegister'; render()">➕ Создать заведение</button>
+        <button class="onboarding-btn secondary" onclick="openExistingVenue()">✎ У меня уже есть заведение</button>
+      </div>
+    </div>
+  `;
+}
+
+function openExistingVenue() {
+  if (state.venue && state.auth && state.auth.role === 'owner') {
+    state.screen = 'ownerDashboard';
+    render();
+    return;
+  }
+  const p = getProgress();
+  const savedVenue = normalizeVenue(p.venue || null);
+  const savedAuth = p.auth || null;
+  if (savedVenue && savedAuth && savedAuth.role === 'owner') {
+    state.venue = savedVenue;
+    state.auth = savedAuth;
+    state.profile = p.profile || state.profile;
+    state.screen = 'ownerDashboard';
+    render();
+    return;
+  }
+  showPlatformToast('Сначала создайте заведение на этом устройстве.');
+}
+
 function renderOwnerSetup() {
   const venue = state.venue;
-  const draft = state.platformDraft || {};
-  const parsedCount = draft.parsedItems ? draft.parsedItems.length : 0;
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
@@ -476,23 +504,13 @@ function renderOwnerSetup() {
       <div class="platform-title">🍽️ ${venue.name}</div>
       <div class="platform-subtitle">Код для сотрудников: <span class="venue-code">${venue.code}</span></div>
       <div class="platform-form">
-        <label class="platform-label">Загрузите ТТК заведения</label>
+        <label class="platform-label">Загрузите файл меню</label>
         <div class="upload-zone" onclick="document.getElementById('ttk-file').click()">
           <div class="upload-icon">📄</div>
           <div class="upload-text">Нажмите, чтобы выбрать файл</div>
           <div class="upload-hint">.txt, .md, .csv, .json, .docx</div>
         </div>
         <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx" onchange="handleTTKFile(this.files[0])">
-
-        <label class="platform-label">Или вставьте текст вручную</label>
-        <textarea class="platform-textarea" id="ttk-paste" rows="6" placeholder="Блюдо: ингредиент 1, ингредиент 2\n\nНапиток:\n- компонент 10г\n- компонент 20г"></textarea>
-
-        <div class="upload-actions">
-          <button class="onboarding-btn secondary" onclick="parseTTKPaste()">Распознать текст</button>
-          ${parsedCount ? `<button class="onboarding-btn" onclick="openCourseEditor()">Редактор (${parsedCount})</button>` : ''}
-        </div>
-
-        ${parsedCount ? `<div class="parsed-preview">Распознано позиций: <strong>${parsedCount}</strong></div>` : ''}
 
         <div class="demo-hint">Нет файла? <button class="link-btn" onclick="loadDemoVenue()">Загрузить демо-меню</button></div>
       </div>
@@ -1009,11 +1027,58 @@ function handleDocxFile(file) {
     return;
   }
   file.arrayBuffer().then(arrayBuffer => {
-    mammoth.extractRawText({ arrayBuffer }).then(result => {
-      const items = parseTTKText(result.value, 'txt');
+    mammoth.convertToHtml({ arrayBuffer }).then(result => {
+      const items = parseDocxHTML(result.value);
       setParsedItems(items, file.name);
     }).catch(() => showPlatformToast('Не удалось извлечь текст из .docx'));
   });
+}
+
+function parseDocxHTML(html) {
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  const items = [];
+
+  wrapper.querySelectorAll('table').forEach(table => {
+    const rows = [];
+    table.querySelectorAll('tr').forEach(tr => {
+      const cells = [...tr.querySelectorAll('td, th')].map(c => c.textContent.replace(/\s+/g, ' ').trim());
+      if (cells.some(Boolean)) rows.push(cells.join('\t'));
+    });
+    if (rows.length > 1) {
+      items.push(...parseTTKCSV(rows.join('\n')));
+    }
+    table.remove();
+  });
+
+  const text = htmlBlockToText(wrapper).trim();
+  if (text) {
+    items.push(...parseTTKPlainText(text));
+  }
+
+  return items;
+}
+
+function htmlBlockToText(node) {
+  let out = '';
+  for (const child of node.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      out += child.textContent;
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const tag = child.tagName.toLowerCase();
+      if (tag === 'br') {
+        out += '\n';
+      } else if (tag === 'li') {
+        out += '- ' + htmlBlockToText(child).trim() + '\n';
+      } else if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
+        const inner = htmlBlockToText(child).trim();
+        if (inner) out += inner + '\n\n';
+      } else {
+        out += htmlBlockToText(child);
+      }
+    }
+  }
+  return out;
 }
 
 function loadScript(src) {
@@ -1030,7 +1095,8 @@ function parseTTKText(text, format) {
   if (format === 'json') {
     try {
       const parsed = JSON.parse(text);
-      return parsed.map(normalizeParsedItem).filter(Boolean);
+      const arr = Array.isArray(parsed) ? parsed : (parsed.items || parsed.data || parsed.menu || parsed.venues || []);
+      return arr.map(normalizeParsedItem).filter(Boolean);
     } catch (e) {
       return [];
     }
@@ -1051,86 +1117,260 @@ function parseTTKPaste() {
 }
 
 function parseTTKPlainText(text) {
-  const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  if (!text || !text.trim()) return [];
+  const normalized = text
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\t/g, ' ')
+    .trim();
+
+  let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+
+  if (blocks.length === 1 && blocks[0].split('\n').length > 2) {
+    const lines = blocks[0].split('\n').map(l => l.trim()).filter(Boolean);
+    const split = maybeSplitBlocks(lines);
+    if (split.length > 1) blocks = split;
+  } else if (blocks.length > 1) {
+    blocks = mergeHeadingBlocks(blocks);
+  }
+
   const items = [];
   for (const block of blocks) {
-    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-    if (!lines.length) continue;
-    let name = lines[0];
-    let components = [];
-    if (name.includes(':')) {
-      const [n, rest] = name.split(':', 2);
-      name = n.trim();
-      components = splitComponents(rest);
-      if (!components.length) components = lines.slice(1).flatMap(splitComponents);
-    } else if (name.includes(' - ')) {
-      const [n, rest] = name.split(' - ', 2);
-      name = n.trim();
-      components = splitComponents(rest);
-      if (!components.length) components = lines.slice(1).flatMap(splitComponents);
-    } else {
-      components = lines.slice(1).flatMap(splitComponents);
-    }
-    name = cleanName(name);
-    components = components.map(cleanName).filter(Boolean);
-    if (!name || components.length === 0) continue;
-    items.push({ type: 'composition', name, correct: components, info_text: `💡 Точный состав по ТТК:\n• ${components.join('\n• ')}` });
+    const item = parseItemBlock(block);
+    if (item) items.push(item);
   }
   return items;
 }
 
-function splitComponents(line) {
-  return line.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+function mergeHeadingBlocks(blocks) {
+  const merged = [];
+  let skipNext = false;
+  for (let i = 0; i < blocks.length; i++) {
+    if (skipNext) {
+      skipNext = false;
+      continue;
+    }
+    const block = blocks[i];
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    const isHeading = lines.length === 1 && /[:\-|–—]$/.test(lines[0]) && !/^[-•–—*‣⁃◦\d[\]()]/.test(lines[0]);
+    if (isHeading && i + 1 < blocks.length) {
+      const nextLines = blocks[i + 1].split('\n').map(l => l.trim()).filter(Boolean);
+      if (nextLines.length && /^[-•–—*‣⁃◦\d[\]()]+/.test(nextLines[0])) {
+        merged.push(block + '\n' + blocks[i + 1]);
+        skipNext = true;
+        continue;
+      }
+    }
+    merged.push(block);
+  }
+  return merged;
 }
 
-function cleanName(str) {
-  return str.replace(/^[-•–—*•‣⁃◦\d.\s]+/, '').trim();
+function maybeSplitBlocks(lines) {
+  const blocks = [];
+  let current = [];
+  const numbered = lines.filter(l => /^\d+[.)\]]\s+/.test(l)).length;
+  const separators = lines.filter(l => /^[-=_]{3,}$/.test(l)).length;
+
+  if (numbered >= 2) {
+    for (const line of lines) {
+      if (/^\d+[.)\]]\s+/.test(line) && current.length) {
+        blocks.push(current.join('\n'));
+        current = [line];
+      } else {
+        current.push(line);
+      }
+    }
+  } else if (separators >= 2) {
+    for (const line of lines) {
+      if (/^[-=_]{3,}$/.test(line)) {
+        if (current.length) blocks.push(current.join('\n'));
+        current = [];
+      } else {
+        current.push(line);
+      }
+    }
+  } else {
+    return [lines.join('\n')];
+  }
+
+  if (current.length) blocks.push(current.join('\n'));
+  return blocks;
+}
+
+function parseItemBlock(block) {
+  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  const split = splitNameAndComponents(lines[0]);
+  let name = split.name;
+  let components = split.components;
+
+  if (!components.length && lines.length > 1) {
+    components = lines.slice(1).flatMap(extractComponents);
+  }
+
+  if (!components.length && lines.length === 1) {
+    const fallback = splitNameAndComponents(lines[0], true);
+    name = fallback.name;
+    components = fallback.components;
+  }
+
+  if (!name || !components.length) return null;
+  components = components.map(parseComponentToken).filter(Boolean);
+  if (!components.length) return null;
+
+  return {
+    type: 'composition',
+    name,
+    correct: components,
+    info_text: buildInfoText(name, components),
+  };
+}
+
+function splitNameAndComponents(line, allowNoComponents) {
+  const delimiters = [':', ' - ', ' – ', ' — ', '=>', '|', ';'];
+  for (const delim of delimiters) {
+    const idx = line.indexOf(delim);
+    if (idx > 0) {
+      const name = cleanItemName(line.slice(0, idx));
+      const rest = line.slice(idx + delim.length);
+      const components = extractComponents(rest);
+      if (components.length || allowNoComponents) return { name, components };
+    }
+  }
+  return { name: cleanItemName(line), components: [] };
+}
+
+function extractComponents(text) {
+  if (!text) return [];
+  return text.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+}
+
+function cleanItemName(str) {
+  if (!str) return '';
+  let s = str.trim();
+  s = s.replace(/^[-•–—*‣⁃◦\d.)\]]+\s*/, '').trim();
+  s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
+  s = s.replace(/[-:;|–—]+\s*$/, '').trim();
+  return s;
+}
+
+function parseComponentToken(str) {
+  if (!str) return null;
+  let s = str.trim();
+  s = s.replace(/^(?:[-•–—*‣⁃◦]+|\d+[.)\]])\s*/, '').trim();
+  if (!s) return null;
+
+  const units = '(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)';
+
+  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*' + units + '\\s*[.)]*$', 'i'));
+  if (trailingMatch && trailingMatch[1].trim()) {
+    const ingredient = trailingMatch[1].trim();
+    const grams = parseFloat(trailingMatch[2].replace(',', '.'));
+    return { ingredient, grams: isNaN(grams) ? 0 : grams };
+  }
+
+  const leadingMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*' + units + '\\s*[-–—:]\\s*(.+)$', 'i'));
+  if (leadingMatch && leadingMatch[2].trim()) {
+    const ingredient = leadingMatch[2].trim();
+    const grams = parseFloat(leadingMatch[1].replace(',', '.'));
+    return { ingredient, grams: isNaN(grams) ? 0 : grams };
+  }
+
+  return s;
+}
+
+function buildInfoText(name, components) {
+  const list = components.map(c => {
+    if (c && typeof c === 'object') {
+      const grams = c.grams || 0;
+      return grams ? `${c.ingredient} (${grams}г)` : c.ingredient;
+    }
+    return c || '';
+  });
+  return `💡 Точный состав по ТТК:\n• ${list.join('\n• ')}`;
 }
 
 function parseTTKCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
+  if (!text) return [];
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim());
   if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-  const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('название') || h.includes('блюдо') || h.includes('напиток'));
-  const compIdx = headers.findIndex(h => h.includes('component') || h.includes('ingredient') || h.includes('ingr') || h.includes('состав') || h.includes('ингредиент'));
-  const gramsIdx = headers.findIndex(h => h.includes('gram') || h.includes('гр') || h.includes('грам'));
-  if (nameIdx === -1 || compIdx === -1) return [];
+
+  const delimiter = detectCSVDelimiter(lines[0]);
+  const headers = parseCSVLine(lines[0], delimiter).map(h => h.trim().toLowerCase());
+  const nameIdx = findHeaderIndex(headers, ['name', 'название', 'блюдо', 'напиток', 'item', 'title', 'продукт', 'position', 'позиция', 'назва']);
+  const compIdx = findHeaderIndex(headers, ['component', 'components', 'ingredient', 'ingredients', 'ingr', 'состав', 'ингредиент', 'ингредиенты']);
+  const gramsIdx = findHeaderIndex(headers, ['gram', 'grams', 'гр', 'грам', 'грамм', 'weight', 'вес', 'количество', 'кол-во', 'amount', 'мл', 'объем', 'объём']);
 
   const items = [];
   for (let i = 1; i < lines.length; i++) {
-    const cols = parseCSVLine(lines[i]);
-    const name = cleanName(cols[nameIdx] || '');
-    const rawComponents = (cols[compIdx] || '').split(/[,;|]/).map(s => s.trim()).filter(Boolean);
-    if (!name || rawComponents.length === 0) continue;
+    const cols = parseCSVLine(lines[i], delimiter);
+    if (!cols.length) continue;
 
-    const grams = {};
-    const hasGrams = gramsIdx !== -1 && cols[gramsIdx];
+    if (nameIdx === -1) {
+      const name = cleanItemName(cols[0] || '');
+      const rest = cols.slice(1).join(',').trim();
+      const components = extractComponents(rest).map(parseComponentToken).filter(Boolean);
+      if (name && components.length) {
+        items.push({ type: 'composition', name, correct: components, info_text: buildInfoText(name, components) });
+      }
+      continue;
+    }
+
+    const name = cleanItemName(cols[nameIdx] || '');
+    if (!name) continue;
+
     let components = [];
-    if (hasGrams) {
-      const rawGrams = (cols[gramsIdx] || '').split(/[,;|]/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-      components = rawComponents.map((c, idx) => {
-        const g = rawGrams[idx];
-        const componentName = cleanName(c);
-        if (g !== undefined && !isNaN(g)) grams[componentName] = g;
-        return componentName;
-      });
-    } else {
-      components = rawComponents.map(cleanName).filter(Boolean);
+    if (compIdx !== -1 && cols[compIdx]) {
+      components = extractComponents(cols[compIdx]).map(parseComponentToken).filter(Boolean);
+    }
+    if (!components.length) {
+      for (let j = 0; j < cols.length; j++) {
+        if (j === nameIdx || j === gramsIdx) continue;
+        const c = parseComponentToken(cols[j]);
+        if (c) components.push(c);
+      }
     }
     if (!components.length) continue;
-    const item = {
-      type: 'composition',
-      name,
-      correct: hasGrams ? components.map(c => ({ ingredient: c, grams: grams[c] || 0 })) : components,
-      info_text: `💡 Точный состав по ТТК:\n• ${components.map(c => hasGrams && grams[c] ? `${c} (${grams[c]}г)` : c).join('\n• ')}`,
-    };
-    if (hasGrams) item._grams = grams;
-    items.push(item);
+
+    if (gramsIdx !== -1 && cols[gramsIdx]) {
+      const gramsList = cols[gramsIdx].split(/[,;|]/).map(s => parseFloat(s.trim().replace(',', '.'))).filter(n => !isNaN(n));
+      components = components.map((c, idx) => {
+        if (typeof c === 'object') return c;
+        const g = gramsList[idx];
+        return g !== undefined ? { ingredient: c, grams: g } : c;
+      });
+    }
+
+    items.push({ type: 'composition', name, correct: components, info_text: buildInfoText(name, components) });
   }
   return items;
 }
 
-function parseCSVLine(line) {
+function detectCSVDelimiter(line) {
+  const delimiters = [',', ';', '\t'];
+  let best = ',';
+  let bestCount = 0;
+  for (const d of delimiters) {
+    const count = line.split(d).length;
+    if (count > bestCount) {
+      bestCount = count;
+      best = d;
+    }
+  }
+  return best;
+}
+
+function findHeaderIndex(headers, candidates) {
+  for (const c of candidates) {
+    const idx = headers.findIndex(h => h === c || h.includes(c));
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+function parseCSVLine(line, delimiter) {
   const result = [];
   let current = '';
   let inQuotes = false;
@@ -1144,7 +1384,7 @@ function parseCSVLine(line) {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (c === ',' && !inQuotes) {
+    } else if (c === delimiter && !inQuotes) {
       result.push(current.trim());
       current = '';
     } else {
@@ -1157,29 +1397,90 @@ function parseCSVLine(line) {
 
 function normalizeParsedItem(item) {
   if (!item || !item.name) return null;
-  const correct = Array.isArray(item.correct) ? item.correct : (Array.isArray(item.components) ? item.components : []);
+  const correct = Array.isArray(item.correct) ? item.correct : (Array.isArray(item.components) ? item.components : (Array.isArray(item.ingredients) ? item.ingredients : []));
   if (!correct.length) return null;
-  const hasGrams = correct[0] && typeof correct[0] === 'object';
   return {
     type: 'composition',
     name: item.name,
     correct: correct,
-    info_text: item.info_text || `💡 Точный состав по ТТК:\n• ${correct.map(c => typeof c === 'object' ? c.ingredient : c).join('\n• ')}`,
+    info_text: item.info_text || buildInfoText(item.name, correct),
     image: item.image || null,
   };
 }
 
+function sourceNameToSectionName(sourceName) {
+  if (!sourceName) return 'Основное меню';
+  const cleaned = sourceName.replace(/\.[^.]+$/, '').trim();
+  if (!cleaned) return 'Основное меню';
+  if (cleaned === 'вставленный текст') return 'Основное меню';
+  if (cleaned.toLowerCase().includes('demo') || cleaned.toLowerCase().includes('демо')) return 'Демо';
+  return cleaned;
+}
+
 function setParsedItems(items, sourceName) {
-  state.platformDraft = state.platformDraft || {};
-  state.platformDraft.parsedItems = items;
-  state.platformDraft.fileName = sourceName;
-  state.platformDraft.sectionName = (state.platformDraft.sectionName || 'Основное меню');
-  if (items.length) {
-    showPlatformToast(`Распознано ${items.length} позиций`);
-  } else {
-    showPlatformToast('Не удалось распознать структуру. Проверьте формат.');
+  buildVenueFromParsedItems(items, sourceName);
+}
+
+function buildVenueFromParsedItems(items, sourceName) {
+  if (!items || !items.length) {
+    showPlatformToast('Не удалось распознать структуру файла. Проверьте формат.');
+    return;
   }
+  const venue = state.venue;
+  if (!venue) return;
+
+  const sectionName = sourceNameToSectionName(sourceName);
+  const allComponentNames = new Set();
+  items.forEach(item => {
+    (item.correct || []).forEach(c => {
+      const name = typeof c === 'object' ? c.ingredient : c;
+      if (name) allComponentNames.add(name);
+    });
+  });
+  const allComponentsArray = [...allComponentNames];
+
+  const sectionItems = items.map(item => {
+    const correct = item.correct || [];
+    const hasGrams = correct[0] && typeof correct[0] === 'object';
+    const correctNames = correct.map(c => typeof c === 'object' ? c.ingredient : c);
+    const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
+    if (hasGrams) {
+      return {
+        type: 'composition',
+        name: item.name,
+        correct: correct,
+        wrong: distractors,
+        info_text: item.info_text || buildInfoText(item.name, correct),
+        image: item.image || null,
+      };
+    } else {
+      const pool = shuffle([...correctNames, ...distractors]);
+      return {
+        type: 'composition',
+        name: item.name,
+        correct: correctNames,
+        pool: pool,
+        info_text: item.info_text || buildInfoText(item.name, correctNames),
+        image: item.image || null,
+      };
+    }
+  });
+
+  venue.sections = venue.sections || [];
+  const existing = venue.sections.find(s => s.name === sectionName);
+  const section = existing || { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
+  section.items = sectionItems;
+  section.createdAt = section.createdAt || Date.now();
+  if (!existing) venue.sections.push(section);
+
+  state.platformDraft = null;
+  saveProgress({ venue: venue });
+  syncVenue();
+  window.renderHome = renderPlatformHome;
+  state.screen = 'home';
   render();
+  showPlatformToast(`Меню загружено: ${items.length} позиций`);
+  playSound('correct');
 }
 
 function loadDemoVenue() {
