@@ -353,3 +353,113 @@ GRANT EXECUTE ON FUNCTION public.register_user(TEXT, TEXT, TEXT, TEXT, TEXT, TEX
 GRANT EXECUTE ON FUNCTION public.login_user(TEXT, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_recovery_question(TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.reset_password(TEXT, TEXT, TEXT) TO anon;
+
+-- Staff results for per-item and per-staff analytics
+CREATE TABLE IF NOT EXISTS public.staff_results (
+  id BIGSERIAL PRIMARY KEY,
+  venue_code TEXT REFERENCES public.venues(code) ON DELETE CASCADE,
+  staff_login TEXT NOT NULL,
+  item_name TEXT NOT NULL,
+  is_correct BOOLEAN NOT NULL,
+  format TEXT,
+  time_taken FLOAT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION public.get_staff_list(p_code TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN COALESCE(
+    (SELECT jsonb_agg(jsonb_build_object(
+        'id', id,
+        'name', name,
+        'joined_at', joined_at
+      ))
+     FROM public.staff
+     WHERE venue_code = p_code),
+    '[]'::jsonb
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.remove_staff(p_code TEXT, p_name TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  DELETE FROM public.staff WHERE venue_code = p_code AND name = p_name;
+  DELETE FROM public.users WHERE venue_code = p_code AND login = p_name AND role = 'staff';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.save_result(
+  p_venue_code TEXT,
+  p_staff_login TEXT,
+  p_item_name TEXT,
+  p_is_correct BOOLEAN,
+  p_format TEXT DEFAULT NULL,
+  p_time_taken FLOAT DEFAULT NULL
+) RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.staff_results (venue_code, staff_login, item_name, is_correct, format, time_taken)
+  VALUES (p_venue_code, p_staff_login, p_item_name, p_is_correct, p_format, p_time_taken);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_training_stats(p_venue_code TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_result JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'staff', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'login', staff_login,
+        'total', total,
+        'correct', correct,
+        'accuracy', CASE WHEN total > 0 THEN round(correct::numeric / total, 2) ELSE 0 END
+      ))
+      FROM (
+        SELECT staff_login, count(*) AS total, sum(CASE WHEN is_correct THEN 1 ELSE 0 END) AS correct
+        FROM public.staff_results
+        WHERE venue_code = p_venue_code
+        GROUP BY staff_login
+      ) sub
+    ), '[]'::jsonb),
+    'items', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'name', item_name,
+        'total', total,
+        'correct', correct,
+        'accuracy', CASE WHEN total > 0 THEN round(correct::numeric / total, 2) ELSE 0 END
+      ))
+      FROM (
+        SELECT item_name, count(*) AS total, sum(CASE WHEN is_correct THEN 1 ELSE 0 END) AS correct
+        FROM public.staff_results
+        WHERE venue_code = p_venue_code
+        GROUP BY item_name
+      ) sub
+    ), '[]'::jsonb)
+  ) INTO v_result;
+  RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_staff_list(TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION public.remove_staff(TEXT, TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION public.save_result(TEXT, TEXT, TEXT, BOOLEAN, TEXT, FLOAT) TO anon;
+GRANT EXECUTE ON FUNCTION public.get_training_stats(TEXT) TO anon;
