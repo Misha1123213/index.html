@@ -150,7 +150,7 @@ CREATE OR REPLACE FUNCTION public.register_user(
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_user_id BIGINT;
@@ -264,7 +264,7 @@ CREATE OR REPLACE FUNCTION public.login_user(p_login TEXT, p_password TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_user RECORD;
@@ -321,7 +321,7 @@ CREATE OR REPLACE FUNCTION public.reset_password(
 ) RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_user RECORD;
