@@ -555,16 +555,16 @@ function showStaffStats() {
 function renderAuthOptions() {
   app.innerHTML = `
     <div class="platform-screen role-select">
-      <div class="platform-mascot">☕</div>
+      <div class="platform-mascot"></div>
       <div class="platform-title">Cognitio</div>
       <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
       <div class="role-cards">
         <button class="role-card" onclick="state.screen='login'; state.platformDraft={}; render()">
-          <div class="role-icon">🔑</div>
+          <div class="role-icon"></div>
           <div class="role-label">Войти</div>
         </button>
         <button class="role-card" onclick="state.screen='register'; state.platformDraft={role:'owner'}; render()">
-          <div class="role-icon">✚</div>
+          <div class="role-icon"></div>
           <div class="role-label">Регистрация</div>
         </button>
       </div>
@@ -582,7 +582,7 @@ function renderLogin() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">🔑 Вход</div>
+      <div class="platform-title">Вход</div>
       <div class="platform-form">
         <label class="platform-label">Логин</label>
         <input class="platform-input" type="text" id="auth-login" value="${login}" placeholder="ivan" maxlength="30" oninput="updatePlatformDraft('login', this.value); validatePlatformButton()">
@@ -632,7 +632,7 @@ function renderRegister() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">✚ Регистрация</div>
+      <div class="platform-title">Регистрация</div>
       <div class="platform-form">
         <label class="platform-label">Роль</label>
         <div class="role-cards" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
@@ -686,7 +686,7 @@ function renderForgotPassword() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">🔑 Восстановление пароля</div>
+      <div class="platform-title">Восстановление пароля</div>
       <div class="platform-form">
         <label class="platform-label">Логин</label>
         <input class="platform-input" type="text" id="auth-login" value="${login}" placeholder="ivan" maxlength="30" oninput="updatePlatformDraft('login', this.value); validatePlatformButton()">
@@ -706,7 +706,7 @@ function renderResetPassword() {
       <div class="platform-header">
         <button class="close-btn" onclick="state.screen='forgotPassword'; state.platformDraft={login:draft.login||''}; render()">← Назад</button>
       </div>
-      <div class="platform-title">🔑 Новый пароль</div>
+      <div class="platform-title">Новый пароль</div>
       <div class="platform-form">
         <label class="platform-label">Контрольный вопрос</label>
         <div class="platform-hint" style="margin-bottom:12px">${question}</div>
@@ -886,7 +886,7 @@ function renderOwnerRegister() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">🏪 Создать заведение</div>
+      <div class="platform-title">Создать заведение</div>
       <div class="platform-form">
         <label class="platform-label">Ваше имя</label>
         <input class="platform-input" type="text" id="owner-name" value="${name}" placeholder="Иван" maxlength="30" oninput="updatePlatformDraft('name', this.value); validatePlatformButton()">
@@ -907,10 +907,10 @@ function renderOwnerOptions() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">🏪 Я владелец</div>
+      <div class="platform-title">Я владелец</div>
       <div class="platform-form">
-        <button class="onboarding-btn" style="margin-bottom:12px" onclick="state.screen='ownerRegister'; render()">➕ Создать заведение</button>
-        <button class="onboarding-btn secondary" onclick="openExistingVenue()">✎ У меня уже есть заведение</button>
+        <button class="onboarding-btn" style="margin-bottom:12px" onclick="state.screen='ownerRegister'; render()">Создать заведение</button>
+        <button class="onboarding-btn secondary" onclick="openExistingVenue()">У меня уже есть заведение</button>
       </div>
     </div>
   `;
@@ -937,7 +937,7 @@ function renderOwnerLogin() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">🔑 Вход для владельца</div>
+      <div class="platform-title">Вход для владельца</div>
       <div class="platform-form">
         <label class="platform-label">Код заведения</label>
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-code" value="${code}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
@@ -1006,12 +1006,12 @@ function renderOwnerSetup() {
       <div class="platform-header">
         <button class="close-btn" onclick="logoutPlatform()">← Выйти</button>
       </div>
-      <div class="platform-title">🍽️ ${venue.name}</div>
+      <div class="platform-title">${venue.name}</div>
       <div class="platform-subtitle">Код для сотрудников: <span class="venue-code">${venue.code}</span></div>
       <div class="platform-form">
         <label class="platform-label">Загрузите файл меню</label>
         <div class="upload-zone" onclick="document.getElementById('ttk-file').click()">
-          <div class="upload-icon">📄</div>
+          <div class="upload-icon"></div>
           <div class="upload-text">Нажмите, чтобы выбрать файл</div>
           <div class="upload-hint">.txt, .md, .csv, .json, .docx</div>
         </div>
@@ -1034,7 +1034,7 @@ function renderOwnerDashboard() {
         <div class="section-row-name">${escapeHtml(s.name)}</div>
         <div class="section-row-meta">с ${new Date(s.joined_at).toLocaleDateString()}</div>
       </div>
-      <button class="section-row-action" onclick="removeStaff('${escapeHtml(s.name)}')">🗑</button>
+      <button class="section-row-action" onclick="removeStaff('${escapeHtml(s.name)}')">Удалить</button>
     </div>
   `).join('') : '<div class="section-empty">Пока нет сотрудников</div>';
 
@@ -1042,7 +1042,7 @@ function renderOwnerDashboard() {
     <div class="top-bar">
       <button class="close-btn" onclick="ownerBackToHome()">← Назад</button>
       <div class="path-title">${venue.name}</div>
-      <button class="settings-btn" onclick="logoutPlatform()" aria-label="Выйти">🚪</button>
+      <button class="settings-btn" onclick="logoutPlatform()" aria-label="Выйти">×</button>
     </div>
     <div class="platform-dashboard">
       <div class="dashboard-card">
@@ -1076,16 +1076,16 @@ function renderOwnerDashboard() {
               <div class="section-row-name">${s.name}</div>
               <div class="section-row-meta">${s.items ? s.items.length : 0} позиций • ${Math.ceil((s.items ? s.items.length : 0) / 8)} уроков</div>
             </div>
-            <button class="section-row-action" onclick="editSection('${s.id}')">✎</button>
-            <button class="section-row-action" onclick="deleteSection('${s.id}')">🗑</button>
+            <button class="section-row-action" onclick="editSection('${s.id}')">Изменить</button>
+            <button class="section-row-action" onclick="deleteSection('${s.id}')">Удалить</button>
           </div>
         `).join('') : '<div class="section-empty">Пока нет разделов</div>'}
         <button class="onboarding-btn secondary" onclick="promptNewSection()">+ Новый раздел</button>
       </div>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">📊 Статистика обучения</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">🔄 Загрузить ТТК</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">✨ Сгенерировать фон заведения</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">📤 Экспортировать заведение</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика обучения</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">Загрузить ТТК</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">Сгенерировать фон заведения</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
     </div>
   `;
 }
@@ -1116,7 +1116,7 @@ function renderOwnerStats() {
       <div class="platform-header">
         <button class="close-btn" onclick="ownerDashboard()">← Назад</button>
       </div>
-      <div class="platform-title">📊 Статистика обучения</div>
+      <div class="platform-title">Статистика обучения</div>
       <div class="platform-form">
         <div class="platform-label">По сотрудникам</div>
         ${staffRows}
@@ -1146,7 +1146,7 @@ function renderStaffStats() {
       <div class="platform-header">
         <button class="close-btn" onclick="state.screen='home'; render()">← Назад</button>
       </div>
-      <div class="platform-title">📊 Моя статистика</div>
+      <div class="platform-title">Моя статистика</div>
       <div class="platform-form">
         <div class="section-row">
           <div>
@@ -1170,7 +1170,7 @@ function renderStaffRegister() {
       <div class="platform-header">
         <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
       </div>
-      <div class="platform-title">👨‍🍳 Регистрация сотрудника</div>
+      <div class="platform-title">Регистрация сотрудника</div>
       <div class="platform-form">
         <label class="platform-label">Ваше имя</label>
         <input class="platform-input" type="text" id="staff-name" value="${name}" placeholder="Анна" maxlength="30" oninput="updatePlatformDraft('name', this.value); validatePlatformButton()">
@@ -1188,7 +1188,7 @@ function renderStaffJoin() {
       <div class="platform-header">
         <button class="close-btn" onclick="state.screen='staffRegister'; render()">← Назад</button>
       </div>
-      <div class="platform-title">🔑 Код заведения</div>
+      <div class="platform-title">Код заведения</div>
       <div class="platform-subtitle">Введите 6-значный код, который вам дал владелец</div>
       <div class="platform-form">
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="venue-code" value="${code}" placeholder="123456" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
@@ -1217,40 +1217,40 @@ function renderPlatformHome() {
       </button>
       <div style="flex:1"></div>
       <div class="top-bar-stat">
-        <span class="icon">🔥</span>
+        <span class="icon"></span>
         <span class="streak-count">${stats.streak}</span>
       </div>
       <div class="top-bar-stat">
-        <span class="icon">⚡</span>
+        <span class="icon"></span>
         <span class="xp-count">${stats.totalXP} XP</span>
       </div>
-      <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">⚙️</button>
+      <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">≡</button>
     </div>
     <div class="home-screen" ${bgImage ? `style="--venue-bg:${bgImage}"` : ''}>
       <div class="mascot-area">
-        <span class="mascot">${state.auth && state.auth.role === 'owner' ? '🏪' : '👨‍🍳'}</span>
+        <span class="mascot"></span>
         <div class="app-title">${venue ? venue.name : 'Cognitio'}</div>
         <div class="app-subtitle">${venue ? 'Изучай меню своего заведения' : 'Платформа обучения'}</div>
       </div>
       ${renderDailyGoalCard()}
       <div class="daily-stats">
         <div class="daily-stat-card" style="${cementStyle()}">
-          <div class="stat-value streak-count">🔥 ${stats.streak}</div>
+          <div class="stat-value streak-count">${stats.streak}</div>
           <div class="stat-label">Серия дней</div>
         </div>
         <div class="daily-stat-card" style="${cementStyle()}">
-          <div class="stat-value xp-count">⚡ ${stats.totalXP}</div>
+          <div class="stat-value xp-count">${stats.totalXP}</div>
           <div class="stat-label">Всего XP</div>
         </div>
         <div class="daily-stat-card" style="${cementStyle()}">
-          <div class="stat-value" style="color:var(--green)">📚 ${stats.totalLessons}</div>
+          <div class="stat-value" style="color:var(--green)">${stats.totalLessons}</div>
           <div class="stat-label">Уроков</div>
         </div>
       </div>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">📊 Характеристика обучения</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">🏆 Рейтинг</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">🏅 Достижения ${renderAchievementBadge()}</button>
-      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">📊 Моя статистика</button>` : ''}
+      <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Характеристика обучения</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
+      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>` : ''}
       ${hasSections ? sections.map(s => `
         <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
           <div class="card-img-wrap">
@@ -1264,32 +1264,25 @@ function renderPlatformHome() {
         </button>
       `).join('') : `<div class="parsed-preview" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${isOwner ? 'Загрузите ТТК, чтобы создать первый раздел' : 'Владелец ещё не загрузил меню'}</div>`}
       ${isOwner ? `<button class="section-card" style="${cementStyle()}" onclick="ownerDashboard()">
-        <div class="card-img-wrap"><div class="card-img-placeholder">🏪</div></div>
+        <div class="card-img-wrap"><div class="card-img-placeholder">З</div></div>
         <div class="card-info">
           Управление заведением
           <small>Код, сотрудники, разделы, фон</small>
         </div>
         <div class="card-arrow">›</div>
       </button>` : ''}
-      <button class="stats-btn" style="${cementStyle()}" onclick="logoutPlatform()">🚪 Выйти из аккаунта</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="logoutPlatform()">Выйти из аккаунта</button>
     </div>
   `;
 }
 
 function getSectionEmoji(name) {
-  const n = (name || '').toLowerCase();
-  if (n.includes('кофе') || n.includes('напит')) return '☕';
-  if (n.includes('бар')) return '🍸';
-  if (n.includes('десерт') || n.includes('выпеч')) return '🍰';
-  if (n.includes('кухн') || n.includes('блюд') || n.includes('завтрак') || n.includes('обед') || n.includes('ужин')) return '🍽️';
-  if (n.includes('салат')) return '🥗';
-  if (n.includes('суп')) return '🍲';
-  return '📋';
+  const n = (name || '').trim();
+  return (n[0] || '?').toUpperCase();
 }
 
 function getVenueEmoji(style) {
-  const map = { modern: '☕', classic: '🍷', rustic: '🍺', minimal: '🥛', neon: '🍸' };
-  return map[style] || '🍽️';
+  return '?';
 }
 
 // ====================== COURSE EDITOR ======================
@@ -1317,7 +1310,7 @@ function renderCourseEditor() {
       <div class="platform-header">
         <button class="close-btn" onclick="state.screen='ownerSetup'; render()">← Назад</button>
       </div>
-      <div class="platform-title">📝 Редактор курса</div>
+      <div class="platform-title">Редактор курса</div>
       <div class="platform-subtitle">Проверьте и отредактируйте распознанные позиции</div>
       <div class="platform-form">
         <label class="platform-label">Сохранить в раздел</label>
@@ -1331,7 +1324,7 @@ function renderCourseEditor() {
           ${items.map((it, idx) => renderCourseEditorItem(it, idx)).join('')}
         </div>
         <button class="onboarding-btn secondary" onclick="addParsedItem()">+ Добавить позицию</button>
-        <button id="platform-primary-btn" class="onboarding-btn" onclick="saveCourseFromEditor()">💾 Сохранить курс (${items.length})</button>
+        <button id="platform-primary-btn" class="onboarding-btn" onclick="saveCourseFromEditor()">Сохранить курс (${items.length})</button>
       </div>
     </div>
   `;
@@ -1356,7 +1349,7 @@ function renderCourseEditorItem(it, idx) {
     <div class="editor-item" data-idx="${idx}">
       <div class="editor-item-header">
         <input class="platform-input editor-item-name" type="text" value="${escapeHtml(it.name)}" placeholder="Название позиции" oninput="updateParsedItem(${idx}, 'name', this.value)">
-        <button class="editor-item-delete" onclick="deleteParsedItem(${idx})">🗑</button>
+        <button class="editor-item-delete" onclick="deleteParsedItem(${idx})">×</button>
       </div>
       <label class="platform-label">Состав (через запятую)</label>
       <input class="platform-input" type="text" value="${escapeHtml(components)}" placeholder="Ингредиент 1, Ингредиент 2" oninput="updateParsedItemComponents(${idx}, this.value)">
@@ -1366,7 +1359,7 @@ function renderCourseEditorItem(it, idx) {
       <div class="editor-image-row">
         <input class="platform-input" type="text" value="${escapeHtml(image)}" placeholder="https://..." oninput="updateParsedItemImage(${idx}, this.value)">
         <input type="file" id="editor-img-${idx}" accept="image/*" style="display:none" onchange="handleEditorImage(${idx}, this.files[0])">
-        <button class="editor-img-btn" onclick="document.getElementById('editor-img-${idx}').click()">📷</button>
+        <button class="editor-img-btn" onclick="document.getElementById('editor-img-${idx}').click()">+</button>
       </div>
     </div>
   `;
@@ -1395,7 +1388,7 @@ function updateParsedItemComponents(idx, value) {
   } else {
     items[idx].correct = comps;
   }
-  items[idx].info_text = `💡 Точный состав по ТТК:\n• ${items[idx].correct.map(c => typeof c === 'object' ? c.ingredient : c).join('\n• ')}`;
+  items[idx].info_text = `Состав:\n• ${items[idx].correct.map(c => typeof c === 'object' ? c.ingredient : c).join('\n• ')}`;
 }
 
 function updateParsedItemGrams(idx, value) {
@@ -1405,7 +1398,7 @@ function updateParsedItemGrams(idx, value) {
   const grams = value.split(/[,;|]/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
   const comps = (items[idx].correct || []).map(c => typeof c === 'object' ? c.ingredient : c);
   items[idx].correct = comps.map((c, i) => ({ ingredient: c, grams: grams[i] || 0 }));
-  items[idx].info_text = `💡 Точный состав по ТТК:\n• ${items[idx].correct.map(c => `${c.ingredient} (${c.grams}г)`).join('\n• ')}`;
+  items[idx].info_text = `Состав:\n• ${items[idx].correct.map(c => `${c.ingredient} (${c.grams}г)`).join('\n• ')}`;
 }
 
 function updateParsedItemImage(idx, value) {
@@ -1433,7 +1426,7 @@ function addParsedItem() {
     type: 'composition',
     name: '',
     correct: [],
-    info_text: '💡 Точный состав по ТТК:\n• ',
+    info_text: 'Состав:\n• ',
   });
   render();
 }
@@ -1882,7 +1875,7 @@ function buildInfoText(name, components) {
     }
     return c || '';
   });
-  return `💡 Точный состав по ТТК:\n• ${list.join('\n• ')}`;
+  return `Состав:\n• ${list.join('\n• ')}`;
 }
 
 function parseTTKCSV(text) {
@@ -2078,9 +2071,9 @@ function buildVenueFromParsedItems(items, sourceName) {
 
 function loadDemoVenue() {
   const demo = [
-    { type: 'composition', name: 'Капучино', correct: ['Шот эспрессо', 'Молоко'], info_text: '💡 Точный состав по ТТК:\n• Шот эспрессо\n• Молоко' },
-    { type: 'composition', name: 'Латте', correct: ['Шот эспрессо', 'Молоко'], info_text: '💡 Точный состав по ТТК:\n• Шот эспрессо\n• Молоко' },
-    { type: 'composition', name: 'Раф', correct: ['Шот эспрессо', 'Молоко', 'Сливки 10%', 'Ванильный сахар'], info_text: '💡 Точный состав по ТТК:\n• Шот эспрессо\n• Молоко\n• Сливки 10%\n• Ванильный сахар' },
+    { type: 'composition', name: 'Капучино', correct: ['Шот эспрессо', 'Молоко'], info_text: 'Состав:\n• Шот эспрессо\n• Молоко' },
+    { type: 'composition', name: 'Латте', correct: ['Шот эспрессо', 'Молоко'], info_text: 'Состав:\n• Шот эспрессо\n• Молоко' },
+    { type: 'composition', name: 'Раф', correct: ['Шот эспрессо', 'Молоко', 'Сливки 10%', 'Ванильный сахар'], info_text: 'Состав:\n• Шот эспрессо\n• Молоко\n• Сливки 10%\n• Ванильный сахар' },
   ];
   setParsedItems(demo, 'демо-меню');
 }
