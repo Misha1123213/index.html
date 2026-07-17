@@ -312,15 +312,17 @@ function loadVenueIntoState(sectionId) {
 
 function selectRole(role) {
   state.platformDraft = { role };
-  if (role === 'owner') {
-    state.screen = 'ownerOptions';
-  } else {
-    state.screen = 'staffRegister';
-  }
+  state.screen = 'register';
   render();
 }
 
 function backToRoleSelect() {
+  state.platformDraft = null;
+  state.screen = 'roleSelect';
+  render();
+}
+
+function backToAuthOptions() {
   state.platformDraft = null;
   state.screen = 'authOptions';
   render();
@@ -557,18 +559,42 @@ function renderAuthOptions() {
     <div class="platform-screen role-select">
       <div class="platform-mascot"></div>
       <div class="platform-title">Cognitio</div>
-      <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
+      <div class="platform-subtitle">Платформа для изучения составов блюд и напитков</div>
       <div class="role-cards">
         <button class="role-card" onclick="state.screen='login'; state.platformDraft={}; render()">
           <div class="role-icon"></div>
           <div class="role-label">Войти</div>
         </button>
-        <button class="role-card" onclick="state.screen='register'; state.platformDraft={role:'owner'}; render()">
+        <button class="role-card" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">
           <div class="role-icon"></div>
           <div class="role-label">Регистрация</div>
         </button>
       </div>
       <button class="link-btn" style="margin-top:20px" onclick="state.screen='forgotPassword'; state.platformDraft={}; render()">Забыли пароль?</button>
+    </div>
+  `;
+}
+
+function renderRoleSelect() {
+  app.innerHTML = `
+    <div class="platform-screen role-select">
+      <div class="platform-header">
+        <button class="close-btn" onclick="backToAuthOptions()">← Назад</button>
+      </div>
+      <div class="platform-title">Регистрация</div>
+      <div class="platform-subtitle">Выберите, кто вы</div>
+      <div class="role-cards">
+        <button class="role-card" onclick="selectRole('owner')">
+          <div class="role-icon"></div>
+          <div class="role-label">Я владелец</div>
+          <div class="role-desc">Создам заведение, загружу ТТК и приглашу сотрудников</div>
+        </button>
+        <button class="role-card" onclick="selectRole('staff')">
+          <div class="role-icon"></div>
+          <div class="role-label">Я сотрудник</div>
+          <div class="role-desc">У меня есть код от владельца</div>
+        </button>
+      </div>
     </div>
   `;
 }
@@ -580,7 +606,7 @@ function renderLogin() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+        <button class="close-btn" onclick="backToAuthOptions()">← Назад</button>
       </div>
       <div class="platform-title">Вход</div>
       <div class="platform-form">
@@ -634,16 +660,6 @@ function renderRegister() {
       </div>
       <div class="platform-title">Регистрация</div>
       <div class="platform-form">
-        <label class="platform-label">Роль</label>
-        <div class="role-cards" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
-          <button class="role-card" type="button" style="border:${isOwner ? '2px solid var(--green)' : 'none'}" onclick="updatePlatformDraft('role','owner'); render()">
-            <div class="role-label">Владелец</div>
-          </button>
-          <button class="role-card" type="button" style="border:${!isOwner ? '2px solid var(--green)' : 'none'}" onclick="updatePlatformDraft('role','staff'); render()">
-            <div class="role-label">Сотрудник</div>
-          </button>
-        </div>
-
         <label class="platform-label">Логин</label>
         <input class="platform-input" type="text" id="auth-login" value="${login}" placeholder="ivan" maxlength="30" oninput="updatePlatformDraft('login', this.value); validatePlatformButton()">
         <label class="platform-label">Пароль</label>
@@ -684,7 +700,7 @@ function renderForgotPassword() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+        <button class="close-btn" onclick="backToAuthOptions()">← Назад</button>
       </div>
       <div class="platform-title">Восстановление пароля</div>
       <div class="platform-form">
