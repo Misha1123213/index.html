@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
+-- Ensure owner_pin column exists for older venues created before this schema update
+ALTER TABLE public.venues ADD COLUMN IF NOT EXISTS owner_pin TEXT;
+
 -- Backfill owner_pin for existing venues (defaults to the venue code until changed by owner)
 UPDATE public.venues SET owner_pin = code WHERE owner_pin IS NULL;
 
