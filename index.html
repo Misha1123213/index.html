@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Cognitio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --green: #4CAF50;
@@ -41,7 +41,7 @@
         body {
             background: var(--bg-dark);
             color: var(--text-primary);
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Inter', sans-serif;
             min-height: 100dvh;
             overflow-x: hidden;
             background-image: url('img/bg-cafe.jpg');
@@ -2176,6 +2176,38 @@
         .card-img-placeholder img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
         .home-screen { position: relative; z-index: 1; }
         #venue-bg { transition: opacity 0.5s; }
+
+        /* Strict UI overrides */
+        :root {
+            --green: #10b981;
+            --green-dark: #059669;
+            --green-light: #34d399;
+            --bg-dark: #0f0f12;
+            --bg-card: #18181b;
+            --bg-card-hover: #27272a;
+            --bg-modal: #1c1c21;
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-dim: #71717a;
+            --border: rgba(255,255,255,0.08);
+            --border-light: rgba(255,255,255,0.14);
+            --shadow: rgba(0,0,0,0.35);
+            --concrete: #e4e4e7;
+            --concrete-light: #f4f4f5;
+            --concrete-dark: #d4d4d8;
+            --concrete-text: #18181b;
+            --concrete-border: rgba(0,0,0,0.08);
+        }
+        body { font-family: 'Inter', sans-serif; background-image: none !important; }
+        body::before { display: none !important; }
+        .mascot, .onboarding-mascot, .platform-mascot, .result-mascot, .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: none !important; }
+        .mascot-area { padding: 16px 0 8px !important; }
+        .top-bar .streak-count::before { content:'Серия '; }
+        .top-bar .hearts-count::before { content:'Жизни '; }
+        .section-card .card-info small, .section-card .card-arrow, .daily-stat-card .stat-label, .lesson-node.locked, .question-type-label { color: rgba(24,24,27,0.55) !important; }
+        .section-row-action { width: auto !important; padding: 4px 10px !important; font-size: 11px !important; border-radius: 6px !important; border: 1px solid var(--concrete-border) !important; background: rgba(255,255,255,0.1) !important; }
+        .card-img-placeholder { font-weight: 800 !important; }
+        #hearts-display::before { content:'Жизни: '; }
     </style>
 </head>
 <body>
@@ -2225,7 +2257,7 @@ window.state = state;
 
 // Cement texture images for variety
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
-const AVATAR_EMOJIS = ['🦉','🐻','🦊','🐼','🐯','🐰','🐧','🐸','🐶','🐱','🦁','🐨'];
+const AVATAR_EMOJIS = ['А','Б','В','Г','Д','Е','Ж','З','И','К','Л','М'];
 // Editable categories shown in the avatar editor. Ears are still rendered
 // (see AVATAR_RENDER_ORDER) but are not user-editable.
 const AVATAR_LAYERS = [
@@ -2239,7 +2271,7 @@ const AVATAR_LAYERS = [
 const AVATAR_RENDER_ORDER = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair'];
 const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
 const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1' };
-const DEFAULT_AVATAR_EMOJI = '☕';
+const DEFAULT_AVATAR_EMOJI = '?';
 let avatarConfig = null;
 let cementCounter = 0;
 function nextCement() {
@@ -2248,7 +2280,7 @@ function nextCement() {
     return img;
 }
 function cementStyle() {
-    return `background-image:url('${nextCement()}');background-size:400px 400px;`;
+    return '';
 }
 
 // ====================== PERSISTENCE ======================
@@ -2328,19 +2360,19 @@ function getDailyProgress() {
 
 // ====================== ACHIEVEMENTS ======================
 const ACHIEVEMENTS = [
-    { id: 'first_lesson', icon: '🎓', title: 'Первый шаг', desc: 'Пройди первый урок', check: s => s.totalLessons >= 1 },
-    { id: 'lessons_10', icon: '📚', title: 'Прилежный', desc: 'Пройди 10 уроков', check: s => s.totalLessons >= 10 },
-    { id: 'lessons_50', icon: '🏫', title: 'Ветеран', desc: 'Пройди 50 уроков', check: s => s.totalLessons >= 50 },
-    { id: 'streak_3', icon: '🔥', title: 'В огне', desc: '3 дня подряд', check: s => s.streak >= 3 },
-    { id: 'streak_7', icon: '🔥', title: 'Неделя без пропусков', desc: '7 дней подряд', check: s => s.streak >= 7 },
-    { id: 'streak_30', icon: '🌋', title: 'Железная воля', desc: '30 дней подряд', check: s => s.streak >= 30 },
-    { id: 'xp_100', icon: '⚡', title: 'Сотня', desc: 'Набери 100 XP', check: s => s.totalXP >= 100 },
-    { id: 'xp_500', icon: '💫', title: 'Знаток', desc: 'Набери 500 XP', check: s => s.totalXP >= 500 },
-    { id: 'xp_1000', icon: '👑', title: 'Мастер', desc: 'Набери 1000 XP', check: s => s.totalXP >= 1000 },
-    { id: 'correct_100', icon: '🎯', title: 'Меткий', desc: '100 верных ответов', check: s => s.totalCorrect >= 100 },
-    { id: 'perfect_1', icon: '🌟', title: 'Идеально!', desc: 'Пройди урок без ошибок', check: s => s.perfectLessons >= 1 },
-    { id: 'perfect_10', icon: '🏆', title: 'Перфекционист', desc: '10 идеальных уроков', check: s => s.perfectLessons >= 10 },
-    { id: 'goal_met', icon: '✅', title: 'Цель дня', desc: 'Выполни дневную цель', check: s => s.dailyGoalMet },
+    { id: 'first_lesson', icon: '', title: 'Первый шаг', desc: 'Пройди первый урок', check: s => s.totalLessons >= 1 },
+    { id: 'lessons_10', icon: '', title: 'Прилежный', desc: 'Пройди 10 уроков', check: s => s.totalLessons >= 10 },
+    { id: 'lessons_50', icon: '', title: 'Ветеран', desc: 'Пройди 50 уроков', check: s => s.totalLessons >= 50 },
+    { id: 'streak_3', icon: '', title: 'В огне', desc: '3 дня подряд', check: s => s.streak >= 3 },
+    { id: 'streak_7', icon: '', title: 'Неделя без пропусков', desc: '7 дней подряд', check: s => s.streak >= 7 },
+    { id: 'streak_30', icon: '', title: 'Железная воля', desc: '30 дней подряд', check: s => s.streak >= 30 },
+    { id: 'xp_100', icon: '', title: 'Сотня', desc: 'Набери 100 XP', check: s => s.totalXP >= 100 },
+    { id: 'xp_500', icon: '', title: 'Знаток', desc: 'Набери 500 XP', check: s => s.totalXP >= 500 },
+    { id: 'xp_1000', icon: '', title: 'Мастер', desc: 'Набери 1000 XP', check: s => s.totalXP >= 1000 },
+    { id: 'correct_100', icon: '', title: 'Меткий', desc: '100 верных ответов', check: s => s.totalCorrect >= 100 },
+    { id: 'perfect_1', icon: '', title: 'Идеально!', desc: 'Пройди урок без ошибок', check: s => s.perfectLessons >= 1 },
+    { id: 'perfect_10', icon: '', title: 'Перфекционист', desc: '10 идеальных уроков', check: s => s.perfectLessons >= 10 },
+    { id: 'goal_met', icon: '', title: 'Цель дня', desc: 'Выполни дневную цель', check: s => s.dailyGoalMet },
 ];
 function getAchievementStats() {
     const p = getProgress();
@@ -2692,18 +2724,18 @@ function getSectionCategory(section) {
 // ====================== CHAPTER PROGRESS ======================
 function getChapterTotals() {
     const chapters = {
-        kitchen: { file: 'dishes.json', label: '🍳 Кухня' },
-        desserts: { file: 'desserts.json', label: '🍰 Десерты' },
-        drinks: { file: 'drinks.json', label: '🍹 Напитки' },
-        drink_pf: { file: 'drink_pf.json', label: '🧪 ПФ Напитков' },
-        kitchen_pf: { file: 'kitchen_pf.json', label: '🧪 ПФ Кухни' }
+        kitchen: { file: 'dishes.json', label: 'Кухня' },
+        desserts: { file: 'desserts.json', label: 'Десерты' },
+        drinks: { file: 'drinks.json', label: 'Напитки' },
+        drink_pf: { file: 'drink_pf.json', label: 'ПФ Напитков' },
+        kitchen_pf: { file: 'kitchen_pf.json', label: 'ПФ Кухни' }
     };
     if (state.venue && state.venue.sections) {
         for (const section of state.venue.sections) {
-            chapters['venue_' + section.id] = { file: null, label: `🏪 ${section.name || 'Раздел'}` };
+            chapters['venue_' + section.id] = { file: null, label: `${section.name || 'Раздел'}` };
         }
     } else if (state.venue) {
-        chapters.venue_progress = { file: null, label: `🏪 ${state.venue.name || 'Заведение'}` };
+        chapters.venue_progress = { file: null, label: `${state.venue.name || 'Заведение'}` };
     }
     return chapters;
 }
@@ -2854,7 +2886,7 @@ function renderPhotoFallbackString(name, cls) {
         ? (name ? getDishCategory(name) : null)
         : (state.section ? getSectionCategory(state.section) : (name ? getDishCategory(name) : null));
     const label = cat ? cat.label : 'Блюдо';
-    const emoji = cat ? (cat.cls === 'breakfast' ? '🍳' : cat.cls === 'lunch' ? '🥗' : cat.cls === 'sandwich' ? '🥪' : cat.cls === 'dessert' ? '🍰' : cat.cls === 'drink' ? '☕' : cat.cls === 'drink_pf' ? '🧪' : cat.cls === 'kitchen_pf' ? '🧪' : '🍽️') : '🍽️';
+    const emoji = (cat ? ((cat.label || 'Блюдо')[0] || '?') : '?');
     return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${emoji}</span><span class="dish-fallback-label">${label}</span></div>`;
 }
 
@@ -2870,7 +2902,7 @@ function renderAvatar(avatar, size = 32) {
     }
     // if assets are not generated yet, show the migrated emoji or default
     if (!avatarConfig || Object.keys(avatarConfig).length === 0) {
-        const emoji = avatar.avatarEmoji || DEFAULT_AVATAR_EMOJI;
+        const emoji = DEFAULT_AVATAR_EMOJI;
         return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${emoji}</span>`;
     }
     const order = AVATAR_RENDER_ORDER;
@@ -2946,11 +2978,11 @@ function renderDailyGoalCard() {
                         stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
                         transform="rotate(-90 40 40)" class="goal-ring-fill"/>
                 </svg>
-                <div class="goal-ring-center">${d.met ? '✅' : `${d.pct}%`}</div>
+                <div class="goal-ring-center">${d.pct}%</div>
             </div>
             <div class="goal-info">
                 <div class="goal-title">Цель дня</div>
-                <div class="goal-sub">${d.met ? 'Цель выполнена! 🎉' : `${d.xp} / ${d.goal} XP`}</div>
+                <div class="goal-sub">${d.met ? 'Цель выполнена' : `${d.xp} / ${d.goal} XP`}</div>
             </div>
         </button>
     `;
@@ -2966,7 +2998,7 @@ function showAchievements() {
         const on = !!unlocked[a.id];
         return `
             <div class="ach-card ${on ? 'unlocked' : 'locked'}">
-                <div class="ach-icon">${on ? a.icon : '🔒'}</div>
+                <div class="ach-icon">${on ? a.icon : ''}</div>
                 <div class="ach-title">${a.title}</div>
                 <div class="ach-desc">${a.desc}</div>
             </div>
@@ -2979,7 +3011,7 @@ function showAchievements() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">🏅 Достижения</div>
+                <div class="stats-modal-title">Достижения</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <p class="settings-hint" style="margin:0 0 16px">Открыто ${got} из ${ACHIEVEMENTS.length}</p>
@@ -2991,7 +3023,7 @@ function showAchievements() {
 
 function renderHome() {
     const stats = getGlobalStats();
-    const profile = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const profile = state.profile || { nickname: 'Ты', avatar: null };
     app.innerHTML = `
         <div class="top-bar">
             <button class="profile-chip" onclick="openAvatarEditor()">
@@ -3000,49 +3032,49 @@ function renderHome() {
             </button>
             <div style="flex:1"></div>
             <div class="top-bar-stat">
-                <span class="icon">🔥</span>
+                <span class="icon"></span>
                 <span class="streak-count">${stats.streak}</span>
             </div>
             <div class="top-bar-stat">
-                <span class="icon">⚡</span>
+                <span class="icon"></span>
                 <span class="xp-count">${stats.totalXP} XP</span>
             </div>
-            <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">⚙️</button>
+            <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">≡</button>
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot">☕</span>
+                <span class="mascot"></span>
                 <div class="app-title">Cognitio</div>
                 <div class="app-subtitle">Изучай составы блюд</div>
             </div>
             ${renderDailyGoalCard()}
             <div class="daily-stats">
                 <div class="daily-stat-card" style="${cementStyle()}">
-                    <div class="stat-value streak-count">🔥 ${stats.streak}</div>
+                    <div class="stat-value streak-count">${stats.streak}</div>
                     <div class="stat-label">Серия дней</div>
                 </div>
                 <div class="daily-stat-card" style="${cementStyle()}">
-                    <div class="stat-value xp-count">⚡ ${stats.totalXP}</div>
+                    <div class="stat-value xp-count">${stats.totalXP}</div>
                     <div class="stat-label">Всего XP</div>
                 </div>
                 <div class="daily-stat-card" style="${cementStyle()}">
-                    <div class="stat-value" style="color:var(--green)">📚 ${stats.totalLessons}</div>
+                    <div class="stat-value" style="color:var(--green)">${stats.totalLessons}</div>
                     <div class="stat-label">Уроков</div>
                 </div>
             </div>
             <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">
-                📊 Характеристика обучения
+                Характеристика обучения
             </button>
             <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">
-                🏆 Рейтинг
+                Рейтинг
             </button>
             <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">
-                🏅 Достижения ${renderAchievementBadge()}
+                Достижения ${renderAchievementBadge()}
             </button>
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('kitchen')">
                 <div class="card-img-wrap">
                     <img class="card-img" src="img/shakshuka.jpg" alt="Кухня" onerror="this.parentNode.classList.add('no-img')">
-                    <span class="card-img-placeholder">🍳</span>
+                    <span class="card-img-placeholder">К</span>
                 </div>
                 <div class="card-info">
                     Кухня
@@ -3053,7 +3085,7 @@ function renderHome() {
             <button class="section-card" style="${cementStyle()}" onclick="selectSection('desserts')">
                 <div class="card-img-wrap">
                     <img class="card-img" src="img/tart.jpg" alt="Десерты" onerror="this.parentNode.classList.add('no-img')">
-                    <span class="card-img-placeholder">🍰</span>
+                    <span class="card-img-placeholder">Д</span>
                 </div>
                 <div class="card-info">
                     Десерты
@@ -3064,7 +3096,7 @@ function renderHome() {
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('drinks')">
                 <div class="card-img-wrap">
                     <img class="card-img" src="img/cappuccino.jpg" alt="Напитки" onerror="this.parentNode.classList.add('no-img')">
-                    <span class="card-img-placeholder">☕</span>
+                    <span class="card-img-placeholder">Н</span>
                 </div>
                 <div class="card-info">
                     Напитки
@@ -3123,7 +3155,7 @@ function renderOnboarding() {
     if (state.onboardingStep === 'nickname') {
         app.innerHTML = `
             <div class="onboarding-screen">
-                <div class="onboarding-mascot">☕</div>
+                <div class="onboarding-mascot"></div>
                 <div class="onboarding-title">Как тебя зовут?</div>
                 <div class="onboarding-subtitle">Создай персонажа, как в Duolingo</div>
                 <input class="nickname-input" type="text" placeholder="Введи никнейм" maxlength="20" value="${state.onboardingNickname}" oninput="setOnboardingNickname(this.value)">
@@ -3258,12 +3290,12 @@ function renderAvatarEditor() {
 }
 
 function getLeaderboard() {
-    const user = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const user = state.profile || { nickname: 'Ты', avatar: null };
     const userXP = getGlobalStats().totalXP;
     const names = ['Алекс', 'Миша', 'Катя', 'Саша', 'Дима', 'Лена', 'Ваня', 'Оля', 'Ира', 'Паша', 'Тима', 'Ника', 'Глеб', 'Юля', 'Вера', 'Макс', 'Аня', 'Лёша', 'Зоя', 'Рома', 'Соня', 'Артём', 'Настя', 'Петя'];
     const users = names.map((n, i) => ({
         name: n,
-        avatar: AVATAR_EMOJIS[i % AVATAR_EMOJIS.length],
+        avatar: n[0].toUpperCase(),
         xp: Math.max(0, userXP + Math.floor((Math.random() - 0.5) * 1200)),
         isUser: false,
     }));
@@ -3313,7 +3345,7 @@ function renderLeaderboard() {
             <div class="leaderboard-header">
                 <button class="close-btn" onclick="goHome()" style="position:static;margin:0">← Назад</button>
             </div>
-            <div class="leaderboard-title">🏆 Рейтинг</div>
+            <div class="leaderboard-title">Рейтинг</div>
             ${podiumHTML}
             ${listHTML}
         </div>
@@ -3348,7 +3380,7 @@ function renderBranchSelection() {
         <button class="section-card" style="${cementStyle()}" onclick="selectSection('${b.id}')">
             <div class="card-img-wrap">
                 <img class="card-img" src="${b.img}" alt="${b.label}" onerror="this.parentNode.classList.add('no-img')">
-                <span class="card-img-placeholder">${isKitchen ? '🍳' : '☕'}</span>
+                <span class="card-img-placeholder">${isKitchen ? 'К' : 'Н'}</span>
             </div>
             <div class="card-info">
                 ${b.label}
@@ -3364,7 +3396,7 @@ function renderBranchSelection() {
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot">☕</span>
+                <span class="mascot"></span>
                 <div class="app-title">${title}</div>
                 <div class="app-subtitle">${subtitle}</div>
             </div>
@@ -3376,22 +3408,22 @@ function renderBranchSelection() {
 // ====================== LEARNING STATS DASHBOARD ======================
 function getCategoryLabel(cat) {
     const labels = {
-        berry: '🫐 Ягоды',
-        fruit: '🍎 Фрукты',
-        vegetable: '🥬 Овощи / зелень',
-        bulk: '🌾 Сыпучее',
-        liquid: '💧 Жидкости',
-        other: '🥩 Прочее'
+        berry: 'Ягоды',
+        fruit: 'Фрукты',
+        vegetable: 'Овощи / зелень',
+        bulk: 'Сыпучее',
+        liquid: 'Жидкости',
+        other: 'Прочее'
     };
     return labels[cat] || cat;
 }
 
 function getTypeLabel(type) {
     const labels = {
-        select: '☑️ Выбор',
-        missing: '❓ Пропуск',
-        truefalse: '✅ Верно/неверно',
-        color_fill: '🎨 Цветовые группы'
+        select: 'Выбор',
+        missing: 'Пропуск',
+        truefalse: 'Верно/неверно',
+        color_fill: 'Цветовые группы'
     };
     return labels[type] || type;
 }
@@ -3497,7 +3529,7 @@ function showLearningStats() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">📊 Характеристика обучения</div>
+                <div class="stats-modal-title">Характеристика обучения</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <div class="strength-card">
@@ -3537,11 +3569,11 @@ function showLearningStats() {
 
 // ====================== SETTINGS MODAL ======================
 const SETTINGS_UI = [
-    { key: 'sound', icon: '🔊', label: 'Звук', desc: 'Звуковые эффекты при ответах и нажатиях' },
-    { key: 'vibration', icon: '📳', label: 'Вибрация', desc: 'Тактильная отдача (на телефонах)' },
-    { key: 'tapFeedback', icon: '👆', label: 'Отклик при нажатии', desc: 'Лёгкий звук и вибро при выборе варианта' },
-    { key: 'confetti', icon: '🎉', label: 'Конфетти', desc: 'Празднование за идеальный урок' },
-    { key: 'animations', icon: '✨', label: 'Анимации', desc: 'Плавные переходы и «живые» кнопки' },
+    { key: 'sound', icon: '', label: 'Звук', desc: 'Звуковые эффекты при ответах и нажатиях' },
+    { key: 'vibration', icon: '', label: 'Вибрация', desc: 'Тактильная отдача (на телефонах)' },
+    { key: 'tapFeedback', icon: '', label: 'Отклик при нажатии', desc: 'Лёгкий звук и вибро при выборе варианта' },
+    { key: 'confetti', icon: '', label: 'Конфетти', desc: 'Празднование за идеальный урок' },
+    { key: 'animations', icon: '', label: 'Анимации', desc: 'Плавные переходы и «живые» кнопки' },
 ];
 function renderToggleRow(s, item) {
     return `
@@ -3562,20 +3594,20 @@ function showSettings() {
     const rowsHTML = SETTINGS_UI.map(item => renderToggleRow(s, item)).join('');
     const themeHTML = `
         <div class="settings-row">
-            <div class="settings-row-icon">🎨</div>
+            <div class="settings-row-icon"></div>
             <div class="settings-row-text">
                 <div class="settings-row-label">Тема</div>
                 <div class="settings-row-desc">Тёмная или светлая</div>
             </div>
             <div class="seg-control">
-                <button class="seg-btn ${s.theme !== 'light' ? 'active' : ''}" onclick="changeTheme('dark', this)">🌙 Тёмная</button>
-                <button class="seg-btn ${s.theme === 'light' ? 'active' : ''}" onclick="changeTheme('light', this)">☀️ Светлая</button>
+                <button class="seg-btn ${s.theme !== 'light' ? 'active' : ''}" onclick="changeTheme('dark', this)">Тёмная</button>
+                <button class="seg-btn ${s.theme === 'light' ? 'active' : ''}" onclick="changeTheme('light', this)">Светлая</button>
             </div>
         </div>
     `;
     const goalHTML = `
         <div class="settings-row">
-            <div class="settings-row-icon">🎯</div>
+            <div class="settings-row-icon"></div>
             <div class="settings-row-text">
                 <div class="settings-row-label">Дневная цель</div>
                 <div class="settings-row-desc">Сколько XP набирать в день</div>
@@ -3592,7 +3624,7 @@ function showSettings() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">⚙️ Настройки</div>
+                <div class="stats-modal-title">Настройки</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <div class="settings-list">${rowsHTML}${themeHTML}${goalHTML}</div>
@@ -3632,11 +3664,11 @@ function changeDailyGoal(goal, btn) {
 async function selectSection(section) {
     state.section = section;
     const labels = {
-        kitchen: '🍳 Кухня',
-        desserts: '🍰 Десерты',
-        drinks: '🍹 Напитки',
-        drink_pf: '🧪 ПФ Напитков',
-        kitchen_pf: '🧪 ПФ Кухни'
+        kitchen: 'Кухня',
+        desserts: 'Десерты',
+        drinks: 'Напитки',
+        drink_pf: 'ПФ Напитков',
+        kitchen_pf: 'ПФ Кухни'
     };
     state.sectionLabel = labels[section] || section;
     state.isDrinksChapter = (section === 'drinks' || section === 'drink_pf');
@@ -3662,7 +3694,7 @@ async function selectSection(section) {
     } catch (e) {
         app.innerHTML = `
             <div class="loading-screen">
-                <span style="font-size:60px">😔</span>
+                <span style="font-size:60px">—</span>
                 <p>Файл ${fileName} не найден</p>
                 <button class="result-btn secondary" style="margin-top:20px;max-width:280px" onclick="goHome()">Назад</button>
             </div>
@@ -3719,7 +3751,7 @@ function renderPath() {
         }
 
         const offset = offsets[i % offsets.length];
-        const crownHTML = ld.crowns > 0 ? `<span class="crown-badge">👑${ld.crowns > 1 ? ld.crowns : ''}</span>` : '';
+        const crownHTML = ld.crowns > 0 ? `<span class="crown-badge">${ld.crowns > 1 ? ld.crowns : ''}</span>` : '';
         const connectorClass = i < firstIncomplete ? 'completed' : '';
 
         if (i > 0) {
@@ -3739,22 +3771,22 @@ function renderPath() {
 
     const practiceHTML = weakItems.length > 0 ? `
         <button class="practice-btn" style="${cementStyle()}" onclick="startPractice()">
-            🏋️ Тренировка слабых мест (${weakItems.length})
+            Тренировка слабых мест (${weakItems.length})
         </button>
     ` : '';
 
     app.innerHTML = `
         <div class="top-bar">
             <div class="top-bar-stat">
-                <span class="icon">🔥</span>
+                <span class="icon"></span>
                 <span class="streak-count">${stats.streak}</span>
             </div>
             <div class="top-bar-stat">
-                <span class="icon">⚡</span>
+                <span class="icon"></span>
                 <span class="xp-count">${stats.totalXP} XP</span>
             </div>
             <div class="top-bar-stat">
-                <span class="icon">❤️</span>
+                <span class="icon"></span>
                 <span class="hearts-count">5</span>
             </div>
         </div>
@@ -3762,7 +3794,7 @@ function renderPath() {
             <div class="path-header">
                 <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
                 <div class="path-title">${state.sectionLabel}</div>
-                <button class="browse-btn" style="${cementStyle()}" onclick="openBrowse()" aria-label="Справочник">📕</button>
+                <button class="browse-btn" style="${cementStyle()}" onclick="openBrowse()" aria-label="Справочник">i</button>
             </div>
             ${practiceHTML}
             <div class="path-container">
@@ -3818,7 +3850,7 @@ function renderBrowse() {
             <button class="close-btn" onclick="closeBrowse()" style="position:static;margin:0">← Назад</button>
         </div>
         <div class="browse-screen">
-            <div class="path-title">📕 Справочник — ${state.sectionLabel}</div>
+            <div class="path-title">Справочник — ${state.sectionLabel}</div>
             <div class="browse-container">
                 ${itemsHTML}
             </div>
@@ -4336,7 +4368,7 @@ function renderLesson() {
     const fb = state.feedbackShown;
     const progressTotal = Math.max(state._phaseTotal || state.questions.length, state.currentQIdx + 1);
     const progress = ((state.currentQIdx + (fb ? 1 : 0)) / progressTotal) * 100;
-    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+    const heartsStr = String(state.hearts);
     const correctSet = new Set(q.item._ingredients);
 
     let questionHTML = '';
@@ -4369,7 +4401,7 @@ function renderLesson() {
                     ${dishPhotoHTML}
                     <div class="question-title">
                         Выбери состав: <span class="question-dish-name">${dishName}</span>
-                        ${q.showGrams ? '<div style="font-size:12px;color:rgba(42,42,42,0.6);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
+                        ${q.showGrams ? '<div style="font-size:12px;color:rgba(24,24,27,0.55);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
                     </div>
                 </div>
                 ${resultStripHTML}
@@ -4798,7 +4830,7 @@ function renderResult() {
         : 0;
 
     const barColor = accuracy >= 80 ? 'var(--green)' : accuracy >= 50 ? 'var(--gold)' : 'var(--red)';
-    const resultEmoji = accuracy === 100 ? '🏆' : accuracy >= 80 ? '🌟' : accuracy >= 50 ? '👍' : '💪';
+    const resultEmoji = accuracy === 100 ? '' : accuracy >= 80 ? '' : accuracy >= 50 ? '' : '';
     const resultTitle = accuracy === 100 ? 'Идеально!' :
                         accuracy >= 80 ? 'Отличная работа!' :
                         accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
@@ -4807,7 +4839,6 @@ function renderResult() {
 
     app.innerHTML = `
         <div class="result-screen">
-            <div class="result-mascot">${resultEmoji}</div>
             <div class="result-title">${resultTitle}</div>
             <div class="result-subtitle">${resultSub}</div>
             <div class="result-stats">
@@ -4829,7 +4860,7 @@ function renderResult() {
             </div>
             <p style="color:var(--text-secondary);margin-bottom:24px;font-weight:700">${accuracy}% точность</p>
             <button class="result-btn primary" onclick="returnToPath()">Продолжить</button>
-            ${state.mistakeIds.length > 0 ? `<button class="result-btn secondary" onclick="retryMistakes()">🔄 Повторить ошибки (${state.mistakeIds.length})</button>` : ''}
+            ${state.mistakeIds.length > 0 ? `<button class="result-btn secondary" onclick="retryMistakes()">Повторить ошибки (${state.mistakeIds.length})</button>` : ''}
         </div>
     `;
 
