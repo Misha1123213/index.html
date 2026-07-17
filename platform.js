@@ -33,6 +33,32 @@ function initSupabaseClient() {
 }
 initSupabaseClient();
 
+const PENDING_RESULTS_KEY = 'cognitio_pending_results';
+function getPendingResults() {
+  try { return JSON.parse(localStorage.getItem(PENDING_RESULTS_KEY) || '[]'); } catch { return []; }
+}
+function addPendingResult(result) {
+  const arr = getPendingResults();
+  arr.push(result);
+  localStorage.setItem(PENDING_RESULTS_KEY, JSON.stringify(arr));
+}
+async function syncPendingResults() {
+  if (!supabaseClient) return;
+  const pending = getPendingResults();
+  if (!pending.length) return;
+  const failed = [];
+  for (const r of pending) {
+    try {
+      const { error } = await supabaseClient.rpc('save_result', r);
+      if (error) throw error;
+    } catch (e) { failed.push(r); }
+  }
+  localStorage.setItem(PENDING_RESULTS_KEY, JSON.stringify(failed));
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', syncPendingResults);
+}
+
 function generateVenueCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -101,6 +127,31 @@ function syncVenue() {
       }
     })
     .catch(e => console.error('syncVenue error', e));
+}
+
+async function saveTrainingResult(itemName, isCorrect, format, timeTaken) {
+  const auth = state.auth || {};
+  const venue = state.venue || {};
+  if (!auth.login || !venue.code) return;
+  const payload = {
+    p_venue_code: venue.code,
+    p_staff_login: auth.login,
+    p_item_name: itemName,
+    p_is_correct: isCorrect,
+    p_format: format || null,
+    p_time_taken: timeTaken || 0
+  };
+  try {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.rpc('save_result', payload);
+      if (error) throw error;
+      syncPendingResults();
+    } else {
+      addPendingResult(payload);
+    }
+  } catch (e) {
+    addPendingResult(payload);
+  }
 }
 
 function exportVenueFile() {
@@ -188,7 +239,7 @@ function venueMoodImageUrl(style, venueName) {
 }
 
 function isPlatformScreen() {
-  return ['authOptions', 'login', 'register', 'forgotPassword', 'resetPassword', 'roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
+  return ['authOptions', 'login', 'register', 'forgotPassword', 'resetPassword', 'roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'ownerStats', 'staffStats', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
 }
 
 function normalizeVenue(venue) {
@@ -413,6 +464,7 @@ async function joinStaffVenue() {
   window.renderHome = renderPlatformHome;
   state.screen = 'home';
   render();
+  syncPendingResults();
   playSound('correct');
 }
 
@@ -435,11 +487,67 @@ function logoutPlatform() {
 function ownerDashboard() {
   state.screen = 'ownerDashboard';
   render();
+  loadStaffList();
 }
 
 function ownerBackToHome() {
   state.screen = 'home';
   render();
+}
+
+async function loadStaffList() {
+  if (!supabaseClient || !state.venue) return;
+  try {
+    const { data, error } = await supabaseClient.rpc('get_staff_list', { p_code: state.venue.code });
+    if (error) throw error;
+    state.staffList = (data || []).map(s => ({ id: s.id, name: s.name, joined_at: s.joined_at }));
+  } catch (e) {
+    console.error('loadStaffList error', e);
+    state.staffList = state.venue.staff || [];
+  }
+  render();
+}
+
+async function removeStaff(name) {
+  if (!supabaseClient || !state.venue || !name) return;
+  if (!confirm('Удалить сотрудника ' + name + '?')) return;
+  try {
+    const { error } = await supabaseClient.rpc('remove_staff', { p_code: state.venue.code, p_name: name });
+    if (error) throw error;
+    showPlatformToast('Сотрудник удалён');
+    loadStaffList();
+  } catch (e) {
+    showPlatformToast('Ошибка удаления: ' + (e.message || e));
+  }
+}
+
+async function loadTrainingStats() {
+  if (!supabaseClient || !state.venue) {
+    state.trainingStats = { staff: [], items: [] };
+    render();
+    return;
+  }
+  try {
+    const { data, error } = await supabaseClient.rpc('get_training_stats', { p_venue_code: state.venue.code });
+    if (error) throw error;
+    state.trainingStats = data || { staff: [], items: [] };
+  } catch (e) {
+    console.error('loadTrainingStats error', e);
+    state.trainingStats = { staff: [], items: [] };
+  }
+  render();
+}
+
+function showOwnerStats() {
+  state.screen = 'ownerStats';
+  render();
+  loadTrainingStats();
+}
+
+function showStaffStats() {
+  state.screen = 'staffStats';
+  render();
+  loadTrainingStats();
 }
 
 // ====================== RENDERERS ======================
@@ -654,6 +762,7 @@ function handleAuthData(data) {
     state.screen = 'home';
   }
   render();
+  syncPendingResults();
   showPlatformToast(user.role === 'owner' ? 'Заведение загружено' : 'Добро пожаловать');
 }
 
@@ -918,7 +1027,17 @@ function renderOwnerDashboard() {
   const venue = state.venue;
   const sections = getVenueSections();
   const itemCount = sections.reduce((sum, s) => sum + (s.items ? s.items.length : 0), 0);
-  const staffCount = venue.staff ? venue.staff.length : 0;
+  const staffList = state.staffList || venue.staff || [];
+  const staffRows = staffList.length ? staffList.map(s => `
+    <div class="section-row">
+      <div>
+        <div class="section-row-name">${escapeHtml(s.name)}</div>
+        <div class="section-row-meta">с ${new Date(s.joined_at).toLocaleDateString()}</div>
+      </div>
+      <button class="section-row-action" onclick="removeStaff('${escapeHtml(s.name)}')">🗑</button>
+    </div>
+  `).join('') : '<div class="section-empty">Пока нет сотрудников</div>';
+
   app.innerHTML = `
     <div class="top-bar">
       <button class="close-btn" onclick="ownerBackToHome()">← Назад</button>
@@ -941,9 +1060,13 @@ function renderOwnerDashboard() {
           <div class="dashboard-stat-label">Разделов</div>
         </div>
         <div class="dashboard-stat">
-          <div class="dashboard-stat-value">${staffCount}</div>
+          <div class="dashboard-stat-value">${staffList.length}</div>
           <div class="dashboard-stat-label">Сотрудников</div>
         </div>
+      </div>
+      <div class="section-management">
+        <div class="platform-label">Сотрудники</div>
+        ${staffRows}
       </div>
       <div class="section-management">
         <div class="platform-label">Разделы</div>
@@ -959,9 +1082,82 @@ function renderOwnerDashboard() {
         `).join('') : '<div class="section-empty">Пока нет разделов</div>'}
         <button class="onboarding-btn secondary" onclick="promptNewSection()">+ Новый раздел</button>
       </div>
+      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">📊 Статистика обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">🔄 Загрузить ТТК</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">✨ Сгенерировать фон заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">📤 Экспортировать заведение</button>
+    </div>
+  `;
+}
+
+function renderOwnerStats() {
+  const stats = state.trainingStats || { staff: [], items: [] };
+  const staffRows = (stats.staff || []).map(s => `
+    <div class="section-row">
+      <div>
+        <div class="section-row-name">${escapeHtml(s.login)}</div>
+        <div class="section-row-meta">${s.correct} / ${s.total} верно</div>
+      </div>
+      <div style="font-weight:700">${s.total ? Math.round((s.accuracy || 0) * 100) : 0}%</div>
+    </div>
+  `).join('') || '<div class="section-empty">Пока нет данных по сотрудникам</div>';
+  const itemRows = (stats.items || []).map(it => `
+    <div class="section-row">
+      <div>
+        <div class="section-row-name">${escapeHtml(it.name)}</div>
+        <div class="section-row-meta">${it.correct} / ${it.total} верно</div>
+      </div>
+      <div style="font-weight:700">${it.total ? Math.round((it.accuracy || 0) * 100) : 0}%</div>
+    </div>
+  `).join('') || '<div class="section-empty">Пока нет данных по позициям</div>';
+
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="ownerDashboard()">← Назад</button>
+      </div>
+      <div class="platform-title">📊 Статистика обучения</div>
+      <div class="platform-form">
+        <div class="platform-label">По сотрудникам</div>
+        ${staffRows}
+        <div class="platform-label" style="margin-top:16px">По позициям</div>
+        ${itemRows}
+      </div>
+    </div>
+  `;
+}
+
+function renderStaffStats() {
+  const stats = state.trainingStats || { staff: [], items: [] };
+  const login = (state.auth && state.auth.login) || (state.profile && state.profile.nickname) || 'Ты';
+  const myStats = (stats.staff || []).find(s => s.login === login) || { total: 0, correct: 0, accuracy: 0 };
+  const itemRows = (stats.items || []).map(it => `
+    <div class="section-row">
+      <div>
+        <div class="section-row-name">${escapeHtml(it.name)}</div>
+        <div class="section-row-meta">${it.correct} / ${it.total} верно</div>
+      </div>
+      <div style="font-weight:700">${it.total ? Math.round((it.accuracy || 0) * 100) : 0}%</div>
+    </div>
+  `).join('') || '<div class="section-empty">Пока нет данных</div>';
+
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="state.screen='home'; render()">← Назад</button>
+      </div>
+      <div class="platform-title">📊 Моя статистика</div>
+      <div class="platform-form">
+        <div class="section-row">
+          <div>
+            <div class="section-row-name">Общая точность</div>
+            <div class="section-row-meta">${myStats.correct} / ${myStats.total}</div>
+          </div>
+          <div style="font-weight:700">${myStats.total ? Math.round((myStats.accuracy || 0) * 100) : 0}%</div>
+        </div>
+        <div class="platform-label" style="margin-top:16px">По позициям</div>
+        ${itemRows}
+      </div>
     </div>
   `;
 }
@@ -1054,6 +1250,7 @@ function renderPlatformHome() {
       <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">📊 Характеристика обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">🏆 Рейтинг</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">🏅 Достижения ${renderAchievementBadge()}</button>
+      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">📊 Моя статистика</button>` : ''}
       ${hasSections ? sections.map(s => `
         <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
           <div class="card-img-wrap">

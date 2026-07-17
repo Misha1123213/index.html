@@ -2913,6 +2913,8 @@ function render() {
         case 'ownerSetup': renderOwnerSetup(); break;
         case 'courseEditor': renderCourseEditor(); break;
         case 'ownerDashboard': renderOwnerDashboard(); break;
+        case 'ownerStats': renderOwnerStats(); break;
+        case 'staffStats': renderStaffStats(); break;
         case 'sectionPicker': renderSectionPicker(); break;
         case 'staffRegister': renderStaffRegister(); break;
         case 'staffJoin': renderStaffJoin(); break;
@@ -4674,6 +4676,7 @@ function processAnswer(isCorrect, item, format, timeTaken) {
     state.sessionTotal++;
     recordAnswer(item.name, isCorrect);
     recordFormatAnswer(format, isCorrect, timeTaken);
+    saveTrainingResult(item.name, isCorrect, format, timeTaken);
 
     if (isCorrect) {
         state.sessionCorrect++;
