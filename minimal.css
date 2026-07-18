@@ -92,8 +92,7 @@ body { background: var(--bg-dark) !important; color: var(--text-primary) !import
 .card-img,
 .dish-photo,
 .dish-photo-fallback,
-.browse-item-photo,
-.avatar-editor-preview .avatar-stack { border-radius: 0 !important; }
+.browse-item-photo { border-radius: 0 !important; }
 
 .section-card:hover,
 .section-card:active,
