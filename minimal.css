@@ -1,0 +1,330 @@
+/* Minimal modern UI overrides */
+:root {
+    --bg-dark: #0a0a0b;
+    --bg-card: #141415;
+    --bg-card-hover: #1f1f21;
+    --bg-modal: #161618;
+    --text-primary: #f5f5f5;
+    --text-secondary: #a1a1aa;
+    --text-dim: #737373;
+    --border: rgba(255,255,255,0.08);
+    --border-light: rgba(255,255,255,0.13);
+    --green: #22c55e;
+    --green-dark: #16a34a;
+    --green-light: #4ade80;
+    --red: #ef4444;
+    --gold: #f59e0b;
+    --concrete: #1c1c1e;
+    --concrete-light: #27272a;
+    --concrete-dark: #3f3f46;
+    --concrete-text: #f4f4f5;
+    --concrete-border: rgba(255,255,255,0.08);
+}
+
+:root[data-theme="light"] {
+    --bg-dark: #ffffff;
+    --bg-card: #f4f4f5;
+    --bg-card-hover: #e4e4e7;
+    --bg-modal: #ffffff;
+    --text-primary: #18181b;
+    --text-secondary: #52525b;
+    --text-dim: #a1a1aa;
+    --border: rgba(0,0,0,0.08);
+    --border-light: rgba(0,0,0,0.13);
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --green-light: #22c55e;
+    --red: #dc2626;
+    --gold: #d97706;
+    --concrete: #f4f4f5;
+    --concrete-light: #ffffff;
+    --concrete-dark: #e4e4e7;
+    --concrete-text: #18181b;
+    --concrete-border: rgba(0,0,0,0.08);
+}
+
+body { background: var(--bg-dark) !important; color: var(--text-primary) !important; }
+
+* {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    text-transform: none !important;
+}
+
+*:focus { outline: 2px solid var(--text-secondary) !important; outline-offset: 2px !important; }
+
+.loader { animation: spin 0.8s linear infinite !important; }
+
+.confetti-container,
+.xp-popup { display: none !important; }
+
+#venue-bg { opacity: 0.08 !important; filter: grayscale(1) !important; }
+
+.option-btn.crack-effect::after,
+.choice-btn.crack-effect::after { background-image: none !important; }
+
+.achievement-toast { background: var(--bg-modal) !important; border: 1px solid var(--border) !important; }
+:root[data-theme="light"] .achievement-toast { background: var(--bg-modal) !important; }
+
+* { border-radius: 10px !important; }
+
+.profile-avatar,
+.avatar-stack,
+.avatar-layer,
+.avatar-btn,
+.lesson-node,
+.toggle,
+.toggle-knob,
+.podium-rank,
+.crown-badge,
+.settings-btn,
+.goal-ring,
+.goal-ring-wrap,
+.loader { border-radius: 50% !important; }
+
+.top-bar,
+.lesson-header,
+.bottom-area,
+.modal-overlay,
+.section-card .card-img-wrap,
+.card-img,
+.dish-photo,
+.dish-photo-fallback,
+.browse-item-photo { border-radius: 0 !important; }
+
+.section-card:hover,
+.section-card:active,
+.stats-btn:hover,
+.stats-btn:active,
+.daily-goal-card:hover,
+.daily-goal-card:active,
+.back-btn:hover,
+.back-btn:active,
+.browse-btn:hover,
+.browse-btn:active,
+.practice-btn:hover,
+.practice-btn:active,
+.option-btn:hover,
+.option-btn:active,
+.tf-btn:hover,
+.tf-btn:active,
+.choice-btn:hover,
+.choice-btn:active,
+.missing-item:hover,
+.missing-item:active,
+.check-btn:hover,
+.check-btn:active,
+.result-btn:hover,
+.result-btn:active,
+.onboarding-btn:hover,
+.onboarding-btn:active,
+.avatar-editor-btn:hover,
+.avatar-editor-btn:active,
+.role-card:hover,
+.role-card:active,
+.upload-zone:hover,
+.upload-zone:active,
+.browse-item-header:hover,
+.browse-item-header:active,
+.daily-stat-card:hover,
+.daily-stat-card:active,
+.lesson-node:hover,
+.lesson-node:active,
+.option-btn.selected,
+.choice-btn.selected,
+.color-fill-tablet.selected,
+.missing-slot,
+.sort-column { transform: none !important; filter: none !important; }
+
+.daily-stat-card .stat-label,
+.section-card .card-info small,
+.section-card .card-arrow,
+.lesson-node.locked,
+.question-type-label,
+.sort-column-label,
+.spatial-zone-label { color: var(--text-secondary) !important; }
+
+.daily-goal-card,
+.section-card,
+.stats-btn,
+.practice-btn,
+.back-btn,
+.browse-btn,
+.question-panel,
+.option-btn,
+.tf-btn,
+.choice-btn,
+.missing-item,
+.missing-slot,
+.check-btn,
+.result-btn,
+.daily-stat-card,
+.modal-content,
+.stats-modal,
+.dashboard-card,
+.dashboard-stat,
+.editor-item,
+.section-row,
+.role-card,
+.upload-zone,
+.parsed-preview,
+.settings-row,
+.strength-card,
+.format-score-card,
+.ach-card,
+.ach-card.unlocked,
+.leaderboard-row,
+.leaderboard-row.current,
+.podium-rank,
+.color-fill-column,
+.sort-column,
+.spatial-zone,
+.missing-slot,
+.color-fill-tablet,
+.category-badge,
+.color-category-label,
+.color-fill-header,
+.browse-item,
+.browse-item-header,
+.achievement-toast,
+.inline-result {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.daily-goal-card:hover,
+.section-card:hover,
+.stats-btn:hover,
+.practice-btn:hover,
+.back-btn:hover,
+.browse-btn:hover,
+.option-btn:hover,
+.tf-btn:hover,
+.choice-btn:hover,
+.missing-item:hover,
+.result-btn:hover,
+.onboarding-btn:hover,
+.avatar-editor-btn:hover,
+.role-card:hover,
+.upload-zone:hover,
+.browse-item-header:hover,
+.daily-stat-card:hover,
+.daily-goal-card:active,
+.section-card:active,
+.stats-btn:active,
+.practice-btn:active,
+.back-btn:active,
+.browse-btn:active,
+.option-btn:active,
+.tf-btn:active,
+.choice-btn:active,
+.missing-item:active,
+.result-btn:active,
+.onboarding-btn:active,
+.avatar-editor-btn:active,
+.role-card:active,
+.upload-zone:active,
+.browse-item-header:active,
+.daily-stat-card:active { background: var(--bg-card-hover) !important; }
+
+.check-btn.active { background: var(--bg-card-hover) !important; color: var(--text-primary) !important; }
+.check-btn.disabled { background: var(--bg-card) !important; color: var(--text-dim) !important; opacity: 0.6 !important; }
+
+.result-btn.primary { background: var(--bg-card-hover) !important; }
+.result-btn.secondary { background: transparent !important; }
+
+.modal-btn.primary { background: var(--bg-card-hover) !important; }
+.modal-btn.secondary { background: transparent !important; }
+
+.onboarding-btn { background: var(--green) !important; color: #fff !important; }
+.onboarding-btn.disabled { background: var(--text-dim) !important; color: #fff !important; }
+
+.option-btn.selected,
+.choice-btn.selected,
+.color-fill-tablet.selected {
+    background: var(--bg-card-hover) !important;
+    outline: 2px solid var(--text-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.option-btn.correct-reveal,
+.choice-btn.correct-reveal,
+.tf-btn.tf-correct { background: var(--green) !important; color: #fff !important; }
+
+.option-btn.correct-unselected,
+.choice-btn.correct-unselected { background: rgba(34,197,94,0.15) !important; color: #fff !important; opacity: 0.7 !important; }
+
+.option-btn.wrong-reveal,
+.choice-btn.wrong-reveal,
+.tf-btn.tf-wrong { background: var(--red) !important; color: #fff !important; }
+
+.option-btn.wrong-selected,
+.choice-btn.wrong-selected { background: var(--red) !important; color: #fff !important; outline: 2px solid var(--red) !important; }
+
+.inline-result.correct { background: var(--green) !important; color: #fff !important; }
+.inline-result.wrong { background: var(--red) !important; color: #fff !important; }
+
+.parsed-preview { color: var(--green) !important; }
+
+.link-btn { color: var(--text-secondary) !important; text-decoration: underline !important; }
+
+.venue-code { background: transparent !important; color: var(--text-primary) !important; padding: 0 !important; }
+
+.question-title,
+.question-dish-name { color: var(--text-primary) !important; }
+
+.progress-bar-container,
+.result-accuracy-bar { background: var(--bg-card-hover) !important; }
+
+.progress-bar-fill { background: var(--text-secondary) !important; }
+
+.goal-ring circle:not(.goal-ring-fill) { stroke: var(--text-dim) !important; opacity: 0.3 !important; }
+
+.category-badge,
+.color-category-label { color: var(--text-secondary) !important; }
+
+.color-fill-tablet:hover { background: var(--bg-card-hover) !important; }
+
+.leaderboard-row.current { color: var(--text-primary) !important; }
+
+.podium-rank { color: var(--text-primary) !important; }
+.podium-xp { color: var(--text-secondary) !important; }
+
+.profile-chip { background: transparent !important; border: none !important; padding: 4px 0 !important; }
+
+.settings-btn:hover { background: var(--bg-card-hover) !important; }
+
+.mascot-area { padding: 12px 0 4px !important; }
+
+.app-title,
+.platform-title,
+.result-title,
+.onboarding-title,
+.leaderboard-title,
+.stats-modal-title,
+.achievement-toast-title,
+.path-title { font-weight: 700 !important; }
+
+.stat-value,
+.daily-stat-card .stat-value,
+.result-stat-value,
+.dashboard-stat-value,
+.podium-rank,
+.goal-ring-center,
+.lesson-node,
+.format-score-val,
+.strength-value,
+.section-card { font-weight: 600 !important; }
+
+.platform-input::placeholder,
+.platform-textarea::placeholder,
+.nickname-input::placeholder,
+.code-input::placeholder { color: var(--text-dim) !important; opacity: 1 !important; }
+
+.gram-input { color: #111 !important; }
+.gram-input::placeholder { color: #666 !important; opacity: 1 !important; }
+.gram-input.gram-correct,
+.gram-input.gram-wrong { color: #111 !important; }

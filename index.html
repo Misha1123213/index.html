@@ -2209,6 +2209,7 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:'Жизни: '; }
     </style>
+    <link rel="stylesheet" href="minimal.css">
 </head>
 <body>
 <div id="app"></div>
@@ -3063,7 +3064,7 @@ function renderHome() {
                 </div>
             </div>
             <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">
-                Характеристика обучения
+                Прогресс
             </button>
             <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">
                 Рейтинг
@@ -3529,7 +3530,7 @@ function showLearningStats() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">Характеристика обучения</div>
+                <div class="stats-modal-title">Прогресс</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <div class="strength-card">
