@@ -1640,26 +1640,130 @@ function handleDocxFile(file) {
   });
 }
 
+function parseWeightToGrams(str) {
+  if (!str) return null;
+  const s = str.trim()
+    .replace(/\s+/g, ' ')
+    .replace(/,/g, '.')
+    .replace(/(\d+)\s*\/\s*(\d+)/g, (m, a, b) => {
+      const val = parseFloat(a) / parseFloat(b);
+      return val.toFixed(3).replace(/\.?0+$/, '');
+    });
+  const units = ['кг','kg','г','гр','грамм','грам','мл','миллилитров','шт','штук','штуки','л','мг','g','gr','gram','grams','ml','pcs','pc'];
+  const weightMult = { 'кг':1000,'kg':1000,'г':1,'гр':1,'грамм':1,'грам':1,'g':1,'gr':1,'gram':1,'grams':1,'мл':1,'миллилитров':1,'ml':1,'л':1000,'мг':0.001 };
+  const countUnits = { 'шт':1,'штук':1,'штуки':1,'pcs':1,'pc':1 };
+  const fractions = { '½':0.5,'¼':0.25,'¾':0.75,'⅓':0.333,'⅔':0.667 };
+  const re = new RegExp('(\\d*[' + Object.keys(fractions).join('') + ']\\d*|\\d+(?:\\.\\d+)?)\\s*(' + units.join('|') + ')?', 'gi');
+  const matches = [...s.matchAll(re)];
+  const weightTokens = [];
+  const countTokens = [];
+  for (const m of matches) {
+    const num = m[1];
+    const unit = (m[2] || '').toLowerCase();
+    let val;
+    let isFraction = false;
+    if (/\d/.test(num)) {
+      val = parseFloat(num);
+    } else {
+      val = fractions[num] || 0;
+      isFraction = true;
+    }
+    if (isNaN(val) || (val === 0 && !isFraction)) continue;
+    if (unit && weightMult[unit] !== undefined) {
+      weightTokens.push({ grams: val * weightMult[unit], hasUnit: true });
+    } else if (unit && countUnits[unit] !== undefined) {
+      countTokens.push({ count: val, hasUnit: true });
+    } else if (isFraction) {
+      countTokens.push({ count: val, hasUnit: false });
+    } else {
+      weightTokens.push({ grams: val * 1000, hasUnit: false });
+    }
+  }
+  const explicit = weightTokens.filter(t => t.hasUnit);
+  if (explicit.length) return { grams: Math.max(...explicit.map(t => t.grams)), isCount: false };
+  if (weightTokens.length) return { grams: Math.max(...weightTokens.map(t => t.grams)), isCount: false };
+  if (countTokens.length) return { grams: Math.max(...countTokens.map(t => t.count)), isCount: true };
+  return null;
+}
+
 function parseDocxHTML(html) {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = html;
   const items = [];
+  let pendingName = null;
 
-  wrapper.querySelectorAll('table').forEach(table => {
-    const rows = [];
-    table.querySelectorAll('tr').forEach(tr => {
-      const cells = [...tr.querySelectorAll('td, th')].map(c => c.textContent.replace(/\s+/g, ' ').trim());
-      if (cells.some(Boolean)) rows.push(cells.join('\t'));
-    });
-    if (rows.length > 1) {
-      items.push(...parseTTKCSV(rows.join('\n')));
+  function nodeText(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = node.tagName.toLowerCase();
+      if (tag === 'br') return '\n';
+      if (tag === 'table') return '';
+      return [...node.childNodes].map(nodeText).join('');
     }
-    table.remove();
-  });
+    return '';
+  }
 
-  const text = htmlBlockToText(wrapper).trim();
-  if (text) {
-    items.push(...parseTTKPlainText(text));
+  function looksLikeHeaderRow(cells) {
+    if (!cells || cells.length < 2) return false;
+    const joined = cells.join(' ').toLowerCase();
+    return /№|номер|наименование|вес|количество|продукт|ингредиент|name|component|weight/.test(joined);
+  }
+
+  function parseDocxTable(table) {
+    const rows = [];
+    for (const tr of table.querySelectorAll('tr')) {
+      const cells = [...tr.querySelectorAll('td, th')].map(c => c.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (!cells.length || looksLikeHeaderRow(cells)) continue;
+      let nameIdx = 0;
+      let weightIdx = 1;
+      if (cells.length >= 3 && /^\d*№?$/i.test(cells[0].replace(/\s/g, ''))) {
+        nameIdx = 1;
+        weightIdx = 2;
+      } else if (cells.length >= 2 && cells[0].toLowerCase().includes('наименование')) {
+        nameIdx = 0;
+        weightIdx = 1;
+      }
+      const name = cleanItemName(cells[nameIdx]);
+      const weightStr = cells[weightIdx] || '';
+      if (!name) continue;
+      const parsed = parseWeightToGrams(weightStr);
+      rows.push({
+        ingredient: name,
+        grams: parsed ? parsed.grams : 0,
+        isCount: parsed ? parsed.isCount : false,
+      });
+    }
+    if (!rows.length) return null;
+    const components = rows.map(r => ({ ingredient: r.ingredient, grams: r.grams }));
+    const infoLines = rows.map(r => {
+      if (!r.grams) return r.ingredient;
+      const val = Number.isInteger(r.grams) ? r.grams : parseFloat(r.grams.toFixed(3));
+      const suffix = r.isCount ? ' шт' : 'г';
+      return `${r.ingredient} (${val}${suffix})`;
+    });
+    return { components, infoLines };
+  }
+
+  for (const child of wrapper.childNodes) {
+    if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'table') {
+      const parsedTable = parseDocxTable(child);
+      if (parsedTable) {
+        const name = pendingName ? cleanItemName(pendingName) : parsedTable.components[0].ingredient;
+        items.push({
+          type: 'composition',
+          name,
+          correct: parsedTable.components,
+          info_text: `Состав:\n• ${parsedTable.infoLines.join('\n• ')}`,
+        });
+      }
+      pendingName = null;
+    } else {
+      const text = nodeText(child).trim();
+      if (!text) continue;
+      if (/^[A-ZА-ЯЁ0-9\s]+$/.test(text) && text.length <= 8) continue;
+      if (/^ттк$/i.test(text)) continue;
+      pendingName = text;
+    }
   }
 
   return items;
