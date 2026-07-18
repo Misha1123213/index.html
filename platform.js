@@ -1691,6 +1691,7 @@ function parseDocxHTML(html) {
   wrapper.innerHTML = html;
   const items = [];
   let pendingName = null;
+  let pendingIsHeading = false;
 
   function nodeText(node) {
     if (node.nodeType === Node.TEXT_NODE) return node.textContent;
@@ -1698,22 +1699,83 @@ function parseDocxHTML(html) {
       const tag = node.tagName.toLowerCase();
       if (tag === 'br') return '\n';
       if (tag === 'table') return '';
+      if (['script','style','head','title','meta','link'].includes(tag)) return '';
       return [...node.childNodes].map(nodeText).join('');
     }
     return '';
   }
 
-  function looksLikeHeaderRow(cells) {
+  function isHeaderRow(cells) {
     if (!cells || cells.length < 2) return false;
     const joined = cells.join(' ').toLowerCase();
     return /№|номер|наименование|вес|количество|продукт|ингредиент|name|component|weight/.test(joined);
   }
 
-  function parseDocxTable(table) {
+  function isMenuTable(table) {
+    const firstRow = table.querySelector('tr');
+    if (!firstRow) return false;
+    const cells = [...firstRow.querySelectorAll('td, th')]
+      .map(c => c.textContent.replace(/\s+/g, ' ').trim().toLowerCase());
+    const compIdx = cells.findIndex(h => /состав|ингредиент|ингредиенты|component|components|ingredient|ingredients/.test(h));
+    const nameIdx = cells.findIndex((h, i) =>
+      i !== compIdx && /название|блюдо|наименование|name|title|продукт|product/.test(h)
+    );
+    return compIdx !== -1 && nameIdx !== -1;
+  }
+
+  function parseMenuTable(table) {
+    const rows = [...table.querySelectorAll('tr')];
+    if (!rows.length) return null;
+    const headerCells = [...rows[0].querySelectorAll('td, th')]
+      .map(c => c.textContent.replace(/\s+/g, ' ').trim().toLowerCase());
+    const compIdx = headerCells.findIndex(h => /состав|ингредиент|ингредиенты|component|components|ingredient|ingredients/.test(h));
+    const nameIdx = headerCells.findIndex((h, i) =>
+      i !== compIdx && /название|блюдо|наименование|name|title|продукт|product/.test(h)
+    );
+    if (compIdx === -1 || nameIdx === -1) return null;
+    const out = [];
+    for (const tr of rows.slice(1)) {
+      const cells = [...tr.querySelectorAll('td, th')]
+        .map(c => c.textContent.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+      if (!cells.length || isHeaderRow(cells)) continue;
+      const name = cleanItemName(cells[nameIdx >= 0 ? nameIdx : 0]);
+      const compText = cells[compIdx] || '';
+      if (!name || !compText) continue;
+      const parts = compText.split(/[,;|\n]/).map(s => s.trim()).filter(Boolean);
+      const components = [];
+      for (const part of parts) {
+        const parsed = parseWeightToGrams(part);
+        const grams = parsed ? parsed.grams : 0;
+        const isCount = parsed ? parsed.isCount : false;
+        const ingredient = cleanItemName(part);
+        if (!ingredient) continue;
+        components.push({ ingredient, grams, isCount });
+      }
+      if (!components.length) continue;
+      const infoLines = components.map(c => {
+        if (!c.grams) return c.ingredient;
+        const val = Number.isInteger(c.grams) ? c.grams : parseFloat(c.grams.toFixed(3));
+        const suffix = c.isCount ? ' шт' : 'г';
+        return `${c.ingredient} (${val}${suffix})`;
+      });
+      out.push({
+        type: 'composition',
+        name,
+        correct: components.map(c => ({ ingredient: c.ingredient, grams: c.grams })),
+        info_text: `Состав:\n• ${infoLines.join('\n• ')}`,
+      });
+    }
+    return out.length ? out : null;
+  }
+
+  function parseIngredientTable(table, dishName) {
     const rows = [];
     for (const tr of table.querySelectorAll('tr')) {
-      const cells = [...tr.querySelectorAll('td, th')].map(c => c.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean);
-      if (!cells.length || looksLikeHeaderRow(cells)) continue;
+      const cells = [...tr.querySelectorAll('td, th')]
+        .map(c => c.textContent.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+      if (!cells.length || isHeaderRow(cells)) continue;
       let nameIdx = 0;
       let weightIdx = 1;
       if (cells.length >= 3 && /^\d*№?$/i.test(cells[0].replace(/\s/g, ''))) {
@@ -1741,28 +1803,38 @@ function parseDocxHTML(html) {
       const suffix = r.isCount ? ' шт' : 'г';
       return `${r.ingredient} (${val}${suffix})`;
     });
-    return { components, infoLines };
+    return {
+      type: 'composition',
+      name: dishName ? cleanItemName(dishName) : components[0].ingredient,
+      correct: components,
+      info_text: `Состав:\n• ${infoLines.join('\n• ')}`,
+    };
   }
+
+  const headingTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 
   for (const child of wrapper.childNodes) {
     if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'table') {
-      const parsedTable = parseDocxTable(child);
-      if (parsedTable) {
-        const name = pendingName ? cleanItemName(pendingName) : parsedTable.components[0].ingredient;
-        items.push({
-          type: 'composition',
-          name,
-          correct: parsedTable.components,
-          info_text: `Состав:\n• ${parsedTable.infoLines.join('\n• ')}`,
-        });
+      const menuItems = parseMenuTable(child);
+      if (menuItems) {
+        items.push(...menuItems);
+      } else {
+        const item = parseIngredientTable(child, pendingName);
+        if (item) items.push(item);
       }
       pendingName = null;
+      pendingIsHeading = false;
     } else {
+      const tag = child.nodeType === Node.ELEMENT_NODE ? child.tagName.toLowerCase() : '';
+      const isHeading = headingTags.includes(tag);
       const text = nodeText(child).trim();
       if (!text) continue;
-      if (/^[A-ZА-ЯЁ0-9\s]+$/.test(text) && text.length <= 8) continue;
       if (/^ттк$/i.test(text)) continue;
-      pendingName = text;
+      if (/^[A-ZА-ЯЁ\d\s]+$/.test(text)) continue;
+      if (isHeading || !pendingIsHeading) {
+        pendingName = text;
+        pendingIsHeading = isHeading;
+      }
     }
   }
 
@@ -1989,6 +2061,7 @@ function extractComponents(text) {
 function cleanItemName(str) {
   if (!str) return '';
   let s = str.trim();
+  s = s.replace(/п\\ф/gi, 'п/ф').trim();
   s = s.replace(/^[-•–—*‣⁃◦\d.)\]]+\s*/, '').trim();
   s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
   s = s.replace(/[-:;|–—]+\s*$/, '').trim();
@@ -2002,19 +2075,22 @@ function parseComponentToken(str) {
   if (!s) return null;
 
   const units = '(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)';
+  const countUnits = /^(шт|штук|штуки|pcs|pc)$/i;
 
-  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*' + units + '\\s*[.)]*$', 'i'));
+  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[.)]*$', 'i'));
   if (trailingMatch && trailingMatch[1].trim()) {
     const ingredient = trailingMatch[1].trim();
     const grams = parseFloat(trailingMatch[2].replace(',', '.'));
-    return { ingredient, grams: isNaN(grams) ? 0 : grams };
+    const isCount = countUnits.test(trailingMatch[3]);
+    return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
   }
 
-  const leadingMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*' + units + '\\s*[-–—:]\\s*(.+)$', 'i'));
-  if (leadingMatch && leadingMatch[2].trim()) {
-    const ingredient = leadingMatch[2].trim();
+  const leadingMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[-–—:]\\s*(.+)$', 'i'));
+  if (leadingMatch && leadingMatch[3].trim()) {
+    const ingredient = leadingMatch[3].trim();
     const grams = parseFloat(leadingMatch[1].replace(',', '.'));
-    return { ingredient, grams: isNaN(grams) ? 0 : grams };
+    const isCount = countUnits.test(leadingMatch[2]);
+    return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
   }
 
   return s;
@@ -2023,8 +2099,10 @@ function parseComponentToken(str) {
 function buildInfoText(name, components) {
   const list = components.map(c => {
     if (c && typeof c === 'object') {
-      const grams = c.grams || 0;
-      return grams ? `${c.ingredient} (${grams}г)` : c.ingredient;
+      if (!c.grams) return c.ingredient;
+      const val = Number.isInteger(c.grams) ? c.grams : parseFloat(c.grams.toFixed(3));
+      const suffix = c.isCount ? ' шт' : 'г';
+      return `${c.ingredient} (${val}${suffix})`;
     }
     return c || '';
   });
@@ -2149,11 +2227,12 @@ function normalizeParsedItem(item) {
 
 function sourceNameToSectionName(sourceName) {
   if (!sourceName) return 'Основное меню';
-  const cleaned = sourceName.replace(/\.[^.]+$/, '').trim();
+  let cleaned = sourceName.replace(/\.[^.]+$/, '').trim();
   if (!cleaned) return 'Основное меню';
-  if (cleaned === 'вставленный текст') return 'Основное меню';
-  if (cleaned.toLowerCase().includes('demo') || cleaned.toLowerCase().includes('демо')) return 'Демо';
-  return cleaned;
+  if (/^вставленный текст$/i.test(cleaned)) return 'Основное меню';
+  if (/demo|демо/i.test(cleaned)) return 'Демо';
+  cleaned = cleaned.replace(/^.*[_\-]ttk[_\-]/i, '').replace(/^ttk[_\-]?/i, '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  return cleaned || 'Основное меню';
 }
 
 function setParsedItems(items, sourceName) {
@@ -2206,11 +2285,22 @@ function buildVenueFromParsedItems(items, sourceName) {
   });
 
   venue.sections = venue.sections || [];
-  const existing = venue.sections.find(s => s.name === sectionName);
+  const sectionKey = name => name.toLowerCase().replace(/[\s_\-]+/g, '');
+  const existing = venue.sections.find(s => sectionKey(s.name) === sectionKey(sectionName));
   const section = existing || { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
+  section.name = sectionName;
   section.items = sectionItems;
-  section.createdAt = section.createdAt || Date.now();
+  section.createdAt = Date.now();
   if (!existing) venue.sections.push(section);
+  // merge any accidental duplicate sections with the same normalized name, keeping the newest
+  const bestByKey = new Map();
+  for (const s of venue.sections) {
+    const k = sectionKey(s.name);
+    if (!bestByKey.has(k) || (s.createdAt || 0) > (bestByKey.get(k).createdAt || 0)) {
+      bestByKey.set(k, s);
+    }
+  }
+  venue.sections = [...bestByKey.values()];
 
   state.platformDraft = null;
   saveProgress({ venue: venue });
