@@ -1232,6 +1232,7 @@ function renderPlatformHome() {
         <span>${state.profile && state.profile.nickname || 'Ты'}</span>
       </button>
       <div style="flex:1"></div>
+      ${!isOwner ? `
       <div class="top-bar-stat">
         <span class="icon"></span>
         <span class="streak-count">${stats.streak}</span>
@@ -1240,14 +1241,16 @@ function renderPlatformHome() {
         <span class="icon"></span>
         <span class="xp-count">${stats.totalXP} XP</span>
       </div>
+      ` : ''}
       <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">≡</button>
     </div>
     <div class="home-screen" ${bgImage ? `style="--venue-bg:${bgImage}"` : ''}>
       <div class="mascot-area">
         <span class="mascot"></span>
         <div class="app-title">${venue ? venue.name : 'Cognitio'}</div>
-        <div class="app-subtitle">${venue ? 'Изучай меню своего заведения' : 'Платформа обучения'}</div>
+  
       </div>
+      ${!isOwner ? `
       ${renderDailyGoalCard()}
       <div class="daily-stats">
         <div class="daily-stat-card" style="${cementStyle()}">
@@ -1263,11 +1266,12 @@ function renderPlatformHome() {
           <div class="stat-label">Уроков</div>
         </div>
       </div>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Характеристика обучения</button>
+      ` : ''}
+      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Характеристика обучения</button>` : ''}
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
-      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>` : ''}
-      ${hasSections ? sections.map(s => `
+      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>` : ''}
+      ${!isOwner ? (hasSections ? sections.map(s => `
         <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
           <div class="card-img-wrap">
             <div class="card-img-placeholder">${s.image ? `<img src="${s.image}" alt="">` : getSectionEmoji(s.name)}</div>
@@ -1278,7 +1282,7 @@ function renderPlatformHome() {
           </div>
           <div class="card-arrow">›</div>
         </button>
-      `).join('') : `<div class="parsed-preview" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${isOwner ? 'Загрузите ТТК, чтобы создать первый раздел' : 'Владелец ещё не загрузил меню'}</div>`}
+      `).join('') : `<div class="parsed-preview" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${isOwner ? 'Загрузите ТТК, чтобы создать первый раздел' : 'Владелец ещё не загрузил меню'}</div>`) : ''}
       ${isOwner ? `<button class="section-card" style="${cementStyle()}" onclick="ownerDashboard()">
         <div class="card-img-wrap"><div class="card-img-placeholder">З</div></div>
         <div class="card-info">
@@ -1769,6 +1773,18 @@ function mergeHeadingBlocks(blocks) {
   return merged;
 }
 
+function isLikelyComponent(line) {
+  const s = (line || '').trim();
+  if (!s) return false;
+  if (/^[-•–—*‣⁃◦\d.)\]()]/.test(s)) return true;
+  if (/п\/ф|пф/i.test(s)) return true;
+  const units = ['г', 'гр', 'грамм', 'грам', 'мл', 'миллилитров', 'шт', 'штук', 'штуки', 'л', 'кг', 'кгр', 'мг', 'g', 'gr', 'gram', 'grams', 'ml', 'pcs', 'pc'];
+  const unitRe = new RegExp('\\d+(?:[.,]\\d+)?\\s*(?:' + units.join('|') + ')(?:\\s|$|[.,;])', 'i');
+  if (unitRe.test(s)) return true;
+  if (/\d+(?:[.,]\d+)?\s*%/.test(s)) return true;
+  return false;
+}
+
 function maybeSplitBlocks(lines) {
   const blocks = [];
   let current = [];
@@ -1793,8 +1809,25 @@ function maybeSplitBlocks(lines) {
         current.push(line);
       }
     }
-  } else {
+  } else if (lines.length < 2) {
     return [lines.join('\n')];
+  } else {
+    function isSectionHeader(s) {
+      return /^[A-ZА-ЯЁ\s\d]+$/.test(s) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(s);
+    }
+    let prevWasComponent = isLikelyComponent(lines[0]);
+    current = [lines[0]];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const comp = isLikelyComponent(line);
+      if (!comp && prevWasComponent && !isSectionHeader(line)) {
+        blocks.push(current.join('\n'));
+        current = [line];
+      } else {
+        current.push(line);
+      }
+      prevWasComponent = comp;
+    }
   }
 
   if (current.length) blocks.push(current.join('\n'));
