@@ -33,6 +33,36 @@ function initSupabaseClient() {
 }
 initSupabaseClient();
 
+function isNetworkError(e) {
+  if (!e) return false;
+  if (e instanceof TypeError) return true;
+  const msg = (e.message || String(e)).toLowerCase();
+  return ['load failed', 'failed to fetch', 'networkerror', 'network request failed', 'the network connection was lost', 'abort', 'timeout', 'err_connection', 'network'].some(k => msg.includes(k));
+}
+
+function networkErrorMessage(e) {
+  return 'Не удалось связаться с сервером. Проверьте подключение к интернету, VPN, блокировщики рекламы или обновите страницу.';
+}
+
+async function safeRpc(method, params, retries = 2) {
+  let lastError;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const { data, error } = await supabaseClient.rpc(method, params);
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      lastError = e;
+      if (isNetworkError(e) && i < retries) {
+        await new Promise(r => setTimeout(r, 600 * (i + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError;
+}
+
 const PENDING_RESULTS_KEY = 'cognitio_pending_results';
 function getPendingResults() {
   try { return JSON.parse(localStorage.getItem(PENDING_RESULTS_KEY) || '[]'); } catch { return []; }
@@ -72,16 +102,14 @@ async function createRemoteVenue(venue, ownerPin) {
   const payload = { ...venue };
   delete payload.ownerToken;
   try {
-    const { data, error } = await supabaseClient.rpc('create_venue', { p_code: venue.code, p_data: payload, p_owner_pin: ownerPin || venue.code });
-    if (error) throw error;
-    return data;
+    return await safeRpc('create_venue', { p_code: venue.code, p_data: payload, p_owner_pin: ownerPin || venue.code });
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return null; }
     if (e.message && e.message.includes('create_venue(p_code, p_data)')) {
       try {
-        const { data, error } = await supabaseClient.rpc('create_venue', { p_code: venue.code, p_data: payload });
-        if (error) throw error;
-        return data;
+        return await safeRpc('create_venue', { p_code: venue.code, p_data: payload });
       } catch (e2) {
+        if (isNetworkError(e2)) { showPlatformToast(networkErrorMessage(e2)); return null; }
         showPlatformToast('Ошибка создания заведения на сервере: ' + e2.message);
         return null;
       }
@@ -94,10 +122,9 @@ async function createRemoteVenue(venue, ownerPin) {
 async function fetchRemoteVenue(code) {
   if (!supabaseClient) return null;
   try {
-    const { data, error } = await supabaseClient.rpc('get_venue_by_code', { p_code: code });
-    if (error) throw error;
-    return data;
+    return await safeRpc('get_venue_by_code', { p_code: code });
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return null; }
     showPlatformToast('Ошибка загрузки заведения: ' + e.message);
     return null;
   }
@@ -108,10 +135,9 @@ async function syncVenueToRemote(venue, ownerToken) {
   const payload = { ...venue };
   delete payload.ownerToken;
   try {
-    const { data, error } = await supabaseClient.rpc('update_venue', { p_code: venue.code, p_owner_token: ownerToken, p_data: payload });
-    if (error) throw error;
-    return data;
+    return await safeRpc('update_venue', { p_code: venue.code, p_owner_token: ownerToken, p_data: payload });
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return null; }
     showPlatformToast('Ошибка синхронизации заведения: ' + e.message);
     return null;
   }
@@ -745,11 +771,11 @@ async function loginUser() {
   if (login.length < 3 || password.length < 4) return;
   if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
   try {
-    const { data, error } = await supabaseClient.rpc('login_user', { p_login: login, p_password: password });
-    if (error) throw error;
+    const data = await safeRpc('login_user', { p_login: login, p_password: password });
     if (!data) { showPlatformToast('Неверный логин или пароль'); return; }
     handleAuthData(data);
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return; }
     showPlatformToast('Ошибка входа: ' + (e.message || e));
   }
 }
@@ -836,11 +862,11 @@ async function registerUser() {
   }
 
   try {
-    const { data, error } = await supabaseClient.rpc('register_user', params);
-    if (error) throw error;
+    const data = await safeRpc('register_user', params);
     if (!data) { showPlatformToast('Ошибка регистрации'); return; }
     handleAuthData(data);
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return; }
     const msg = e.message || String(e);
     if (msg.includes('LOGIN_EXISTS')) showPlatformToast('Логин уже занят');
     else if (msg.includes('CODE_EXISTS')) showPlatformToast('Код заведения уже используется');
@@ -856,13 +882,13 @@ async function getRecoveryQuestion() {
   if (login.length < 3) return;
   if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
   try {
-    const { data, error } = await supabaseClient.rpc('get_recovery_question', { p_login: login });
-    if (error) throw error;
+    const data = await safeRpc('get_recovery_question', { p_login: login });
     if (!data) { showPlatformToast('Пользователь не найден'); return; }
     draft.securityQuestion = data;
     state.screen = 'resetPassword';
     render();
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return; }
     showPlatformToast('Ошибка: ' + (e.message || e));
   }
 }
@@ -876,8 +902,7 @@ async function resetUserPassword() {
   if (!answer || newPassword.length < 4 || newPassword !== newPasswordRepeat) return;
   if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
   try {
-    const { data, error } = await supabaseClient.rpc('reset_password', { p_login: login, p_security_answer: answer, p_new_password: newPassword });
-    if (error) throw error;
+    const data = await safeRpc('reset_password', { p_login: login, p_security_answer: answer, p_new_password: newPassword });
     if (data) {
       showPlatformToast('Пароль обновлён. Войдите с новым паролем.');
       state.screen = 'login';
@@ -887,6 +912,7 @@ async function resetUserPassword() {
       showPlatformToast('Неверный ответ на контрольный вопрос');
     }
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return; }
     showPlatformToast('Ошибка сброса: ' + (e.message || e));
   }
 }
@@ -979,14 +1005,13 @@ async function ownerLogin() {
 
   let remoteData = null;
   try {
-    const { data, error } = await supabaseClient.rpc('owner_login', { p_code: code, p_owner_pin: ownerPin });
-    if (error) throw error;
-    if (!data) {
+    remoteData = await safeRpc('owner_login', { p_code: code, p_owner_pin: ownerPin });
+    if (!remoteData) {
       showPlatformToast('Код или пин владельца не найдены.');
       return;
     }
-    remoteData = data;
   } catch (e) {
+    if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return; }
     if (e.message && e.message.includes('Could not find the function public.owner_login')) {
       showPlatformToast('Схема Supabase устарела. Обновите SQL-скрипт в проекте.');
     } else {
