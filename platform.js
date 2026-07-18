@@ -1098,7 +1098,7 @@ function renderOwnerDashboard() {
         `).join('') : '<div class="section-empty">Пока нет разделов</div>'}
         <button class="onboarding-btn secondary" onclick="promptNewSection()">+ Новый раздел</button>
       </div>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика обучения</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">Загрузить ТТК</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">Сгенерировать фон заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
@@ -1132,7 +1132,7 @@ function renderOwnerStats() {
       <div class="platform-header">
         <button class="close-btn" onclick="ownerDashboard()">← Назад</button>
       </div>
-      <div class="platform-title">Статистика обучения</div>
+      <div class="platform-title">Статистика</div>
       <div class="platform-form">
         <div class="platform-label">По сотрудникам</div>
         ${staffRows}
@@ -1267,7 +1267,7 @@ function renderPlatformHome() {
         </div>
       </div>
       ` : ''}
-      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Характеристика обучения</button>` : ''}
+      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Прогресс</button>` : ''}
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>` : ''}
