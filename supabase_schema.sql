@@ -111,7 +111,7 @@ AS $$
 DECLARE
   v_data JSONB;
 BEGIN
-  SELECT data INTO v_data
+  SELECT data || jsonb_build_object('owner_pin', owner_pin) INTO v_data
   FROM public.venues
   WHERE code = p_code AND owner_pin = p_owner_pin;
 
@@ -134,6 +134,37 @@ BEGIN
   UPDATE public.venues
   SET owner_pin = p_new_pin
   WHERE code = p_code AND owner_token = p_owner_token;
+END;
+$$;
+
+-- Change venue staff code. Requires current owner token.
+CREATE OR REPLACE FUNCTION public.change_venue_code(p_old_code TEXT, p_owner_token TEXT, p_new_code TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_data JSONB;
+BEGIN
+  IF p_new_code IS NULL OR length(trim(p_new_code)) < 4 THEN
+    RAISE EXCEPTION 'VENUE_CODE_TOO_SHORT';
+  END IF;
+
+  UPDATE public.venues
+  SET code = p_new_code, data = data || jsonb_build_object('code', p_new_code, 'owner_pin', owner_pin)
+  WHERE code = p_old_code AND owner_token = p_owner_token
+  RETURNING data INTO v_data;
+
+  IF v_data IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  UPDATE public.staff SET venue_code = p_new_code WHERE venue_code = p_old_code;
+  UPDATE public.staff_results SET venue_code = p_new_code WHERE venue_code = p_old_code;
+  UPDATE public.users SET venue_code = p_new_code WHERE venue_code = p_old_code;
+
+  RETURN v_data - 'ownerToken';
 END;
 $$;
 
@@ -220,7 +251,7 @@ BEGIN
       v_token
     ) RETURNING id INTO v_user_id;
 
-    v_venue_data := (v_venue_data - 'ownerToken') || jsonb_build_object('ownerToken', v_token);
+    v_venue_data := (v_venue_data - 'ownerToken') || jsonb_build_object('ownerToken', v_token, 'owner_pin', v_pin);
     v_result := jsonb_build_object(
       'user', jsonb_build_object('id', v_user_id, 'login', p_login, 'role', p_role, 'venue_code', v_code),
       'venue', v_venue_data
@@ -287,7 +318,7 @@ BEGIN
   END IF;
 
   IF v_user.role = 'owner' THEN
-    SELECT data || jsonb_build_object('ownerToken', v_user.owner_token) INTO v_venue_data
+    SELECT data || jsonb_build_object('ownerToken', v_user.owner_token, 'owner_pin', owner_pin) INTO v_venue_data
     FROM public.venues
     WHERE code = v_user.venue_code;
   ELSE
@@ -349,6 +380,7 @@ GRANT EXECUTE ON FUNCTION public.update_venue(TEXT, TEXT, JSONB) TO anon;
 GRANT EXECUTE ON FUNCTION public.register_staff(TEXT, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.owner_login(TEXT, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.set_owner_pin(TEXT, TEXT, TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION public.change_venue_code(TEXT, TEXT, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.register_user(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.login_user(TEXT, TEXT) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_recovery_question(TEXT) TO anon;

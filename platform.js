@@ -206,6 +206,7 @@ function importVenueFile(file, thenScreen) {
       }
       state.venue = normalizeVenue(venue);
       saveProgress({ venue: state.venue });
+      syncVenue();
       if (thenScreen) state.screen = thenScreen;
       render();
       showPlatformToast('Заведение импортировано');
@@ -215,6 +216,61 @@ function importVenueFile(file, thenScreen) {
   };
   reader.onerror = () => showPlatformToast('Не удалось прочитать файл');
   reader.readAsText(file);
+}
+
+function importVenueBackup(file) {
+  importVenueFile(file, 'ownerDashboard');
+}
+
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    showPlatformToast('Скопировано');
+  } catch (e) {
+    showPlatformToast('Не удалось скопировать');
+  }
+}
+
+function copyVenueCode() {
+  if (!state.venue) return;
+  copyToClipboard(state.venue.code);
+}
+
+function generateRandomPin(length = 6) {
+  let pin = '';
+  for (let i = 0; i < length; i++) pin += Math.floor(Math.random() * 10);
+  return pin;
+}
+
+async function regenerateVenueCode() {
+  if (!state.venue || !state.auth || !state.auth.ownerToken) {
+    return showPlatformToast('Нет прав для смены кода');
+  }
+  const newCode = generateRandomPin(6);
+  try {
+    const updated = await safeRpc('change_venue_code', {
+      p_old_code: state.venue.code,
+      p_owner_token: state.auth.ownerToken,
+      p_new_code: newCode
+    });
+    if (!updated) throw new Error('Код не обновлен');
+    state.venue = normalizeVenue(updated);
+    saveProgress({ venue: state.venue });
+    syncVenue();
+    showPlatformToast('Код заведения обновлен');
+    render();
+  } catch (e) {
+    showPlatformToast('Смена кода недоступна: ' + (e.message || ''));
+  }
 }
 
 function generateId() {
@@ -292,20 +348,32 @@ function normalizeVenue(venue) {
     });
   }
   const hasGrams = venueHasGramData(venue);
-  const defaultSettings = { showGrams: hasGrams, requireGrams: hasGrams, speedMode: { enabled: false, timeLimit: 15 } };
+  const defaultFormats = { logical: true, missing: true, color_coded: true, spatial: true };
+  const existingFormats = (venue.settings && venue.settings.formats) || {};
+  const defaultSettings = {
+    showGrams: hasGrams,
+    requireGrams: hasGrams,
+    speedMode: { enabled: false, timeLimit: 15 },
+    formats: defaultFormats
+  };
   venue.settings = {
     ...defaultSettings,
     ...(venue.settings || {}),
-    speedMode: { ...defaultSettings.speedMode, ...(venue.settings && venue.settings.speedMode) }
+    formats: { ...defaultSettings.formats, ...existingFormats },
+    speedMode: { ...defaultSettings.speedMode, ...((venue.settings && venue.settings.speedMode) || {}) }
   };
   delete venue.items;
   return venue;
 }
 
 function getVenueSettings() {
-  const defaults = { showGrams: false, requireGrams: false, speedMode: { enabled: false, timeLimit: 15 } };
-  const settings = (state.venue && state.venue.settings) || {};
-  return { ...defaults, ...settings, speedMode: { ...defaults.speedMode, ...(settings.speedMode || {}) } };
+  const defaults = { showGrams: false, requireGrams: false, formats: { logical: true, missing: true, color_coded: true, spatial: true } };
+  const s = (state.venue && state.venue.settings) || {};
+  return {
+    ...defaults,
+    ...s,
+    formats: { ...defaults.formats, ...(s.formats || {}) }
+  };
 }
 
 function updateVenueSettings(patch) {
@@ -1017,7 +1085,7 @@ function renderOwnerLogin() {
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-code" value="${code}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
         <label class="platform-label">Пин владельца</label>
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-pin" value="${ownerPin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('ownerPin', v); validatePlatformButton()">
-        <div class="platform-hint" style="font-size:13px;color:var(--muted);margin-bottom:12px">Изначально пин владельца совпадает с кодом заведения. Можно изменить в настройках.</div>
+        <div class="platform-hint" style="font-size:13px;color:var(--muted);margin-bottom:12px">Изначально пин владельца совпадает с кодом заведения.</div>
         <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="ownerLogin()">Войти</button>
       </div>
     </div>
@@ -1090,6 +1158,10 @@ function renderOwnerSetup() {
         </div>
         <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx" onchange="handleTTKFile(this.files[0])">
 
+        <label class="platform-label" style="margin-top:18px;">Или вставьте текст ТТК</label>
+        <textarea id="ttk-paste" class="platform-input" rows="6" placeholder="Например:\nКапучино\n• Эспрессо 30 мл\n• Молоко 150 мл\n• Молочная пена 30 г"></textarea>
+        <button class="onboarding-btn" onclick="parseTTKPastePreview()">Распознать и открыть редактор</button>
+
         <div class="demo-hint">Нет файла? <button class="link-btn" onclick="loadDemoVenue()">Загрузить демо-меню</button></div>
       </div>
     </div>
@@ -1122,6 +1194,10 @@ function renderOwnerDashboard() {
         <div class="dashboard-label">Код для сотрудников</div>
         <div class="venue-code">${venue.code}</div>
         <div class="dashboard-hint">Сотрудник вводит этот код при регистрации</div>
+        <div class="dashboard-code-actions" style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;">
+          <button class="stats-btn" style="margin:0;" onclick="copyVenueCode()">Копировать</button>
+          <button class="stats-btn" style="margin:0;" onclick="regenerateVenueCode()">Сменить</button>
+        </div>
       </div>
       <div class="dashboard-grid">
         <div class="dashboard-stat">
@@ -1160,6 +1236,8 @@ function renderOwnerDashboard() {
       <button class="stats-btn" style="${cementStyle()}" onclick="renderTrainingSettings()">Настройки обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">Сгенерировать фон заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импортировать бэкап</button>
+      <input type="file" id="venue-import-file" style="display:none" accept=".json,application/json" onchange="importVenueBackup(this.files[0])">
     </div>
   `;
 }
@@ -1168,6 +1246,31 @@ function renderTrainingSettings() {
   const settings = getVenueSettings();
   const showGrams = settings.showGrams !== false;
   const requireGrams = showGrams && settings.requireGrams !== false;
+  const formats = settings.formats || {};
+  const formatLabels = {
+    logical: 'Логический',
+    missing: 'С пропусками',
+    color_coded: 'Цветовой',
+    spatial: 'Пространственный'
+  };
+  const formatDesc = {
+    logical: 'Простой выбор ингредиентов',
+    missing: 'Указать недостающий компонент',
+    color_coded: 'Распределение по цветовым группам',
+    spatial: 'Выбор зон подачи/стакана'
+  };
+  const formatToggles = Object.keys(formatLabels).map(f => {
+    const on = formats[f] !== false;
+    return `
+      <div class="settings-row" style="cursor:pointer" onclick="toggleVenueSetting('format_${f}', this)">
+        <div class="settings-row-text">
+          <div class="settings-row-label">${formatLabels[f]}</div>
+          <div class="settings-row-desc">${formatDesc[f]}</div>
+        </div>
+        <div class="toggle ${on ? 'on' : ''}" aria-checked="${on ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
+      </div>
+    `;
+  }).join('');
   const speedMode = settings.speedMode || { enabled: false, timeLimit: 15 };
   const speedEnabled = speedMode.enabled === true;
   const speedLimit = Math.max(5, Math.min(60, Number(speedMode.timeLimit) || 15));
@@ -1210,6 +1313,13 @@ function renderTrainingSettings() {
           </div>
           <input class="platform-input" type="number" inputmode="numeric" min="5" max="60" value="${speedLimit}" style="width:70px;text-align:center" onchange="updateSpeedLimit(this.value)">
         </div>
+        <div class="settings-row" style="margin-top:8px;cursor:default;">
+          <div class="settings-row-text">
+            <div class="settings-row-label">Форматы вопросов</div>
+            <div class="settings-row-desc">Какие типы заданий показывать сотрудникам</div>
+          </div>
+        </div>
+        ${formatToggles}
       </div>
       <p class="settings-hint">Настройки сохраняются для всех сотрудников заведения.</p>
     </div>
@@ -1228,6 +1338,9 @@ function toggleVenueSetting(key, row) {
     if (next.requireGrams) next.showGrams = true;
   } else if (key === 'speedEnabled') {
     next.speedMode = { ...(settings.speedMode || {}), enabled: !(settings.speedMode && settings.speedMode.enabled) };
+  } else if (key.startsWith('format_')) {
+    const f = key.replace('format_', '');
+    next.formats = { ...(settings.formats || {}), [f]: !(settings.formats || {})[f] };
   }
   updateVenueSettings(next);
   const overlay = row.closest('.modal-overlay');
@@ -1862,7 +1975,7 @@ function handleTTKFile(file) {
   reader.onload = (e) => {
     const text = e.target.result;
     const items = parseTTKText(text, ext);
-    setParsedItems(items, file.name);
+    previewParsedItems(items, file.name);
   };
   reader.onerror = () => showPlatformToast('Не удалось прочитать файл');
   if (ext === 'json') {
@@ -1882,7 +1995,7 @@ function handleDocxFile(file) {
   file.arrayBuffer().then(arrayBuffer => {
     mammoth.convertToHtml({ arrayBuffer }).then(result => {
       const items = parseDocxHTML(result.value);
-      setParsedItems(items, file.name);
+      previewParsedItems(items, file.name);
     }).catch(() => showPlatformToast('Не удалось извлечь текст из .docx'));
   });
 }
@@ -2136,13 +2249,15 @@ function parseTTKText(text, format) {
   return parseTTKPlainText(text);
 }
 
-function parseTTKPaste() {
+function parseTTKPastePreview() {
   const textarea = document.getElementById('ttk-paste');
   if (!textarea) return;
   const text = textarea.value.trim();
-  if (!text) return;
+  if (!text) return showPlatformToast('Вставьте текст ТТК');
   const items = parseTTKPlainText(text);
-  setParsedItems(items, 'вставленный текст');
+  if (!items || !items.length) return showPlatformToast('Не удалось распознать позиции');
+  state.platformDraft = { parsedItems: items, sectionName: 'Основное меню' };
+  openCourseEditor();
 }
 
 function parseTTKPlainText(text) {
@@ -2484,6 +2599,15 @@ function sourceNameToSectionName(sourceName) {
 
 function setParsedItems(items, sourceName) {
   buildVenueFromParsedItems(items, sourceName);
+}
+
+function previewParsedItems(items, sourceName) {
+  if (!items || !items.length) {
+    showPlatformToast('Не удалось распознать позиции');
+    return;
+  }
+  state.platformDraft = { parsedItems: items, sectionName: sourceNameToSectionName(sourceName) };
+  openCourseEditor();
 }
 
 function buildVenueFromParsedItems(items, sourceName) {
