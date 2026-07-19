@@ -2151,6 +2151,30 @@
             font-size: 18px;
         }
         .editor-item label { margin-top: 8px; }
+        .editor-components { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+        .editor-component-row { display: flex; gap: 8px; align-items: stretch; }
+        .editor-comp-name { flex: 1; min-width: 0; }
+        .editor-comp-grams { width: 72px; text-align: center; }
+        .editor-comp-remove {
+            width: 36px; height: 36px;
+            background: rgba(255, 75, 75, 0.12);
+            border: 1px solid rgba(255, 75, 75, 0.25);
+            color: #ff4b4b;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .editor-add-btn {
+            width: 100%;
+            margin-top: 6px;
+            padding: 10px;
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
         .section-management { margin: 16px 0; }
         .section-row {
             display: flex;
@@ -2209,13 +2233,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:'Жизни: '; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=2">
+    <link rel="stylesheet" href="minimal.css?v=5">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
-<script src="supabase_config.js?v=2"></script>
-<script src="platform.js?v=2"></script>
+<script src="supabase_config.js?v=5"></script>
+<script src="platform.js?v=5"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2842,13 +2866,15 @@ function normalizeItem(item) {
         if (item.correct && item.correct.length > 0 && typeof item.correct[0] === 'object') {
             item._ingredients = item.correct.map(c => c.ingredient);
             item._grams = {};
-            item.correct.forEach(c => { item._grams[c.ingredient] = c.grams; });
+            item._gramUnit = {};
+            item.correct.forEach(c => { item._grams[c.ingredient] = c.grams; item._gramUnit[c.ingredient] = c.isCount ? 'шт' : 'г'; });
             item._pool = [...item._ingredients, ...(item.wrong || [])];
             item._wrongPool = item.wrong || [];
-            item._hasGrams = true;
+            item._hasGrams = item.correct.some(c => (c.grams !== '' && c.grams !== undefined && c.grams !== null && Number(c.grams) > 0) || c.isCount);
         } else {
             item._ingredients = item.correct || [];
             item._grams = {};
+            item._gramUnit = {};
             item._pool = item.pool || [...(item.correct || []), ...(item.wrong || [])];
             item._wrongPool = (item.pool || []).filter(p => !(item.correct || []).includes(p));
             if (item.wrong) item._wrongPool = item.wrong;
@@ -3827,9 +3853,13 @@ function toggleBrowseItem(btn) {
 }
 
 function renderBrowse() {
+    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: true };
     const itemsHTML = state.allData.map(item => {
         const ingredientsHTML = item._ingredients.map(ing => {
-            const grams = item._hasGrams && item._grams[ing] !== undefined ? `<span class="browse-grams">${item._grams[ing]} г</span>` : '';
+            const showGrams = item._hasGrams && venueSettings.showGrams !== false;
+            const hasGram = Number(item._grams[ing]) > 0;
+            const unit = (item._gramUnit && item._gramUnit[ing]) || 'г';
+            const grams = showGrams && hasGram ? `<span class="browse-grams">&nbsp;${item._grams[ing]} ${unit}</span>` : '';
             return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
         }).join('');
         return `
@@ -3932,6 +3962,14 @@ function buildWrongPool(nd, allIngredients) {
     return wrongPool;
 }
 
+function gramSettingsFor(nd) {
+    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: false, requireGrams: false };
+    const fallback = !state.venue && state.isDrinksChapter;
+    const showGrams = nd._hasGrams && (venueSettings.showGrams !== false || fallback);
+    const requireGrams = showGrams && (venueSettings.requireGrams !== false || fallback);
+    return { showGrams, requireGrams };
+}
+
 function buildBasicSelect(nd, wrongPool) {
     const correctCount = nd._ingredients.length;
     const minDistractors = Math.max(2, Math.ceil(correctCount * 0.4));
@@ -3943,12 +3981,14 @@ function buildBasicSelect(nd, wrongPool) {
         const extra = shuffle(wrongPool).filter(i => !used.has(i)).slice(0, remaining);
         pool.push(...extra);
     }
+    const { showGrams, requireGrams } = gramSettingsFor(nd);
     return {
         type: 'select',
         item: nd,
         pool: shuffle(pool),
         format: 'logical',
-        showGrams: state.isDrinksChapter && nd._hasGrams,
+        showGrams,
+        requireGrams,
     };
 }
 
@@ -4092,12 +4132,14 @@ function buildSpatialSelect(nd, wrongPool, allIngredients, format) {
     }
 
     const displayPool = shuffle(pool);
+    const { showGrams, requireGrams } = gramSettingsFor(nd);
     return {
         type: 'select',
         item: nd,
         pool: displayPool,
         format: format,
-        showGrams: state.isDrinksChapter && nd._hasGrams,
+        showGrams,
+        requireGrams,
     };
 }
 
@@ -4166,12 +4208,14 @@ function buildTrueFalseQuestion(nd, wrongPool, format) {
 }
 
 function buildSimpleSelect(nd, wrongPool, format) {
+    const { showGrams, requireGrams } = gramSettingsFor(nd);
     return {
         type: 'select',
         item: nd,
         pool: shuffle(nd._pool),
         format: format,
-        showGrams: state.isDrinksChapter && nd._hasGrams,
+        showGrams,
+        requireGrams,
     };
 }
 
@@ -4250,16 +4294,16 @@ function renderLogical(pool, isClickable, q) {
             else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
             else if (wasSelected) cls = 'wrong-selected';
             else { cls = 'wrong-reveal'; }
-            if (q.showGrams && isCorrectIng) {
+            if (q.showGrams && isCorrectIng && Number(q.item._grams[ing]) > 0) {
                 const correctGram = q.item._grams[ing];
                 const userGram = state.gramInputs[idx];
                 const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}${q.item._gramUnit[ing] || 'г'}</span></div>`;
             }
         } else {
             cls = state.selectedOptions.has(idx) ? 'selected' : '';
-            if (q.showGrams && state.selectedOptions.has(idx)) {
-                gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+            if (q.requireGrams && Number(q.item._grams[ing]) > 0 && state.selectedOptions.has(idx)) {
+                gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="${q.item._gramUnit[ing] || 'г'}" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">${q.item._gramUnit[ing] || 'г'}</span></div>`;
             }
         }
         return `<button class="option-btn ${cls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
@@ -4296,16 +4340,16 @@ function renderColorCoded(pool, isClickable, q) {
                 if (isCorrectIng && wasSelected) btnCls = 'correct-reveal';
                 else if (isCorrectIng && !wasSelected) btnCls = 'correct-unselected';
                 else { btnCls = 'wrong-reveal'; }
-                if (q.showGrams && isCorrectIng) {
+                if (q.showGrams && isCorrectIng && Number(q.item._grams[ing]) > 0) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
                     const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             } else {
                 btnCls = state.selectedOptions.has(idx) ? 'selected' : '';
-                if (q.showGrams && state.selectedOptions.has(idx)) {
-                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+                if (q.requireGrams && Number(q.item._grams[ing]) > 0 && state.selectedOptions.has(idx)) {
+                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="${q.item._gramUnit[ing] || 'г'}" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             }
             html += `<button class="option-btn ${btnCls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
@@ -4338,16 +4382,16 @@ function renderSpatial(pool, isClickable, q) {
                 if (isCorrectIng && wasSelected) cls = 'correct-reveal';
                 else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
                 else { cls = 'wrong-reveal'; }
-                if (q.showGrams && isCorrectIng) {
+                if (q.showGrams && isCorrectIng && Number(q.item._grams[ing]) > 0) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
                     const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             } else {
                 cls = state.selectedOptions.has(idx) ? 'selected' : '';
-                if (q.showGrams && state.selectedOptions.has(idx)) {
-                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+                if (q.requireGrams && Number(q.item._grams[ing]) > 0 && state.selectedOptions.has(idx)) {
+                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="${q.item._gramUnit[ing] || 'г'}" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             }
             html += `<button class="option-btn ${cls}" style="width:100%;margin-bottom:4px;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
@@ -4378,7 +4422,7 @@ function renderLesson() {
     if (fb) {
         const ic = state._lastCorrect;
         let extraInfo = '';
-        if (!ic && q.showGrams) {
+        if (!ic && q.requireGrams) {
             extraInfo = ' (проверьте граммовки)';
         }
         resultStripHTML = `<div class="inline-result ${ic ? 'correct' : 'wrong'}">
@@ -4402,7 +4446,7 @@ function renderLesson() {
                     ${dishPhotoHTML}
                     <div class="question-title">
                         Выбери состав: <span class="question-dish-name">${dishName}</span>
-                        ${q.showGrams ? '<div style="font-size:12px;color:rgba(24,24,27,0.55);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
+                        ${q.requireGrams ? '<div style="font-size:12px;color:rgba(24,24,27,0.55);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
                     </div>
                 </div>
                 ${resultStripHTML}
@@ -4659,12 +4703,15 @@ function checkSelectAnswer() {
 
     // Check grams if applicable
     let gramsCorrect = true;
-    if (q.showGrams && isCorrect) {
+    if (q.requireGrams && isCorrect) {
         for (const idx of state.selectedOptions) {
             const ing = q.pool[idx];
-            if (q.item._grams[ing] !== undefined) {
+            const correctGram = Number(q.item._grams[ing]);
+            if (correctGram > 0) {
                 const userGram = state.gramInputs[idx];
-                if (userGram === undefined || Math.abs(userGram - q.item._grams[ing]) > 2) {
+                const isCount = q.item._gramUnit[ing] === 'шт';
+                const tolerance = isCount ? 0 : 2;
+                if (userGram === undefined || userGram === '' || Math.abs(Number(userGram) - correctGram) > tolerance) {
                     gramsCorrect = false;
                     break;
                 }
