@@ -268,6 +268,18 @@ function isPlatformScreen() {
   return ['authOptions', 'login', 'register', 'forgotPassword', 'resetPassword', 'roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'ownerStats', 'staffStats', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
 }
 
+function venueHasGramData(venue) {
+  if (!venue || !venue.sections) return false;
+  for (const s of venue.sections) {
+    for (const it of (s.items || [])) {
+      for (const c of (it.correct || [])) {
+        if (typeof c === 'object' && (c.grams > 0 || c.isCount)) return true;
+      }
+    }
+  }
+  return false;
+}
+
 function normalizeVenue(venue) {
   if (!venue) return null;
   if (!venue.sections) venue.sections = [];
@@ -279,8 +291,25 @@ function normalizeVenue(venue) {
       createdAt: venue.createdAt || Date.now(),
     });
   }
+  const hasGrams = venueHasGramData(venue);
+  venue.settings = {
+    showGrams: hasGrams,
+    requireGrams: hasGrams,
+    ...(venue.settings || {})
+  };
   delete venue.items;
   return venue;
+}
+
+function getVenueSettings() {
+  return (state.venue && state.venue.settings) || { showGrams: false, requireGrams: false };
+}
+
+function updateVenueSettings(patch) {
+  if (!state.venue) return;
+  state.venue.settings = { ...getVenueSettings(), ...patch };
+  saveProgress({ venue: state.venue });
+  syncVenue();
 }
 
 function initPlatform() {
@@ -1125,10 +1154,63 @@ function renderOwnerDashboard() {
       </div>
       <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">Загрузить ТТК</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="renderTrainingSettings()">Настройки обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">Сгенерировать фон заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
     </div>
   `;
+}
+
+function renderTrainingSettings() {
+  const settings = getVenueSettings();
+  const showGrams = settings.showGrams !== false;
+  const requireGrams = showGrams && settings.requireGrams !== false;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="stats-modal" style="width:min(92vw,420px);max-height:80vh;overflow:auto;">
+      <div class="stats-modal-header">
+        <div class="stats-modal-title">Настройки обучения</div>
+        <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+      </div>
+      <div class="settings-list">
+        <div class="settings-row" style="cursor:pointer" onclick="toggleVenueSetting('showGrams', this)">
+          <div class="settings-row-text">
+            <div class="settings-row-label">Показывать граммы</div>
+            <div class="settings-row-desc">Показывать сотрудникам граммовки в уроках и справочнике</div>
+          </div>
+          <div class="toggle ${showGrams ? 'on' : ''}" aria-checked="${showGrams ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="settings-row" style="cursor:pointer;opacity:${showGrams ? 1 : 0.5}" onclick="if(getVenueSettings().showGrams===false)return;toggleVenueSetting('requireGrams', this)">
+          <div class="settings-row-text">
+            <div class="settings-row-label">Требовать ввод граммов</div>
+            <div class="settings-row-desc">Сотрудник должен ввести граммовку каждого ингредиента</div>
+          </div>
+          <div class="toggle ${requireGrams ? 'on' : ''}" aria-checked="${requireGrams ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
+        </div>
+      </div>
+      <p class="settings-hint">Настройки сохраняются для всех сотрудников заведения.</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function toggleVenueSetting(key, row) {
+  const settings = getVenueSettings();
+  const next = { ...settings };
+  if (key === 'showGrams') {
+    next.showGrams = !settings.showGrams;
+    if (!next.showGrams) next.requireGrams = false;
+  } else if (key === 'requireGrams') {
+    next.requireGrams = !settings.requireGrams;
+    if (next.requireGrams) next.showGrams = true;
+  }
+  updateVenueSettings(next);
+  const overlay = row.closest('.modal-overlay');
+  if (overlay) overlay.remove();
+  renderTrainingSettings();
 }
 
 function renderOwnerStats() {
@@ -1355,8 +1437,8 @@ function renderCourseEditor() {
       <div class="platform-header">
         <button class="close-btn" onclick="state.screen='ownerSetup'; render()">← Назад</button>
       </div>
-      <div class="platform-title">Редактор курса</div>
-      <div class="platform-subtitle">Проверьте и отредактируйте распознанные позиции</div>
+      <div class="platform-title">Редактор блюд</div>
+      <div class="platform-subtitle">Проверьте названия, состав и граммовки</div>
       <div class="platform-form">
         <label class="platform-label">Сохранить в раздел</label>
         <div class="section-save-row">
@@ -1369,7 +1451,7 @@ function renderCourseEditor() {
           ${items.map((it, idx) => renderCourseEditorItem(it, idx)).join('')}
         </div>
         <button class="onboarding-btn secondary" onclick="addParsedItem()">+ Добавить позицию</button>
-        <button id="platform-primary-btn" class="onboarding-btn" onclick="saveCourseFromEditor()">Сохранить курс (${items.length})</button>
+        <button id="platform-primary-btn" class="onboarding-btn" onclick="saveCourseFromEditor()">Сохранить (${items.length})</button>
       </div>
     </div>
   `;
@@ -1386,32 +1468,57 @@ function onEditorSectionChange(val) {
 }
 
 function renderCourseEditorItem(it, idx) {
-  const hasGrams = it.correct && it.correct[0] && typeof it.correct[0] === 'object';
-  const components = (it.correct || []).map(c => typeof c === 'object' ? c.ingredient : c).join(', ');
-  const grams = hasGrams ? (it.correct || []).map(c => c.grams || '').join(', ') : '';
-  const image = it.image || '';
+  ensureItemCorrectObjects(idx);
+  const item = state.platformDraft.parsedItems[idx];
+  const image = item.image || '';
+  const componentsHTML = (item.correct || []).map((c, i) => renderEditorComponentRow(idx, i, c)).join('');
   return `
     <div class="editor-item" data-idx="${idx}">
       <div class="editor-item-header">
-        <input class="platform-input editor-item-name" type="text" value="${escapeHtml(it.name)}" placeholder="Название позиции" oninput="updateParsedItem(${idx}, 'name', this.value)">
+        <input class="platform-input editor-item-name" type="text" value="${escapeHtml(item.name)}" placeholder="Название позиции" oninput="updateParsedItem(${idx}, 'name', this.value)">
         <button class="editor-item-delete" onclick="deleteParsedItem(${idx})">×</button>
       </div>
-      <label class="platform-label">Состав (через запятую)</label>
-      <input class="platform-input" type="text" value="${escapeHtml(components)}" placeholder="Ингредиент 1, Ингредиент 2" oninput="updateParsedItemComponents(${idx}, this.value)">
-      <label class="platform-label">Граммовки (через запятую, опционально)</label>
-      <input class="platform-input" type="text" value="${escapeHtml(grams)}" placeholder="10, 20, 30" oninput="updateParsedItemGrams(${idx}, this.value)">
-      <label class="platform-label">Фото (URL или загрузите файл)</label>
-      <div class="editor-image-row">
-        <input class="platform-input" type="text" value="${escapeHtml(image)}" placeholder="https://..." oninput="updateParsedItemImage(${idx}, this.value)">
-        <input type="file" id="editor-img-${idx}" accept="image/*" style="display:none" onchange="handleEditorImage(${idx}, this.files[0])">
-        <button class="editor-img-btn" onclick="document.getElementById('editor-img-${idx}').click()">+</button>
+      <div class="editor-item-section">
+        <div style="font-size:12px;color:var(--text-secondary);margin:10px 0 6px">Состав</div>
+        <div class="editor-components">
+          ${componentsHTML || renderEditorComponentRow(idx, 0, { ingredient: '', grams: '' })}
+        </div>
+        <button class="editor-add-btn" onclick="addParsedComponent(${idx})">+ Добавить ингредиент</button>
       </div>
+      <div class="editor-item-section">
+        <div style="font-size:12px;color:var(--text-secondary);margin:10px 0 6px">Фото</div>
+        <div class="editor-image-row">
+          <input class="platform-input" type="text" value="${escapeHtml(image)}" placeholder="URL или загрузите файл" oninput="updateParsedItemImage(${idx}, this.value)">
+          <input type="file" id="editor-img-${idx}" accept="image/*" style="display:none" onchange="handleEditorImage(${idx}, this.files[0])">
+          <button class="editor-img-btn" onclick="document.getElementById('editor-img-${idx}').click()">+</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEditorComponentRow(itemIdx, compIdx, c) {
+  const name = typeof c === 'object' ? (c.ingredient || '') : (c || '');
+  const grams = typeof c === 'object' ? (c.grams || '') : '';
+  return `
+    <div class="editor-component-row">
+      <input class="platform-input editor-comp-name" type="text" value="${escapeHtml(name)}" placeholder="Ингредиент" oninput="updateParsedComponentName(${itemIdx}, ${compIdx}, this.value)">
+      <input class="platform-input editor-comp-grams" type="number" inputmode="decimal" placeholder="г" value="${grams}" oninput="updateParsedComponentGrams(${itemIdx}, ${compIdx}, this.value)">
+      <button class="editor-comp-remove" onclick="removeParsedComponent(${itemIdx}, ${compIdx})">×</button>
     </div>
   `;
 }
 
 function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+function ensureItemCorrectObjects(idx) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items[idx]) return;
+  const correct = items[idx].correct || [];
+  items[idx].correct = correct.map(c => typeof c === 'object' ? c : { ingredient: String(c || ''), grams: '' });
 }
 
 function updateParsedItem(idx, field, value) {
@@ -1421,29 +1528,43 @@ function updateParsedItem(idx, field, value) {
   items[idx][field] = value.trim();
 }
 
-function updateParsedItemComponents(idx, value) {
+function updateParsedComponentName(idx, compIdx, value) {
   const draft = state.platformDraft || {};
   const items = draft.parsedItems || [];
   if (!items[idx]) return;
-  const comps = value.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
-  const oldCorrect = items[idx].correct || [];
-  const hasGrams = oldCorrect[0] && typeof oldCorrect[0] === 'object';
-  if (hasGrams) {
-    items[idx].correct = comps.map((c, i) => ({ ingredient: c, grams: (oldCorrect[i] && oldCorrect[i].grams) || 0 }));
-  } else {
-    items[idx].correct = comps;
-  }
-  items[idx].info_text = `Состав:\n• ${items[idx].correct.map(c => typeof c === 'object' ? c.ingredient : c).join('\n• ')}`;
+  ensureItemCorrectObjects(idx);
+  const correct = items[idx].correct;
+  if (!correct[compIdx]) correct[compIdx] = { ingredient: '', grams: '' };
+  correct[compIdx].ingredient = value.trim();
 }
 
-function updateParsedItemGrams(idx, value) {
+function updateParsedComponentGrams(idx, compIdx, value) {
   const draft = state.platformDraft || {};
   const items = draft.parsedItems || [];
   if (!items[idx]) return;
-  const grams = value.split(/[,;|]/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-  const comps = (items[idx].correct || []).map(c => typeof c === 'object' ? c.ingredient : c);
-  items[idx].correct = comps.map((c, i) => ({ ingredient: c, grams: grams[i] || 0 }));
-  items[idx].info_text = `Состав:\n• ${items[idx].correct.map(c => `${c.ingredient} (${c.grams}г)`).join('\n• ')}`;
+  ensureItemCorrectObjects(idx);
+  const correct = items[idx].correct;
+  if (!correct[compIdx]) correct[compIdx] = { ingredient: '', grams: '' };
+  const val = value.trim();
+  correct[compIdx].grams = val === '' ? '' : parseFloat(val.replace(',', '.'));
+}
+
+function removeParsedComponent(idx, compIdx) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items[idx]) return;
+  ensureItemCorrectObjects(idx);
+  items[idx].correct.splice(compIdx, 1);
+  render();
+}
+
+function addParsedComponent(idx) {
+  const draft = state.platformDraft || {};
+  const items = draft.parsedItems || [];
+  if (!items[idx]) return;
+  ensureItemCorrectObjects(idx);
+  items[idx].correct.push({ ingredient: '', grams: '' });
+  render();
 }
 
 function updateParsedItemImage(idx, value) {
@@ -1470,10 +1591,27 @@ function addParsedItem() {
   draft.parsedItems.push({
     type: 'composition',
     name: '',
-    correct: [],
+    correct: [{ ingredient: '', grams: '' }],
     info_text: 'Состав:\n• ',
   });
   render();
+}
+
+function cleanParsedItemForSave(item) {
+  const correct = (item.correct || [])
+    .filter(c => {
+      const name = typeof c === 'object' ? (c.ingredient || '').trim() : String(c || '').trim();
+      return name.length > 0;
+    })
+    .map(c => {
+      if (typeof c === 'object') {
+        const raw = c.grams === '' || c.grams === undefined || c.grams === null ? '' : String(c.grams).replace(',', '.');
+        const grams = raw === '' ? '' : (isNaN(parseFloat(raw)) ? 0 : parseFloat(raw));
+        return { ingredient: c.ingredient.trim(), grams, isCount: !!c.isCount };
+      }
+      return { ingredient: String(c).trim(), grams: '' };
+    });
+  return { ...item, name: (item.name || '').trim(), correct };
 }
 
 function saveCourseFromEditor() {
@@ -1481,8 +1619,8 @@ function saveCourseFromEditor() {
   const items = draft.parsedItems || [];
   if (!items.length) return;
 
-  const validItems = items.filter(it => it.name && it.correct && it.correct.length);
-  if (!validItems.length) {
+  const cleanedItems = items.map(cleanParsedItemForSave).filter(it => it.name && it.correct.length);
+  if (!cleanedItems.length) {
     showPlatformToast('Нет позиций для сохранения');
     return;
   }
@@ -1497,23 +1635,24 @@ function saveCourseFromEditor() {
     venue.sections.push(target);
   }
 
-  const allComponents = new Set();
-  validItems.forEach(it => {
-    it.correct.forEach(c => allComponents.add(typeof c === 'object' ? c.ingredient : c));
+  const allComponentNames = new Set();
+  cleanedItems.forEach(it => {
+    it.correct.forEach(c => allComponentNames.add(c.ingredient));
   });
-  const allComponentsArray = [...allComponents];
+  const allComponentsArray = [...allComponentNames];
+  const showGrams = getVenueSettings().showGrams !== false;
 
-  target.items = validItems.map(item => {
-    const hasGrams = item.correct[0] && typeof item.correct[0] === 'object';
-    const correctNames = item.correct.map(c => typeof c === 'object' ? c.ingredient : c);
-    const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, allComponentsArray.length - correctNames.length));
+  target.items = cleanedItems.map(item => {
+    const hasGrams = item.correct.some(c => c.grams > 0 || c.isCount);
+    const correctNames = item.correct.map(c => c.ingredient);
+    const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
     if (hasGrams) {
       return {
         type: 'composition',
         name: item.name,
         correct: item.correct,
         wrong: distractors,
-        info_text: item.info_text,
+        info_text: buildInfoText(item.name, item.correct, showGrams),
         image: item.image || null,
       };
     } else {
@@ -1523,7 +1662,7 @@ function saveCourseFromEditor() {
         name: item.name,
         correct: correctNames,
         pool: pool,
-        info_text: item.info_text,
+        info_text: buildInfoText(item.name, correctNames, showGrams),
         image: item.image || null,
       };
     }
@@ -2121,10 +2260,10 @@ function parseComponentToken(str) {
   return s;
 }
 
-function buildInfoText(name, components) {
+function buildInfoText(name, components, showGrams = true) {
   const list = components.map(c => {
     if (c && typeof c === 'object') {
-      if (!c.grams) return c.ingredient;
+      if (!showGrams || !c.grams) return c.ingredient;
       const val = Number.isInteger(c.grams) ? c.grams : parseFloat(c.grams.toFixed(3));
       const suffix = c.isCount ? ' шт' : 'г';
       return `${c.ingredient} (${val}${suffix})`;
@@ -2282,9 +2421,10 @@ function buildVenueFromParsedItems(items, sourceName) {
   });
   const allComponentsArray = [...allComponentNames];
 
+  const showGrams = getVenueSettings().showGrams !== false;
   const sectionItems = items.map(item => {
     const correct = item.correct || [];
-    const hasGrams = correct[0] && typeof correct[0] === 'object';
+    const hasGrams = correct.some(c => typeof c === 'object' && (c.grams > 0 || c.isCount));
     const correctNames = correct.map(c => typeof c === 'object' ? c.ingredient : c);
     const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
     if (hasGrams) {
@@ -2293,7 +2433,7 @@ function buildVenueFromParsedItems(items, sourceName) {
         name: item.name,
         correct: correct,
         wrong: distractors,
-        info_text: item.info_text || buildInfoText(item.name, correct),
+        info_text: buildInfoText(item.name, correct, showGrams),
         image: item.image || null,
       };
     } else {
@@ -2303,7 +2443,7 @@ function buildVenueFromParsedItems(items, sourceName) {
         name: item.name,
         correct: correctNames,
         pool: pool,
-        info_text: item.info_text || buildInfoText(item.name, correctNames),
+        info_text: buildInfoText(item.name, correctNames, showGrams),
         image: item.image || null,
       };
     }
