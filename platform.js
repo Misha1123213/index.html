@@ -292,17 +292,20 @@ function normalizeVenue(venue) {
     });
   }
   const hasGrams = venueHasGramData(venue);
+  const defaultSettings = { showGrams: hasGrams, requireGrams: hasGrams, speedMode: { enabled: false, timeLimit: 15 } };
   venue.settings = {
-    showGrams: hasGrams,
-    requireGrams: hasGrams,
-    ...(venue.settings || {})
+    ...defaultSettings,
+    ...(venue.settings || {}),
+    speedMode: { ...defaultSettings.speedMode, ...(venue.settings && venue.settings.speedMode) }
   };
   delete venue.items;
   return venue;
 }
 
 function getVenueSettings() {
-  return (state.venue && state.venue.settings) || { showGrams: false, requireGrams: false };
+  const defaults = { showGrams: false, requireGrams: false, speedMode: { enabled: false, timeLimit: 15 } };
+  const settings = (state.venue && state.venue.settings) || {};
+  return { ...defaults, ...settings, speedMode: { ...defaults.speedMode, ...(settings.speedMode || {}) } };
 }
 
 function updateVenueSettings(patch) {
@@ -1165,6 +1168,9 @@ function renderTrainingSettings() {
   const settings = getVenueSettings();
   const showGrams = settings.showGrams !== false;
   const requireGrams = showGrams && settings.requireGrams !== false;
+  const speedMode = settings.speedMode || { enabled: false, timeLimit: 15 };
+  const speedEnabled = speedMode.enabled === true;
+  const speedLimit = Math.max(5, Math.min(60, Number(speedMode.timeLimit) || 15));
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;';
@@ -1190,6 +1196,20 @@ function renderTrainingSettings() {
           </div>
           <div class="toggle ${requireGrams ? 'on' : ''}" aria-checked="${requireGrams ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
         </div>
+        <div class="settings-row" style="cursor:pointer" onclick="toggleVenueSetting('speedEnabled', this)">
+          <div class="settings-row-text">
+            <div class="settings-row-label">Скоростной режим</div>
+            <div class="settings-row-desc">Таймер на каждый вопрос; быстрые правильные ответы дают бонус XP</div>
+          </div>
+          <div class="toggle ${speedEnabled ? 'on' : ''}" aria-checked="${speedEnabled ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="settings-row" style="opacity:${speedEnabled ? 1 : 0.5}">
+          <div class="settings-row-text">
+            <div class="settings-row-label">Время на вопрос</div>
+            <div class="settings-row-desc">Секунд для ответа в скоростном режиме</div>
+          </div>
+          <input class="platform-input" type="number" inputmode="numeric" min="5" max="60" value="${speedLimit}" style="width:70px;text-align:center" onchange="updateSpeedLimit(this.value)">
+        </div>
       </div>
       <p class="settings-hint">Настройки сохраняются для всех сотрудников заведения.</p>
     </div>
@@ -1206,6 +1226,8 @@ function toggleVenueSetting(key, row) {
   } else if (key === 'requireGrams') {
     next.requireGrams = !settings.requireGrams;
     if (next.requireGrams) next.showGrams = true;
+  } else if (key === 'speedEnabled') {
+    next.speedMode = { ...(settings.speedMode || {}), enabled: !(settings.speedMode && settings.speedMode.enabled) };
   }
   updateVenueSettings(next);
   const overlay = row.closest('.modal-overlay');
@@ -1213,37 +1235,96 @@ function toggleVenueSetting(key, row) {
   renderTrainingSettings();
 }
 
+function updateSpeedLimit(value) {
+  const n = Math.max(5, Math.min(60, parseInt(value) || 15));
+  const settings = getVenueSettings();
+  updateVenueSettings({ ...settings, speedMode: { ...(settings.speedMode || {}), timeLimit: n } });
+  const overlay = document.querySelector('.modal-overlay');
+  if (overlay) overlay.remove();
+  renderTrainingSettings();
+}
+
+function formatDateTime(ts) {
+  if (!ts) return '—';
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch { return '—'; }
+}
+
+function accuracyBar(pct) {
+  const color = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--red)';
+  return `<div class="accuracy-bar" style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;margin-top:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width .4s ease"></div></div>`;
+}
+
 function renderOwnerStats() {
   const stats = state.trainingStats || { staff: [], items: [] };
-  const staffRows = (stats.staff || []).map(s => `
-    <div class="section-row">
-      <div>
-        <div class="section-row-name">${escapeHtml(s.login)}</div>
-        <div class="section-row-meta">${s.correct} / ${s.total} верно</div>
+  const staff = stats.staff || [];
+  const items = stats.items || [];
+  const totalAttempts = staff.reduce((sum, s) => sum + (s.total || 0), 0);
+  const avgAccuracy = staff.length ? Math.round((staff.reduce((sum, s) => sum + (s.accuracy || 0), 0) / staff.length) * 100) : 0;
+
+  const staffRows = staff.map(s => {
+    const pct = s.total ? Math.round((s.accuracy || 0) * 100) : 0;
+    return `
+    <div class="section-row" style="flex-direction:column;align-items:stretch;gap:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="section-row-name">${escapeHtml(s.login)}</div>
+          <div class="section-row-meta">${s.correct || 0} / ${s.total || 0} верно • последняя активность: ${formatDateTime(s.lastActive)}</div>
+        </div>
+        <div style="font-weight:700;font-size:16px">${pct}%</div>
       </div>
-      <div style="font-weight:700">${s.total ? Math.round((s.accuracy || 0) * 100) : 0}%</div>
+      ${accuracyBar(pct)}
     </div>
-  `).join('') || '<div class="section-empty">Пока нет данных по сотрудникам</div>';
-  const itemRows = (stats.items || []).map(it => `
-    <div class="section-row">
-      <div>
-        <div class="section-row-name">${escapeHtml(it.name)}</div>
-        <div class="section-row-meta">${it.correct} / ${it.total} верно</div>
-      </div>
-      <div style="font-weight:700">${it.total ? Math.round((it.accuracy || 0) * 100) : 0}%</div>
+  `}).join('') || '<div class="section-empty">Пока нет данных по сотрудникам</div>';
+
+  const weakItems = [...items].filter(i => (i.total || 0) > 0).sort((a, b) => (a.accuracy || 0) - (b.accuracy || 0)).slice(0, 5);
+  const weakRows = weakItems.map(it => {
+    const pct = it.total ? Math.round((it.accuracy || 0) * 100) : 0;
+    return `
+    <div class="section-row" style="justify-content:space-between">
+      <div class="section-row-name">${escapeHtml(it.name)}</div>
+      <div style="font-weight:700;color:var(--red)">${pct}%</div>
     </div>
-  `).join('') || '<div class="section-empty">Пока нет данных по позициям</div>';
+  `}).join('') || '<div class="section-empty">Нет данных</div>';
+
+  const itemRows = items.map(it => {
+    const pct = it.total ? Math.round((it.accuracy || 0) * 100) : 0;
+    return `
+    <div class="section-row" style="justify-content:space-between">
+      <div class="section-row-name">${escapeHtml(it.name)}</div>
+      <div style="font-weight:700">${pct}%</div>
+    </div>
+  `}).join('') || '<div class="section-empty">Пока нет данных по позициям</div>';
 
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
         <button class="close-btn" onclick="ownerDashboard()">← Назад</button>
       </div>
-      <div class="platform-title">Статистика</div>
+      <div class="platform-title">Прогресс сотрудников</div>
       <div class="platform-form">
+        <div class="dashboard-grid" style="margin-bottom:16px">
+          <div class="dashboard-stat">
+            <div class="dashboard-stat-value">${totalAttempts}</div>
+            <div class="dashboard-stat-label">Всего попыток</div>
+          </div>
+          <div class="dashboard-stat">
+            <div class="dashboard-stat-value">${avgAccuracy}%</div>
+            <div class="dashboard-stat-label">Средняя точность</div>
+          </div>
+          <div class="dashboard-stat">
+            <div class="dashboard-stat-value">${staff.length}</div>
+            <div class="dashboard-stat-label">Сотрудников</div>
+          </div>
+        </div>
         <div class="platform-label">По сотрудникам</div>
         ${staffRows}
-        <div class="platform-label" style="margin-top:16px">По позициям</div>
+        <div class="platform-label" style="margin-top:16px">Самые проблемные позиции</div>
+        ${weakRows}
+        <div class="platform-label" style="margin-top:16px">Все позиции</div>
         ${itemRows}
       </div>
     </div>
@@ -1331,6 +1412,7 @@ function renderPlatformHome() {
   const hasSections = sections.length > 0;
   const itemCount = sections.reduce((sum, s) => sum + (s.items ? s.items.length : 0), 0);
   const bgImage = venue && venue.bgImage ? `url('${venue.bgImage}')` : '';
+  const weakCount = (typeof getGlobalWeakCount === 'function') ? getGlobalWeakCount() : 0;
 
   app.innerHTML = `
     <div class="top-bar">
@@ -1377,7 +1459,8 @@ function renderPlatformHome() {
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Прогресс</button>` : ''}
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>` : ''}
+      <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>
+      ${weakCount > 0 ? `<button class="stats-btn" style="${cementStyle()}" onclick="startWeakPractice()">Тренировка слабых мест (${weakCount})</button>` : ''}` : ''}
       ${!isOwner ? (hasSections ? sections.map(s => `
         <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
           <div class="card-img-wrap">
