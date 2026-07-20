@@ -603,6 +603,36 @@ function startVenueCourse(sectionId) {
   render();
 }
 
+function startMixedPractice() {
+  const sections = getVenueSections();
+  const allItems = sections.flatMap(s => s.items || []);
+  if (!allItems.length) return showPlatformToast('Нет позиций для тренировки');
+
+  state.section = '__mixed__';
+  state.sectionLabel = 'Случайный тест';
+  state.allData = allItems.map(normalizeItem);
+  state.lessons = [];
+  state.isPractice = true;
+  state.currentLessonIdx = -1;
+
+  const pool = shuffle(state.allData).slice(0, 15);
+  state.questions = generateQuestions(pool);
+  state.currentQIdx = 0;
+  state.hearts = 5;
+  state.sessionXP = 0;
+  state.sessionCorrect = 0;
+  state.sessionTotal = 0;
+  state.mistakeIds = [];
+  state.basicMistakeIds = [];
+  state.feedbackShown = false;
+  state.selectedOptions = new Set();
+  state.selectedChoice = null;
+  state.gramInputs = {};
+  state._questionStartTime = Date.now();
+  state.screen = 'lesson';
+  render();
+}
+
 function logoutPlatform() {
   saveProgress({ auth: null, staff: null, profile: null });
   state.auth = null;
@@ -1570,6 +1600,7 @@ function renderPlatformHome() {
       </div>
       ` : ''}
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Прогресс</button>` : ''}
+      ${!isOwner && hasSections ? `<button class="stats-btn" style="${cementStyle()}" onclick="startMixedPractice()">Случайный тест</button>` : ''}
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>
