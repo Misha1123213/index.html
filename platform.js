@@ -1326,9 +1326,45 @@ function renderOwnerStats() {
         ${weakRows}
         <div class="platform-label" style="margin-top:16px">Все позиции</div>
         ${itemRows}
+        <button class="stats-btn" style="${cementStyle()}margin-top:16px" onclick="exportTrainingStatsCSV()">Экспорт CSV</button>
       </div>
     </div>
   `;
+}
+
+function escapeCsv(value) {
+  const s = String(value == null ? '' : value);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function exportTrainingStatsCSV() {
+  const stats = state.trainingStats || { staff: [], items: [] };
+  const staff = stats.staff || [];
+  const items = stats.items || [];
+  let csv = '\ufeff';
+  csv += 'Статистика по сотрудникам\n';
+  csv += 'Логин,Всего ответов,Верно,Точность (%),Последняя активность\n';
+  staff.forEach(s => {
+    const pct = s.total ? Math.round((s.accuracy || 0) * 100) : 0;
+    csv += [escapeCsv(s.login), s.total || 0, s.correct || 0, pct, formatDateTime(s.lastActive)].join(',') + '\n';
+  });
+  csv += '\nСтатистика по позициям\n';
+  csv += 'Название,Всего ответов,Верно,Точность (%)\n';
+  items.forEach(it => {
+    const pct = it.total ? Math.round((it.accuracy || 0) * 100) : 0;
+    csv += [escapeCsv(it.name), it.total || 0, it.correct || 0, pct].join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cognitio-stats-${state.venue ? state.venue.code : 'venue'}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showPlatformToast('CSV экспортирован');
 }
 
 function renderStaffStats() {
