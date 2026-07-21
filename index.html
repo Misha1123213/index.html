@@ -735,6 +735,21 @@
             border-radius: 3px;
             transition: width 0.5s ease;
         }
+        .timer-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(181,176,168,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--green);
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+        .timer-fill.low { background: var(--red); }
 
         .hearts-display {
             display: flex;
@@ -2233,13 +2248,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:'Жизни: '; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=5">
+    <link rel="stylesheet" href="minimal.css?v=6">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
-<script src="supabase_config.js?v=5"></script>
-<script src="platform.js?v=5"></script>
+<script src="supabase_config.js?v=6"></script>
+<script src="platform.js?v=6"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2983,6 +2998,7 @@ function render() {
         case 'browse': renderBrowse(); break;
         case 'leaderboard': renderLeaderboard(); break;
         case 'avatarEditor': renderAvatarEditor(); break;
+        case 'lessonPreview': renderLessonPreview(); break;
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
     }
@@ -3747,6 +3763,53 @@ function buildLessons() {
     }
 }
 
+function showLessonPreview(idx) {
+    state.previewLessonIdx = idx;
+    state.screen = 'lessonPreview';
+    render();
+}
+
+function renderLessonPreview() {
+    const idx = state.previewLessonIdx || 0;
+    const items = state.lessons[idx] || [];
+    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: true };
+    const itemsHTML = items.map(item => {
+        const ingredientsHTML = item._ingredients.map(ing => {
+            const showGrams = item._hasGrams && venueSettings.showGrams !== false;
+            const hasGram = Number(item._grams[ing]) > 0;
+            const unit = (item._gramUnit && item._gramUnit[ing]) || 'г';
+            const grams = showGrams && hasGram ? `<span class="browse-grams">&nbsp;${item._grams[ing]} ${unit}</span>` : '';
+            return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
+        }).join('');
+        return `
+            <div class="browse-item open">
+                <button class="browse-item-header" style="${cementStyle()}">
+                    ${getDishPhotoHTML(item, 'browse-item-photo')}
+                    <span class="browse-item-name">${item.name}</span>
+                </button>
+                <div class="browse-item-body" style="display:block">
+                    ${ingredientsHTML}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    app.innerHTML = `
+        <div class="top-bar">
+            <button class="close-btn" onclick="state.screen='path'; render()" style="position:static;margin:0">← Назад</button>
+        </div>
+        <div class="browse-screen" style="padding-bottom:120px">
+            <div class="path-title">Повтор перед уроком ${idx + 1}</div>
+            <div class="browse-container">
+                ${itemsHTML || '<div class="section-empty">Нет позиций</div>'}
+            </div>
+        </div>
+        <div class="bottom-area" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);padding:16px;border-top:1px solid var(--concrete-border);z-index:10">
+            <button class="check-btn active" onclick="startLesson(${idx})">Начать тест</button>
+        </div>
+    `;
+}
+
 function renderPath() {
     const stats = getGlobalStats();
     const sp = getSectionProgress(state.section);
@@ -3771,10 +3834,10 @@ function renderPath() {
 
         if (i < firstIncomplete) {
             nodeClass = 'completed';
-            clickHandler = `onclick="startLesson(${i})"`;
+            clickHandler = `onclick="showLessonPreview(${i})"`;
         } else if (i === firstIncomplete) {
             nodeClass = 'available';
-            clickHandler = `onclick="startLesson(${i})"`;
+            clickHandler = `onclick="showLessonPreview(${i})"`;
         }
 
         const offset = offsets[i % offsets.length];
@@ -3912,6 +3975,7 @@ function startLesson(idx) {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
@@ -3935,6 +3999,54 @@ function startPractice() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
+    state._questionStartTime = Date.now();
+    state.screen = 'lesson';
+    render();
+}
+
+function getGlobalWeakCount() {
+    const p = getProgress();
+    if (!p || !p.itemStrength) return 0;
+    const names = new Set();
+    const sections = (state.venue && state.venue.sections) || [];
+    for (const s of sections) {
+        for (const it of (s.items || [])) names.add(it.name);
+    }
+    let count = 0;
+    for (const [name, st] of Object.entries(p.itemStrength)) {
+        if (names.has(name) && st.strength < 3) count++;
+    }
+    return count;
+}
+
+function startWeakPractice() {
+    const sections = (state.venue && state.venue.sections) || [];
+    const allItems = sections.flatMap(s => s.items || []);
+    if (!allItems.length) return;
+    state.allData = allItems.map(normalizeItem);
+    buildLessons();
+    state.lessons = [];
+    const weakItems = getWeakItems('__weak__');
+    if (!weakItems.length) { goHome(); return; }
+    state.section = '__weak__';
+    state.sectionLabel = 'Слабые позиции';
+    state.isPractice = true;
+    state.currentLessonIdx = -1;
+    state.questions = generateQuestions(weakItems.slice(0, 15));
+    state._phaseTotal = state.questions.length;
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state.mistakeIds = [];
+    state.basicMistakeIds = [];
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();
@@ -4416,6 +4528,29 @@ function renderLesson() {
     const heartsStr = String(state.hearts);
     const correctSet = new Set(q.item._ingredients);
 
+    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { speedMode: { enabled: false } };
+    const speedMode = venueSettings.speedMode || { enabled: false, timeLimit: 15 };
+    const speedEnabled = !fb && speedMode.enabled;
+
+    if (state._timerInterval) { clearInterval(state._timerInterval); state._timerInterval = null; }
+    let timerPct = 100;
+    if (speedEnabled) {
+        const limit = Math.max(5, Number(speedMode.timeLimit) || 15) * 1000;
+        const start = Date.now();
+        state._timerInterval = setInterval(() => {
+            if (state.screen !== 'lesson' || state.feedbackShown) { clearInterval(state._timerInterval); state._timerInterval = null; return; }
+            const elapsed = Date.now() - start;
+            const pct = Math.max(0, 100 - (elapsed / limit) * 100);
+            const fill = document.getElementById('timer-fill');
+            if (fill) { fill.style.width = pct + '%'; if (pct < 25) fill.classList.add('low'); }
+            if (elapsed >= limit) {
+                clearInterval(state._timerInterval);
+                state._timerInterval = null;
+                handleQuestionTimeout();
+            }
+        }, 100);
+    }
+
     let questionHTML = '';
     let resultStripHTML = '';
 
@@ -4425,9 +4560,10 @@ function renderLesson() {
         if (!ic && q.requireGrams) {
             extraInfo = ' (проверьте граммовки)';
         }
+        const speedBonusText = ic && (state._lastSpeedBonus || 0) > 0 ? ` +${state._lastSpeedBonus} XP` : '';
         resultStripHTML = `<div class="inline-result ${ic ? 'correct' : 'wrong'}">
             <span class="result-icon">${ic ? '✓' : '✗'}</span>
-            ${ic ? 'Верно!' : 'Неверно' + extraInfo}
+            ${ic ? 'Верно!' + speedBonusText : 'Неверно' + extraInfo}
         </div>`;
     }
 
@@ -4622,12 +4758,21 @@ function renderLesson() {
             </button>
            </div>`);
 
+    const timerBarHTML = speedMode.enabled ? `
+        <div class="timer-bar" id="timer-bar">
+            <div class="timer-fill" id="timer-fill" style="width:${timerPct}%"></div>
+        </div>
+    ` : '';
+
     app.innerHTML = `
         <div class="lesson-screen">
             <div class="lesson-header">
                 <button class="close-btn" onclick="confirmQuit()">✕</button>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" style="width:${progress}%"></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width:${progress}%"></div>
+                    </div>
+                    ${timerBarHTML}
                 </div>
                 <div class="hearts-display" id="hearts-display">${heartsStr}</div>
             </div>
@@ -4752,16 +4897,38 @@ function checkColorFillAnswer() {
     processAnswer(isCorrect, q.item, q.format, timeTaken);
 }
 
+function handleQuestionTimeout() {
+    if (state.feedbackShown) return;
+    const q = state.questions[state.currentQIdx];
+    if (!q) return;
+    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { speedMode: { timeLimit: 15 } };
+    const timeLimit = Number((venueSettings.speedMode && venueSettings.speedMode.timeLimit) || 15);
+    processAnswer(false, q.item, q.format, timeLimit);
+}
+
 function processAnswer(isCorrect, item, format, timeTaken) {
     state.sessionTotal++;
     recordAnswer(item.name, isCorrect);
     recordFormatAnswer(format, isCorrect, timeTaken);
     saveTrainingResult(item.name, isCorrect, format, timeTaken);
 
+    state._lastSpeedBonus = 0;
     if (isCorrect) {
         state.sessionCorrect++;
         state.sessionXP += 10;
         state._lastCorrect = true;
+
+        const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { speedMode: { enabled: false } };
+        const speedMode = venueSettings.speedMode || { enabled: false, timeLimit: 15 };
+        if (speedMode.enabled && typeof timeTaken === 'number' && timeTaken < Number(speedMode.timeLimit || 15)) {
+            const limit = Number(speedMode.timeLimit) || 15;
+            const bonus = Math.max(0, Math.round((1 - timeTaken / limit) * 10));
+            if (bonus > 0) {
+                state.sessionXP += bonus;
+                state._lastSpeedBonus = bonus;
+            }
+        }
+
         playSound('correct');
         haptic(40);
     } else {
@@ -4809,6 +4976,7 @@ function nextQuestion() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
 
     if (state.currentQIdx >= state.questions.length) {
@@ -4919,6 +5087,10 @@ function renderResult() {
 }
 
 function returnToPath() {
+    if (!state.lessons || state.lessons.length === 0) {
+        goHome();
+        return;
+    }
     state.screen = 'path';
     render();
 }
@@ -4941,6 +5113,7 @@ function retryMistakes() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
     state.screen = 'lesson';
     render();

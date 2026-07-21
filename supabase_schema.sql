@@ -431,10 +431,11 @@ BEGIN
         'login', staff_login,
         'total', total,
         'correct', correct,
-        'accuracy', CASE WHEN total > 0 THEN round(correct::numeric / total, 2) ELSE 0 END
+        'accuracy', CASE WHEN total > 0 THEN round(correct::numeric / total, 2) ELSE 0 END,
+        'lastActive', last_active
       ))
       FROM (
-        SELECT staff_login, count(*) AS total, sum(CASE WHEN is_correct THEN 1 ELSE 0 END) AS correct
+        SELECT staff_login, count(*) AS total, sum(CASE WHEN is_correct THEN 1 ELSE 0 END) AS correct, max(created_at) AS last_active
         FROM public.staff_results
         WHERE venue_code = p_venue_code
         GROUP BY staff_login
