@@ -2019,7 +2019,7 @@ function renderVenueImages() {
         ${usedLabel ? `<div class="venue-image-label">${escapeHtml(usedLabel)}</div>` : ''}
       </div>
     `;
-  }).join('') : '<div class="section-empty">Нет фото. Загрузите свои, найдите в интернете или укажите Instagram.</div>';
+  }).join('') : '<div class="section-empty">Нет фото. Загрузите свои или найдите в интернете.</div>';
 
   const sectionTargets = sections.length ? sections.map(s => `
     <div class="section-row">
@@ -2038,12 +2038,7 @@ function renderVenueImages() {
       </div>
       <div class="platform-title">Фото заведения</div>
       <div class="platform-form">
-        <label class="platform-label">Instagram заведения</label>
-        <input class="platform-input" type="text" id="venue-instagram" value="${escapeHtml(venue.instagram || '')}" placeholder="@username" onchange="updateVenueInstagram(this.value)">
-        <button class="stats-btn" style="${cementStyle()}" onclick="fetchInstagramPhotos()">Загрузить фото из Instagram</button>
-        <p class="settings-hint">Без API-токена Instagram эта функция недоступна.</p>
-
-        <label class="platform-label" style="margin-top:16px;">Загрузить свои фото</label>
+        <label class="platform-label">Загрузить свои фото</label>
         <input type="file" class="platform-input" id="venue-image-upload" accept="image/*" multiple onchange="handleVenueImageUpload(this.files)">
 
         <button class="stats-btn" style="${cementStyle()}margin-top:12px" onclick="searchVenueImagesOnline()">Найти фото в интернете по названию</button>
@@ -2058,14 +2053,6 @@ function renderVenueImages() {
       </div>
     </div>
   `;
-}
-
-function updateVenueInstagram(value) {
-  const venue = state.venue;
-  if (!venue) return;
-  venue.instagram = (value || '').trim().replace(/^@/, '');
-  saveProgress({ venue: venue });
-  syncVenue();
 }
 
 function handleVenueImageUpload(files) {
@@ -2185,63 +2172,83 @@ function clearSectionCover(sectionId) {
 async function searchVenueImagesOnline() {
   const venue = state.venue;
   if (!venue) return;
-  showPlatformToast('Ищем фото...');
+  showPlatformToast('Ищем фото в Яндекс Картинках...');
   const sections = getVenueSections();
-  const venueName = venue.name || '';
-  const queries = [`${venueName} interior`, `${venueName} food`, `${venueName} drink`, `${venueName} dessert`];
+  const venueName = (venue.name || '').trim();
+  const baseQueries = [];
+  if (venueName) {
+    baseQueries.push(`${venueName} interior`, `${venueName} интерьер`, `${venueName} inside`);
+  }
+  baseQueries.push('coffee shop interior', 'cafe interior', 'restaurant interior');
+  const sectionQueries = [];
   sections.forEach(s => {
-    queries.push(`${venueName} ${s.name}`);
+    const sn = (s.name || '').trim();
+    if (!sn) return;
+    if (venueName) {
+      sectionQueries.push(`${venueName} ${sn}`, `${sn} cafe`, `${sn} restaurant`);
+    }
+    sectionQueries.push(sn);
   });
-  queries.push('coffee shop interior', 'cafe drink', 'restaurant food', 'dessert', 'coffee');
+  const allQueries = [...baseQueries, ...sectionQueries];
   const seen = new Set((venue.images || []).map(i => i.url));
-  for (const q of queries) {
+  for (const q of allQueries) {
     try {
-      const results = await searchWikimediaImages(q, 3);
+      const results = await searchYandexImages(q, 3);
       results.forEach(r => {
         if (!seen.has(r.url)) {
           seen.add(r.url);
-          addVenueImage(r.url, 'wikimedia', { query: q, title: r.title });
+          addVenueImage(r.url, 'yandex', { query: q, title: r.title });
         }
       });
     } catch (e) {
-      console.error('Wikimedia search error', q, e);
+      console.error('Yandex search error', q, e);
     }
   }
   render();
   showPlatformToast('Фото из интернета добавлены');
 }
 
-async function searchWikimediaImages(query, limit) {
-  const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=${limit}&format=json&origin=*`;
-  const searchRes = await fetch(searchUrl);
-  const searchData = await searchRes.json();
-  const titles = (searchData.query && searchData.query.search || []).map(s => s.title);
-  if (!titles.length) return [];
-  const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${titles.map(encodeURIComponent).join('|')}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`;
-  const infoRes = await fetch(infoUrl);
-  const infoData = await infoRes.json();
-  return Object.values(infoData.query.pages || {}).map(p => {
-    if (!p.imageinfo || !p.imageinfo[0]) return null;
-    const url = p.imageinfo[0].thumburl || p.imageinfo[0].url;
-    const title = p.title || '';
-    if (/\.pdf/i.test(title) || /\.pdf/i.test(url)) return null;
-    if (!/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url)) return null;
-    return { url, title };
-  }).filter(Boolean);
+async function searchYandexImages(query, limit) {
+  if (!query || !query.trim()) return [];
+  const target = `https://yandex.com/images/search?text=${encodeURIComponent(query)}&lr=10415`;
+  const proxy = 'https://corsproxy.io/?' + encodeURIComponent(target);
+  const res = await fetch(proxy);
+  const text = await res.text();
+  const urls = [];
+  const re = /&quot;img_href&quot;:&quot;([^&]+)&quot;/g;
+  let m;
+  while ((m = re.exec(text)) && urls.length < limit) {
+    let url = m[1].replace(/&amp;/g, '&');
+    if (!/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url)) continue;
+    if (urls.includes(url)) continue;
+    urls.push(url);
+  }
+  return urls.map(url => ({ url, title: query }));
 }
 
 function autoAssignVenueImages() {
   const venue = state.venue;
   if (!venue || !venue.images) return;
   const sections = getVenueSections();
-  const interior = findBestImageForKeywords(venue.images, ['interior', 'inside', 'room', 'cafe', 'restaurant', 'coffee shop']);
-  if (interior && !venue.bgImage) {
-    venue.bgImage = interior.url;
-  }
+  const venueName = (venue.name || '').trim();
+  const bg = pickImageByQuery(venue.images, `${venueName} interior`)
+    || pickImageByQuery(venue.images, `${venueName} интерьер`)
+    || pickImageByQuery(venue.images, 'coffee shop interior')
+    || pickImageByQuery(venue.images, 'cafe interior')
+    || pickImageByQuery(venue.images, 'restaurant interior')
+    || findBestImageForKeywords(venue.images, ['interior', 'inside', 'room', 'cafe', 'restaurant']);
+  if (bg && !venue.bgImage) venue.bgImage = bg.url;
   sections.forEach(s => {
     if (s.image) return;
-    const words = s.name.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(Boolean);
-    const img = findBestImageForKeywords(venue.images, words) || findBestImageForKeywords(venue.images, ['food', 'drink', 'dessert']);
+    const sn = (s.name || '').trim();
+    let img = pickImageByQuery(venue.images, `${venueName} ${sn}`)
+      || pickImageByQuery(venue.images, `${sn} cafe`)
+      || pickImageByQuery(venue.images, `${sn} restaurant`)
+      || pickImageByQuery(venue.images, sn);
+    if (!img) {
+      const words = sn.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(Boolean);
+      img = findBestImageForKeywords(venue.images, words) || findBestImageForKeywords(venue.images, ['food', 'drink', 'dessert']);
+    }
     if (img) s.image = img.url;
   });
   saveProgress({ venue: venue });
@@ -2251,26 +2258,28 @@ function autoAssignVenueImages() {
   showPlatformToast('Фото распределены');
 }
 
+function pickImageByQuery(images, query) {
+  if (!query || !images || !images.length) return null;
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  for (const img of images) {
+    const metaQuery = ((img.meta && img.meta.query) || '').toLowerCase();
+    if (metaQuery === q) return img;
+  }
+  return findBestImageForKeywords(images, q.split(/\s+/).filter(Boolean));
+}
+
 function findBestImageForKeywords(images, keywords) {
   if (!images || !images.length || !keywords || !keywords.length) return null;
   const scored = images.map(img => {
     const text = ((img.meta && img.meta.query) || img.name || img.url || '').toLowerCase();
     let score = 0;
     keywords.forEach(k => {
-      if (text.includes(k.toLowerCase())) score += 1;
+      if (k && text.includes(k.toLowerCase())) score += 1;
     });
     return { img, score };
   }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
   return scored.length ? scored[0].img : null;
-}
-
-async function fetchInstagramPhotos() {
-  const venue = state.venue;
-  if (!venue || !venue.instagram) {
-    showPlatformToast('Укажите Instagram-аккаунт');
-    return;
-  }
-  showPlatformToast('Загрузка фото из Instagram требует API-токена. Добавьте Instagram Basic Display API access token в настройки проекта.');
 }
 
 // ====================== PARSERS ======================
