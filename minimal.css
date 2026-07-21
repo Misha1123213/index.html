@@ -60,7 +60,7 @@ body { background: var(--bg-dark) !important; color: var(--text-primary) !import
 .confetti-container,
 .xp-popup { display: none !important; }
 
-#venue-bg { opacity: 0.08 !important; filter: grayscale(1) !important; }
+#venue-bg { opacity: 0.16 !important; filter: grayscale(0.4) !important; }
 
 .option-btn.crack-effect::after,
 .choice-btn.crack-effect::after { background-image: none !important; }
@@ -328,3 +328,11 @@ body { background: var(--bg-dark) !important; color: var(--text-primary) !import
 .gram-input::placeholder { color: #666 !important; opacity: 1 !important; }
 .gram-input.gram-correct,
 .gram-input.gram-wrong { color: #111 !important; }
+
+.venue-image-gallery { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; gap: 10px !important; margin-top: 12px !important; }
+.venue-image-card { position: relative !important; background: var(--bg-card) !important; border: 1px solid var(--border) !important; padding: 4px !important; }
+.venue-image-card.selected-bg { border-color: var(--green) !important; }
+.venue-image-thumb { width: 100% !important; aspect-ratio: 1 !important; object-fit: cover !important; border-radius: 6px !important; }
+.venue-image-actions { display: flex !important; flex-wrap: wrap !important; gap: 4px !important; margin-top: 6px !important; justify-content: center !important; }
+.venue-image-actions .section-row-action { font-size: 10px !important; padding: 3px 6px !important; }
+.venue-image-label { position: absolute !important; top: 6px !important; left: 6px !important; background: rgba(0,0,0,0.7) !important; color: #fff !important; font-size: 10px !important; padding: 2px 6px !important; border-radius: 4px !important; }

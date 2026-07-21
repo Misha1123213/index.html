@@ -2248,13 +2248,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:'Жизни: '; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=6">
+    <link rel="stylesheet" href="minimal.css?v=7">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=7"></script>
+<script src="platform.js?v=9"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2998,6 +2998,7 @@ function render() {
         case 'ownerSetup': renderOwnerSetup(); break;
         case 'courseEditor': renderCourseEditor(); break;
         case 'ownerDashboard': renderOwnerDashboard(); break;
+        case 'venueImages': renderVenueImages(); break;
         case 'ownerStats': renderOwnerStats(); break;
         case 'staffStats': renderStaffStats(); break;
         case 'sectionPicker': renderSectionPicker(); break;

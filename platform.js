@@ -362,6 +362,9 @@ function normalizeVenue(venue) {
     formats: { ...defaultSettings.formats, ...existingFormats },
     speedMode: { ...defaultSettings.speedMode, ...((venue.settings && venue.settings.speedMode) || {}) }
   };
+  if (!venue.images) venue.images = [];
+  if (venue.instagram === undefined) venue.instagram = '';
+  venue.sections.forEach(s => { if (s.image === undefined) s.image = ''; });
   delete venue.items;
   return venue;
 }
@@ -1264,7 +1267,7 @@ function renderOwnerDashboard() {
       <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">Загрузить ТТК</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="renderTrainingSettings()">Настройки обучения</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="generateVenueMoodImage()">Сгенерировать фон заведения</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="openVenueImages()">Фото заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импортировать бэкап</button>
       <input type="file" id="venue-import-file" style="display:none" accept=".json,application/json" onchange="importVenueBackup(this.files[0])">
@@ -1644,7 +1647,7 @@ function renderPlatformHome() {
       ${!isOwner ? (hasSections ? sections.map(s => `
         <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
           <div class="card-img-wrap">
-            <div class="card-img-placeholder">${s.image ? `<img src="${s.image}" alt="">` : getSectionEmoji(s.name)}</div>
+            ${s.image ? `<img class="card-img" src="${s.image}" alt="" onerror="this.parentNode.classList.add('no-img')">` : `<div class="card-img-placeholder">${getSectionEmoji(s.name)}</div>`}
           </div>
           <div class="card-info">
             ${s.name}
@@ -1987,46 +1990,287 @@ function deleteSection(sectionId) {
   render();
 }
 
-function generateVenueMoodImage() {
-  const venue = state.venue;
-  const style = VENUE_STYLES.find(s => s.id === venue.style) || VENUE_STYLES[0];
-  const url = venueMoodImageUrl(style, venue.name);
-  venue.bgImage = url;
-  saveProgress({ venue: venue });
-  syncVenue();
-  const img = new Image();
-  img.onload = () => {
-    applyVenueBackground(style, url);
-    render();
-    showPlatformToast('Фон заведения обновлён');
-  };
-  img.onerror = () => showPlatformToast('Не удалось загрузить изображение. Попробуйте ещё раз.');
-  img.src = url;
+function openVenueImages() {
+  state.screen = 'venueImages';
+  render();
 }
 
-function applyVenueBackground(style, imageUrl) {
-  let existing = document.getElementById('venue-bg');
-  if (!existing) {
-    existing = document.createElement('div');
-    existing.id = 'venue-bg';
-    existing.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;';
-    document.body.prepend(existing);
-  }
-  const gradients = {
-    modern: 'linear-gradient(135deg, rgba(26,26,26,0.95) 0%, rgba(45,58,30,0.92) 50%, rgba(0,0,0,0.95) 100%)',
-    classic: 'linear-gradient(135deg, rgba(243,231,215,0.95) 0%, rgba(214,192,166,0.95) 100%)',
-    rustic: 'linear-gradient(135deg, rgba(44,30,20,0.95) 0%, rgba(74,50,33,0.92) 50%, rgba(26,18,13,0.95) 100%)',
-    minimal: 'linear-gradient(135deg, rgba(248,249,250,0.95) 0%, rgba(233,236,239,0.95) 100%)',
-    neon: 'linear-gradient(135deg, rgba(13,2,33,0.95) 0%, rgba(42,10,59,0.92) 50%, rgba(0,0,0,0.95) 100%)',
+function renderVenueImages() {
+  const venue = state.venue;
+  const sections = getVenueSections();
+  const images = venue.images || [];
+  const bgImage = venue.bgImage || '';
+
+  const gallery = images.length ? images.map(img => {
+    const isBg = bgImage === img.url;
+    const usedSection = sections.find(s => s.image === img.url);
+    const usedLabel = isBg ? 'Фон' : (usedSection ? usedSection.name : '');
+    const sectionButtons = sections.map(s => `
+      <button class="section-row-action" onclick="setSectionCover('${img.id}', '${s.id}')">${escapeHtml(s.name)}</button>
+    `).join('');
+    return `
+      <div class="venue-image-card ${isBg ? 'selected-bg' : ''}">
+        <img src="${escapeHtml(img.url)}" class="venue-image-thumb" loading="lazy" alt="">
+        <div class="venue-image-actions">
+          <button class="section-row-action" onclick="setVenueBackground('${img.id}')">Фон</button>
+          ${sectionButtons}
+          <button class="section-row-action" onclick="removeVenueImage('${img.id}')">Удалить</button>
+        </div>
+        ${usedLabel ? `<div class="venue-image-label">${escapeHtml(usedLabel)}</div>` : ''}
+      </div>
+    `;
+  }).join('') : '<div class="section-empty">Нет фото. Загрузите свои, найдите в интернете или укажите Instagram.</div>';
+
+  const sectionTargets = sections.length ? sections.map(s => `
+    <div class="section-row">
+      <div>
+        <div class="section-row-name">${escapeHtml(s.name)}</div>
+        <div class="section-row-meta">${s.image ? 'обложка есть' : 'без обложки'}</div>
+      </div>
+      <button class="section-row-action" onclick="clearSectionCover('${s.id}')">Сбросить</button>
+    </div>
+  `).join('') : '<div class="section-empty">Нет разделов</div>';
+
+  app.innerHTML = `
+    <div class="platform-screen">
+      <div class="platform-header">
+        <button class="close-btn" onclick="ownerBackToHome()">← Назад</button>
+      </div>
+      <div class="platform-title">Фото заведения</div>
+      <div class="platform-form">
+        <label class="platform-label">Instagram заведения</label>
+        <input class="platform-input" type="text" id="venue-instagram" value="${escapeHtml(venue.instagram || '')}" placeholder="@username" onchange="updateVenueInstagram(this.value)">
+        <button class="stats-btn" style="${cementStyle()}" onclick="fetchInstagramPhotos()">Загрузить фото из Instagram</button>
+        <p class="settings-hint">Без API-токена Instagram эта функция недоступна.</p>
+
+        <label class="platform-label" style="margin-top:16px;">Загрузить свои фото</label>
+        <input type="file" class="platform-input" id="venue-image-upload" accept="image/*" multiple onchange="handleVenueImageUpload(this.files)">
+
+        <button class="stats-btn" style="${cementStyle()}margin-top:12px" onclick="searchVenueImagesOnline()">Найти фото в интернете по названию</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="autoAssignVenueImages()">Автораспределить фото</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="clearVenueBackground()">Убрать фон</button>
+
+        <div class="platform-label" style="margin-top:16px">Галерея</div>
+        <div class="venue-image-gallery">${gallery}</div>
+
+        <div class="platform-label" style="margin-top:16px">Обложки разделов</div>
+        ${sectionTargets}
+      </div>
+    </div>
+  `;
+}
+
+function updateVenueInstagram(value) {
+  const venue = state.venue;
+  if (!venue) return;
+  venue.instagram = (value || '').trim().replace(/^@/, '');
+  saveProgress({ venue: venue });
+  syncVenue();
+}
+
+function handleVenueImageUpload(files) {
+  if (!files || !files.length) return;
+  const venue = state.venue;
+  if (!venue) return;
+  let pending = files.length;
+  const onDone = () => {
+    pending--;
+    if (pending === 0) {
+      saveProgress({ venue: venue });
+      syncVenue();
+      render();
+      showPlatformToast('Фото добавлены');
+    }
   };
-  if (imageUrl) {
-    existing.style.background = `${gradients[style.id] || gradients.modern}, url('${imageUrl}') center/cover no-repeat`;
-    existing.style.backgroundBlendMode = 'overlay';
-    existing.style.opacity = '0.35';
-  } else {
-    existing.style.background = gradients[style.id] || gradients.modern;
-    existing.style.opacity = '0.18';
+  Array.from(files).forEach(file => {
+    resizeImageFile(file, 900, 0.85).then(dataUrl => {
+      venue.images.push({ id: generateId(), url: dataUrl, source: 'upload', name: file.name });
+      onDone();
+    }).catch(() => {
+      onDone();
+    });
+  });
+}
+
+function resizeImageFile(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function addVenueImage(url, source, meta) {
+  const venue = state.venue;
+  if (!venue || !url) return;
+  if (!venue.images) venue.images = [];
+  if (venue.images.some(i => i.url === url)) return;
+  venue.images.push({ id: generateId(), url, source, meta });
+  saveProgress({ venue: venue });
+  syncVenue();
+}
+
+function removeVenueImage(id) {
+  const venue = state.venue;
+  if (!venue || !venue.images) return;
+  const img = venue.images.find(i => i.id === id);
+  if (img && venue.bgImage === img.url) venue.bgImage = '';
+  venue.sections.forEach(s => { if (s.image === img.url) s.image = ''; });
+  venue.images = venue.images.filter(i => i.id !== id);
+  saveProgress({ venue: venue });
+  syncVenue();
+  render();
+}
+
+function setVenueBackground(id) {
+  const venue = state.venue;
+  if (!venue || !venue.images) return;
+  const img = venue.images.find(i => i.id === id);
+  if (!img) return;
+  venue.bgImage = img.url;
+  saveProgress({ venue: venue });
+  syncVenue();
+  applyVenueStyle(venue.style, venue.bgImage);
+  render();
+  showPlatformToast('Фон обновлён');
+}
+
+function clearVenueBackground() {
+  const venue = state.venue;
+  if (!venue) return;
+  venue.bgImage = '';
+  saveProgress({ venue: venue });
+  syncVenue();
+  applyVenueStyle(venue.style, '');
+  render();
+}
+
+function setSectionCover(imageId, sectionId) {
+  const venue = state.venue;
+  if (!venue || !venue.images) return;
+  const img = venue.images.find(i => i.id === imageId);
+  const section = venue.sections.find(s => s.id === sectionId);
+  if (!img || !section) return;
+  section.image = img.url;
+  saveProgress({ venue: venue });
+  syncVenue();
+  render();
+  showPlatformToast('Обложка раздела обновлена');
+}
+
+function clearSectionCover(sectionId) {
+  const venue = state.venue;
+  if (!venue) return;
+  const section = venue.sections.find(s => s.id === sectionId);
+  if (section) section.image = '';
+  saveProgress({ venue: venue });
+  syncVenue();
+  render();
+}
+
+async function searchVenueImagesOnline() {
+  const venue = state.venue;
+  if (!venue) return;
+  showPlatformToast('Ищем фото...');
+  const sections = getVenueSections();
+  const venueName = venue.name || '';
+  const queries = [`${venueName} interior`, `${venueName} food`, `${venueName} drink`, `${venueName} dessert`];
+  sections.forEach(s => {
+    queries.push(`${venueName} ${s.name}`);
+  });
+  queries.push('coffee shop interior', 'cafe drink', 'restaurant food', 'dessert', 'coffee');
+  const seen = new Set((venue.images || []).map(i => i.url));
+  for (const q of queries) {
+    try {
+      const results = await searchWikimediaImages(q, 3);
+      results.forEach(r => {
+        if (!seen.has(r.url)) {
+          seen.add(r.url);
+          addVenueImage(r.url, 'wikimedia', { query: q, title: r.title });
+        }
+      });
+    } catch (e) {
+      console.error('Wikimedia search error', q, e);
+    }
   }
+  render();
+  showPlatformToast('Фото из интернета добавлены');
+}
+
+async function searchWikimediaImages(query, limit) {
+  const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=${limit}&format=json&origin=*`;
+  const searchRes = await fetch(searchUrl);
+  const searchData = await searchRes.json();
+  const titles = (searchData.query && searchData.query.search || []).map(s => s.title);
+  if (!titles.length) return [];
+  const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${titles.map(encodeURIComponent).join('|')}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`;
+  const infoRes = await fetch(infoUrl);
+  const infoData = await infoRes.json();
+  return Object.values(infoData.query.pages || {}).map(p => {
+    if (!p.imageinfo || !p.imageinfo[0]) return null;
+    const url = p.imageinfo[0].thumburl || p.imageinfo[0].url;
+    const title = p.title || '';
+    if (/\.pdf/i.test(title) || /\.pdf/i.test(url)) return null;
+    if (!/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url)) return null;
+    return { url, title };
+  }).filter(Boolean);
+}
+
+function autoAssignVenueImages() {
+  const venue = state.venue;
+  if (!venue || !venue.images) return;
+  const sections = getVenueSections();
+  const interior = findBestImageForKeywords(venue.images, ['interior', 'inside', 'room', 'cafe', 'restaurant', 'coffee shop']);
+  if (interior && !venue.bgImage) {
+    venue.bgImage = interior.url;
+  }
+  sections.forEach(s => {
+    if (s.image) return;
+    const words = s.name.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(Boolean);
+    const img = findBestImageForKeywords(venue.images, words) || findBestImageForKeywords(venue.images, ['food', 'drink', 'dessert']);
+    if (img) s.image = img.url;
+  });
+  saveProgress({ venue: venue });
+  syncVenue();
+  applyVenueStyle(venue.style, venue.bgImage);
+  render();
+  showPlatformToast('Фото распределены');
+}
+
+function findBestImageForKeywords(images, keywords) {
+  if (!images || !images.length || !keywords || !keywords.length) return null;
+  const scored = images.map(img => {
+    const text = ((img.meta && img.meta.query) || img.name || img.url || '').toLowerCase();
+    let score = 0;
+    keywords.forEach(k => {
+      if (text.includes(k.toLowerCase())) score += 1;
+    });
+    return { img, score };
+  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+  return scored.length ? scored[0].img : null;
+}
+
+async function fetchInstagramPhotos() {
+  const venue = state.venue;
+  if (!venue || !venue.instagram) {
+    showPlatformToast('Укажите Instagram-аккаунт');
+    return;
+  }
+  showPlatformToast('Загрузка фото из Instagram требует API-токена. Добавьте Instagram Basic Display API access token в настройки проекта.');
 }
 
 // ====================== PARSERS ======================
