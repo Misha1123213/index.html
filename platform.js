@@ -2041,7 +2041,12 @@ function renderVenueImages() {
         <label class="platform-label">Загрузить свои фото</label>
         <input type="file" class="platform-input" id="venue-image-upload" accept="image/*" multiple onchange="handleVenueImageUpload(this.files)">
 
+        <label class="platform-label" style="margin-top:16px;">Или найдите по запросу</label>
+        <input class="platform-input" type="text" id="custom-image-query" placeholder="например, капучино">
+        <button class="stats-btn" style="${cementStyle()}" onclick="searchCustomVenueImage(document.getElementById('custom-image-query').value)">Найти</button>
+
         <button class="stats-btn" style="${cementStyle()}margin-top:12px" onclick="searchVenueImagesOnline()">Найти фото в интернете по названию</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="clearSearchImages()">Убрать найденные фото</button>
         <button class="stats-btn" style="${cementStyle()}" onclick="autoAssignVenueImages()">Автораспределить фото</button>
         <button class="stats-btn" style="${cementStyle()}" onclick="clearVenueBackground()">Убрать фон</button>
 
@@ -2169,6 +2174,90 @@ function clearSectionCover(sectionId) {
   render();
 }
 
+const IMAGE_BAD_URL_TERMS = ['youtube','ytimg','steam','24smi','pockettactics','allthings.how','ttk-internet','adesk','maximilians','gruppa','festivalsreda','imzagazetesi','sreda','shared.fastly','vk.com','gta','csgo','counter-strike','pubg','fortnite','logo','clipart','pngkey','icon','emoji','meme','wallpaper','demo','test','ttk','pdf','game','gaming','play','app','apk','iphone','android','steamstatic','fastly','demo-','test-','kinoafisha','kpcdn','plus2net','gmesupply'];
+const IMAGE_GOOD_DOMAINS = ['pinterest','pinimg','tripadvisor','restoclub','timeout','restaurantguru','unsplash','pexels','pixabay','wikimedia','alamy','gettyimages','shutterstock','dreamstime','flickr','yandex','yelp','restocdn','zoon','restobook','booking','googleusercontent','fbcdn','instagram','cdninstagram'];
+const IMAGE_STOPWORDS = new Set(['cafe','restaurant','interior','inside','menu','food','drink','dessert','coffee','tea','cake','bar','shop','venue','place','the','and','of','a','an','в','и','на','к','для','с','из','по','за','под','напитки','десерты','кухня','кофе','чай','test','demo','ttk','тест','демо']);
+
+function getImageHostname(url) {
+  try { return new URL(url).hostname.toLowerCase(); } catch (e) { return ''; }
+}
+
+function isGoodImageDomain(hostname) {
+  if (!hostname) return false;
+  const parts = hostname.split('.');
+  return IMAGE_GOOD_DOMAINS.some(d => parts.includes(d));
+}
+
+function isBadImageDomain(hostname) {
+  if (!hostname) return false;
+  const h = hostname;
+  return IMAGE_BAD_URL_TERMS.some(t => h.includes(t));
+}
+
+function isImageRelevantForQuery(url, query) {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  const hostname = getImageHostname(url);
+  if (isBadImageDomain(hostname) || IMAGE_BAD_URL_TERMS.some(t => u.includes(t))) return false;
+  const q = (query || '').toLowerCase().trim();
+  const qWords = q.split(/[^a-zа-я0-9]+/i).map(w => w.trim()).filter(w => w.length > 1);
+  const meaningful = qWords.filter(w => !IMAGE_STOPWORDS.has(w));
+  if (meaningful.length && meaningful.some(w => u.includes(w))) return true;
+  if (q.includes('interior') || q.includes('интерьер') || q.includes('inside')) {
+    if (['interior','inside','cafe','coffee','restaurant','bar','shop','room','table','chair','window'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('coffee') || q.includes('кофе')) {
+    if (['coffee','cafe','espresso','cappuccino','latte','cup','mug'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('drink') || q.includes('напит')) {
+    if (['drink','coffee','tea','beverage','cup','glass','cocktail','juice'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('dessert') || q.includes('десерт')) {
+    if (['dessert','cake','sweet','pastry','tart','croissant','chocolate'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('food')) {
+    if (['food','dish','meal','plate','cuisine','lunch','dinner'].some(h => u.includes(h))) return true;
+  }
+  if (isGoodImageDomain(hostname)) return true;
+  return false;
+}
+
+function clearSearchImages() {
+  const venue = state.venue;
+  if (!venue) return;
+  const yandexUrls = new Set((venue.images || []).filter(i => i.source === 'yandex').map(i => i.url));
+  venue.images = (venue.images || []).filter(i => i.source !== 'yandex');
+  if (venue.bgImage && yandexUrls.has(venue.bgImage)) venue.bgImage = '';
+  venue.sections.forEach(s => { if (yandexUrls.has(s.image)) s.image = ''; });
+  saveProgress({ venue: venue });
+  syncVenue();
+  render();
+  showPlatformToast('Найденные фото удалены');
+}
+
+async function searchCustomVenueImage(query) {
+  const venue = state.venue;
+  if (!venue) return;
+  const q = (query || '').trim();
+  if (!q) return;
+  showPlatformToast('Ищем фото...');
+  try {
+    const results = await searchYandexImages(q, 6);
+    const seen = new Set((venue.images || []).map(i => i.url));
+    results.forEach(r => {
+      if (!seen.has(r.url)) {
+        seen.add(r.url);
+        addVenueImage(r.url, 'yandex', { query: q, title: r.title });
+      }
+    });
+    render();
+    showPlatformToast('Фото добавлены');
+  } catch (e) {
+    console.error('Custom image search error', e);
+    showPlatformToast('Не удалось найти фото');
+  }
+}
+
 async function searchVenueImagesOnline() {
   const venue = state.venue;
   if (!venue) return;
@@ -2177,23 +2266,34 @@ async function searchVenueImagesOnline() {
   const venueName = (venue.name || '').trim();
   const baseQueries = [];
   if (venueName) {
-    baseQueries.push(`${venueName} interior`, `${venueName} интерьер`, `${venueName} inside`);
+    baseQueries.push(`${venueName} interior`, `${venueName} inside`);
   }
-  baseQueries.push('coffee shop interior', 'cafe interior', 'restaurant interior');
+  baseQueries.push('coffee shop interior', 'cafe interior');
   const sectionQueries = [];
   sections.forEach(s => {
     const sn = (s.name || '').trim();
     if (!sn) return;
-    if (venueName) {
-      sectionQueries.push(`${venueName} ${sn}`, `${sn} cafe`, `${sn} restaurant`);
+    const hint = sectionSearchHint(sn);
+    const meaningfulWords = sn.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(w => w.length > 1 && !IMAGE_STOPWORDS.has(w));
+    if (!hint && !meaningfulWords.length) return;
+    if (venueName) sectionQueries.push(`${venueName} ${sn}`);
+    if (hint) {
+      sectionQueries.push(`${sn} ${hint}`, `${hint} cafe`);
+    } else {
+      sectionQueries.push(`${sn} cafe`, `${sn} restaurant`);
     }
-    sectionQueries.push(sn);
   });
   const allQueries = [...baseQueries, ...sectionQueries];
+  const yandexUrls = new Set((venue.images || []).filter(i => i.source === 'yandex').map(i => i.url));
+  venue.images = (venue.images || []).filter(i => i.source !== 'yandex');
+  if (venue.bgImage && yandexUrls.has(venue.bgImage)) venue.bgImage = '';
+  venue.sections.forEach(s => { if (yandexUrls.has(s.image)) s.image = ''; });
   const seen = new Set((venue.images || []).map(i => i.url));
+  const MAX_TOTAL = 20;
   for (const q of allQueries) {
+    if ((venue.images || []).length >= MAX_TOTAL) break;
     try {
-      const results = await searchYandexImages(q, 3);
+      const results = await searchYandexImages(q, 2);
       results.forEach(r => {
         if (!seen.has(r.url)) {
           seen.add(r.url);
@@ -2208,6 +2308,17 @@ async function searchVenueImagesOnline() {
   showPlatformToast('Фото из интернета добавлены');
 }
 
+function sectionSearchHint(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('напит') || n.includes('кофе') || n.includes('чай') || n.includes('drink') || n.includes('coffee') || n.includes('tea')) return 'drink';
+  if (n.includes('десерт') || n.includes('сладк') || n.includes('cake') || n.includes('dessert') || n.includes('pastry')) return 'dessert';
+  if (n.includes('кухн') || n.includes('блюдо') || n.includes('еда') || n.includes('food') || n.includes('dish') || n.includes('kitchen')) return 'food';
+  if (n.includes('сэндвич') || n.includes('бургер') || n.includes('sandwich') || n.includes('burger')) return 'sandwich';
+  if (n.includes('салат') || n.includes('salad')) return 'salad';
+  if (n.includes('суп') || n.includes('soup')) return 'soup';
+  return '';
+}
+
 async function searchYandexImages(query, limit) {
   if (!query || !query.trim()) return [];
   const target = `https://yandex.com/images/search?text=${encodeURIComponent(query)}&lr=10415`;
@@ -2217,13 +2328,15 @@ async function searchYandexImages(query, limit) {
   const urls = [];
   const re = /&quot;img_href&quot;:&quot;([^&]+)&quot;/g;
   let m;
-  while ((m = re.exec(text)) && urls.length < limit) {
+  while ((m = re.exec(text))) {
+    if (urls.length >= 10) break;
     let url = m[1].replace(/&amp;/g, '&');
     if (!/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url)) continue;
     if (urls.includes(url)) continue;
+    if (!isImageRelevantForQuery(url, query)) continue;
     urls.push(url);
   }
-  return urls.map(url => ({ url, title: query }));
+  return urls.slice(0, limit).map(url => ({ url, title: query }));
 }
 
 function autoAssignVenueImages() {
@@ -2231,20 +2344,19 @@ function autoAssignVenueImages() {
   if (!venue || !venue.images) return;
   const sections = getVenueSections();
   const venueName = (venue.name || '').trim();
-  const bg = pickImageByQuery(venue.images, `${venueName} interior`)
-    || pickImageByQuery(venue.images, `${venueName} интерьер`)
-    || pickImageByQuery(venue.images, 'coffee shop interior')
-    || pickImageByQuery(venue.images, 'cafe interior')
-    || pickImageByQuery(venue.images, 'restaurant interior')
+  const bg = pickRelevantImageByQuery(venue.images, `${venueName} interior`)
+    || pickRelevantImageByQuery(venue.images, `${venueName} inside`)
+    || pickRelevantImageByQuery(venue.images, 'coffee shop interior')
+    || pickRelevantImageByQuery(venue.images, 'cafe interior')
     || findBestImageForKeywords(venue.images, ['interior', 'inside', 'room', 'cafe', 'restaurant']);
   if (bg && !venue.bgImage) venue.bgImage = bg.url;
   sections.forEach(s => {
     if (s.image) return;
     const sn = (s.name || '').trim();
-    let img = pickImageByQuery(venue.images, `${venueName} ${sn}`)
-      || pickImageByQuery(venue.images, `${sn} cafe`)
-      || pickImageByQuery(venue.images, `${sn} restaurant`)
-      || pickImageByQuery(venue.images, sn);
+    const hint = sectionSearchHint(sn);
+    let img = pickRelevantImageByQuery(venue.images, `${venueName} ${sn}`)
+      || pickRelevantImageByQuery(venue.images, hint ? `${sn} ${hint}` : `${sn} cafe`)
+      || pickRelevantImageByQuery(venue.images, sn);
     if (!img) {
       const words = sn.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(Boolean);
       img = findBestImageForKeywords(venue.images, words) || findBestImageForKeywords(venue.images, ['food', 'drink', 'dessert']);
@@ -2258,13 +2370,13 @@ function autoAssignVenueImages() {
   showPlatformToast('Фото распределены');
 }
 
-function pickImageByQuery(images, query) {
+function pickRelevantImageByQuery(images, query) {
   if (!query || !images || !images.length) return null;
   const q = query.trim().toLowerCase();
   if (!q) return null;
   for (const img of images) {
     const metaQuery = ((img.meta && img.meta.query) || '').toLowerCase();
-    if (metaQuery === q) return img;
+    if (metaQuery === q && isImageRelevantForQuery(img.url, query)) return img;
   }
   return findBestImageForKeywords(images, q.split(/\s+/).filter(Boolean));
 }
@@ -2272,13 +2384,14 @@ function pickImageByQuery(images, query) {
 function findBestImageForKeywords(images, keywords) {
   if (!images || !images.length || !keywords || !keywords.length) return null;
   const scored = images.map(img => {
+    if (!isImageRelevantForQuery(img.url, (img.meta && img.meta.query) || '')) return null;
     const text = ((img.meta && img.meta.query) || img.name || img.url || '').toLowerCase();
     let score = 0;
     keywords.forEach(k => {
       if (k && text.includes(k.toLowerCase())) score += 1;
     });
     return { img, score };
-  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+  }).filter(Boolean).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
   return scored.length ? scored[0].img : null;
 }
 
