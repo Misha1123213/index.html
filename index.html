@@ -2590,8 +2590,16 @@ function getWeakItems(section) {
 }
 
 // ====================== ADAPTIVE ENGINE ======================
-const FORMATS = ['logical', 'color_coded', 'spatial'];
+const FORMATS = ['logical', 'missing', 'color_coded', 'spatial'];
 const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill'];
+
+function getEnabledQuestionFormats() {
+    const all = ['logical', 'missing', 'color_coded', 'spatial'];
+    const settings = (typeof getVenueSettings === 'function') ? getVenueSettings() : {};
+    const formats = settings.formats || {};
+    const enabled = all.filter(f => formats[f] !== false);
+    return enabled.length ? enabled : all;
+}
 const EMA_ALPHA = 0.25; // higher = faster reaction to recent answers
 
 function getAdaptiveData() {
@@ -2711,14 +2719,15 @@ function getWeakBuckets(obj, minAttempts = 3) {
 }
 
 function pickFormat() {
-    const scores = FORMATS.map(f => ({ format: f, score: getExplorationScore(f) }));
+    const enabled = getEnabledQuestionFormats();
+    const scores = enabled.map(f => ({ format: f, score: getExplorationScore(f) }));
     scores.sort((a, b) => b.score - a.score);
     const dominant = scores[0].format;
     const weakest = scores[scores.length - 1].format;
     const r = Math.random();
     if (r < 0.6) return dominant;          // play to strength
     if (r < 0.8) return weakest;            // deliberate training of weak format
-    return FORMATS[Math.floor(Math.random() * FORMATS.length)];
+    return enabled[Math.floor(Math.random() * enabled.length)];
 }
 
 function getDominantFormat() {
@@ -2730,6 +2739,7 @@ function getDominantFormat() {
 function getFormatLabel(f) {
     const labels = {
         logical: 'Логический',
+        missing: 'С пропусками',
         color_coded: 'Визуальный',
         spatial: 'Пространственный'
     };
@@ -2739,6 +2749,7 @@ function getFormatLabel(f) {
 function getFormatDescription(f) {
     const desc = {
         logical: 'Текстовые списки ингредиентов',
+        missing: 'Найти недостающий ингредиент',
         color_coded: 'Цветовая группировка по категориям',
         spatial: 'Визуальное расположение компонентов'
     };
@@ -3910,6 +3921,11 @@ function closeBrowse() {
     render();
 }
 
+function filterBrowse(value) {
+    state.browseFilter = value;
+    render();
+}
+
 function toggleBrowseItem(btn) {
     const item = btn.closest('.browse-item');
     if (item) item.classList.toggle('open');
@@ -3917,7 +3933,15 @@ function toggleBrowseItem(btn) {
 
 function renderBrowse() {
     const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: true };
-    const itemsHTML = state.allData.map(item => {
+    const query = (state.browseFilter || '').trim().toLowerCase();
+    const filtered = query
+        ? state.allData.filter(item => {
+            const nameMatch = (item.name || '').toLowerCase().includes(query);
+            const ingMatch = (item._ingredients || []).some(i => i.toLowerCase().includes(query));
+            return nameMatch || ingMatch;
+        })
+        : state.allData;
+    const itemsHTML = filtered.map(item => {
         const ingredientsHTML = item._ingredients.map(ing => {
             const showGrams = item._hasGrams && venueSettings.showGrams !== false;
             const hasGram = Number(item._grams[ing]) > 0;
@@ -3945,8 +3969,9 @@ function renderBrowse() {
         </div>
         <div class="browse-screen">
             <div class="path-title">Справочник — ${state.sectionLabel}</div>
+            <input type="text" class="platform-input" style="margin:12px 0;" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.browseFilter || '')}" oninput="filterBrowse(this.value)">
             <div class="browse-container">
-                ${itemsHTML}
+                ${itemsHTML || '<div class="section-empty">Ничего не найдено</div>'}
             </div>
         </div>
     `;
@@ -3961,7 +3986,9 @@ function startLesson(idx) {
     const allIngredients = getAllIngredients();
     state.questions = shuffle(lessonData).map(item => {
         const nd = normalizeItem(item);
-        return buildBasicSelect(nd, buildWrongPool(nd, allIngredients));
+        const wrongPool = buildWrongPool(nd, allIngredients);
+        const format = pickFormat();
+        return buildQuestionByFormat(format, nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
     });
     state._phaseTotal = state.questions.length;
     state.currentQIdx = 0;
@@ -4107,14 +4134,17 @@ function buildBasicSelect(nd, wrongPool) {
 function buildRemediationSet(item, allIngredients) {
     const nd = normalizeItem(item);
     const wrongPool = buildWrongPool(nd, allIngredients);
-    const order = shuffle(['missing', 'color_fill', 'spatial']);
+    const enabled = getEnabledQuestionFormats();
+    const typeMap = { missing: 'missing', color_fill: 'color_coded', spatial: 'spatial' };
+    let order = shuffle(['missing', 'color_fill', 'spatial']).filter(t => enabled.includes(typeMap[t]));
+    if (!order.length) order = ['missing', 'color_fill', 'spatial'];
     const questions = [];
     for (const type of order) {
         let q = null;
-        if (type === 'missing') q = buildMissingQuestion(nd, wrongPool, 'logical');
-        else if (type === 'color_fill') q = buildColorFillQuestion(nd, wrongPool, allIngredients);
-        else if (type === 'spatial') q = buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial');
-        if (!q) q = buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        if (type === 'missing') q = buildQuestionByFormat('missing', nd, wrongPool, allIngredients);
+        else if (type === 'color_fill') q = buildQuestionByFormat('color_coded', nd, wrongPool, allIngredients);
+        else if (type === 'spatial') q = buildQuestionByFormat('spatial', nd, wrongPool, allIngredients);
+        if (!q) q = buildQuestionByFormat('logical', nd, wrongPool, allIngredients);
         if (q) questions.push(q);
     }
     return questions;
@@ -4128,19 +4158,14 @@ function generateQuestions(items) {
         const nd = normalizeItem(item);
         const wrongPool = buildWrongPool(nd, allIngredients);
 
-        const format = pickFormat();
-        let q = null;
-
-        if (format === 'color_coded') {
-            q = buildColorFillQuestion(nd, wrongPool, allIngredients);
-            if (!q) q = buildMissingQuestion(nd, wrongPool, 'logical') || buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
-        } else if (format === 'spatial') {
-            q = buildSpatialSelect(nd, wrongPool, allIngredients, format);
-            if (!q) q = buildMissingQuestion(nd, wrongPool, 'logical') || buildColorFillQuestion(nd, wrongPool, allIngredients) || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
-        } else { // logical
-            q = buildMissingQuestion(nd, wrongPool, format);
-            if (!q) q = buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildColorFillQuestion(nd, wrongPool, allIngredients) || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        let q = buildQuestionByFormat(pickFormat(), nd, wrongPool, allIngredients);
+        if (!q) {
+            for (const f of getEnabledQuestionFormats()) {
+                q = buildQuestionByFormat(f, nd, wrongPool, allIngredients);
+                if (q) break;
+            }
         }
+        if (!q) q = buildQuestionByFormat('logical', nd, wrongPool, allIngredients);
 
         if (q) questions.push(q);
     }
@@ -4329,6 +4354,17 @@ function buildSimpleSelect(nd, wrongPool, format) {
         showGrams,
         requireGrams,
     };
+}
+
+function buildQuestionByFormat(format, nd, wrongPool, allIngredients) {
+    if (format === 'color_coded') return buildColorFillQuestion(nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
+    if (format === 'spatial') return buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildBasicSelect(nd, wrongPool);
+    if (format === 'missing') return buildMissingQuestion(nd, wrongPool, 'missing') || buildBasicSelect(nd, wrongPool);
+    // logical
+    let q = buildBasicSelect(nd, wrongPool);
+    if (!q) q = buildTrueFalseQuestion(nd, wrongPool, 'logical');
+    if (!q) q = buildSimpleSelect(nd, wrongPool, 'logical');
+    return q;
 }
 
 // ====================== FORMAT RENDERERS ======================
