@@ -251,6 +251,38 @@ function generateRandomPin(length = 6) {
   return pin;
 }
 
+function getVenueJoinUrl() {
+  if (!state.venue || !state.venue.code) return '';
+  const origin = window.location.origin;
+  const pathname = window.location.pathname.replace(/\/$/, '');
+  return origin + pathname + '?venue=' + encodeURIComponent(state.venue.code);
+}
+
+function getUrlParam(name) {
+  try { return new URLSearchParams(window.location.search).get(name); } catch (e) { return null; }
+}
+
+function showVenueQR() {
+  const venue = state.venue;
+  if (!venue || !venue.code) return;
+  const joinUrl = getVenueJoinUrl();
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(joinUrl);
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:relative;background:#18181b;padding:20px;border-radius:10px;max-width:360px;width:90%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+  modal.innerHTML = `
+    <button class="close-btn" style="position:absolute;top:12px;right:16px;font-size:24px;" onclick="this.closest('div').parentElement.remove()">×</button>
+    <div class="platform-title" style="margin-bottom:8px;">QR-код для сотрудников</div>
+    <img src="${escapeHtml(qrUrl)}" alt="QR" style="width:100%;max-width:280px;margin:12px auto;display:block;border-radius:8px;">
+    <div class="dashboard-hint">Сканируйте, чтобы открыть приложение с уже введённым кодом заведения</div>
+    <button class="stats-btn" style="margin-top:16px;" onclick="copyToClipboard('${escapeHtml(joinUrl)}')">Копировать ссылку</button>
+  `;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
 async function regenerateVenueCode() {
   if (!state.venue || !state.auth || !state.auth.ownerToken) {
     return showPlatformToast('Нет прав для смены кода');
@@ -396,7 +428,11 @@ function initPlatform() {
     applyVenueStyle(state.venue.style, state.venue.bgImage || null);
   }
 
-  if (state.auth && state.venue) {
+  const joinCode = getUrlParam('venue');
+  if (!state.auth && joinCode && /^\d{6}$/.test(joinCode)) {
+    state.platformDraft = { ...(state.platformDraft || {}), code: joinCode };
+    state.screen = 'staffJoin';
+  } else if (state.auth && state.venue) {
     window.renderHome = renderPlatformHome;
     if (state.auth.role === 'owner') {
       state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
@@ -1229,6 +1265,7 @@ function renderOwnerDashboard() {
         <div class="dashboard-hint">Сотрудник вводит этот код при регистрации</div>
         <div class="dashboard-code-actions" style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;">
           <button class="stats-btn" style="margin:0;" onclick="copyVenueCode()">Копировать</button>
+          <button class="stats-btn" style="margin:0;" onclick="showVenueQR()">QR-код</button>
           <button class="stats-btn" style="margin:0;" onclick="regenerateVenueCode()">Сменить</button>
         </div>
       </div>
