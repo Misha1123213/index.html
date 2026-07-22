@@ -757,7 +757,7 @@ function renderAuthOptions() {
         <h1>Знания, которые создают качество сервиса</h1>
         <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
         <div class="landing-cta">
-          <button class="onboarding-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Попробовать бесплатно</button>
+          <button class="onboarding-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Начать бесплатно</button>
           <button class="stats-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Смотреть демо</button>
         </div>
         <div class="landing-logos">
