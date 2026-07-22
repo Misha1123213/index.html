@@ -251,6 +251,38 @@ function generateRandomPin(length = 6) {
   return pin;
 }
 
+function getVenueJoinUrl() {
+  if (!state.venue || !state.venue.code) return '';
+  const origin = window.location.origin;
+  const pathname = window.location.pathname.replace(/\/$/, '');
+  return origin + pathname + '?venue=' + encodeURIComponent(state.venue.code);
+}
+
+function getUrlParam(name) {
+  try { return new URLSearchParams(window.location.search).get(name); } catch (e) { return null; }
+}
+
+function showVenueQR() {
+  const venue = state.venue;
+  if (!venue || !venue.code) return;
+  const joinUrl = getVenueJoinUrl();
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(joinUrl);
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:relative;background:#18181b;padding:20px;border-radius:10px;max-width:360px;width:90%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+  modal.innerHTML = `
+    <button class="close-btn" style="position:absolute;top:12px;right:16px;font-size:24px;" onclick="this.closest('div').parentElement.remove()">×</button>
+    <div class="platform-title" style="margin-bottom:8px;">QR-код для сотрудников</div>
+    <img src="${escapeHtml(qrUrl)}" alt="QR" style="width:100%;max-width:280px;margin:12px auto;display:block;border-radius:8px;">
+    <div class="dashboard-hint">Сканируйте, чтобы открыть приложение с уже введённым кодом заведения</div>
+    <button class="stats-btn" style="margin-top:16px;" onclick="copyToClipboard('${escapeHtml(joinUrl)}')">Копировать ссылку</button>
+  `;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
 async function regenerateVenueCode() {
   if (!state.venue || !state.auth || !state.auth.ownerToken) {
     return showPlatformToast('Нет прав для смены кода');
@@ -396,7 +428,11 @@ function initPlatform() {
     applyVenueStyle(state.venue.style, state.venue.bgImage || null);
   }
 
-  if (state.auth && state.venue) {
+  const joinCode = getUrlParam('venue');
+  if (!state.auth && joinCode && /^\d{6}$/.test(joinCode)) {
+    state.platformDraft = { ...(state.platformDraft || {}), code: joinCode };
+    state.screen = 'staffJoin';
+  } else if (state.auth && state.venue) {
     window.renderHome = renderPlatformHome;
     if (state.auth.role === 'owner') {
       state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
@@ -1229,6 +1265,7 @@ function renderOwnerDashboard() {
         <div class="dashboard-hint">Сотрудник вводит этот код при регистрации</div>
         <div class="dashboard-code-actions" style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;">
           <button class="stats-btn" style="margin:0;" onclick="copyVenueCode()">Копировать</button>
+          <button class="stats-btn" style="margin:0;" onclick="showVenueQR()">QR-код</button>
           <button class="stats-btn" style="margin:0;" onclick="regenerateVenueCode()">Сменить</button>
         </div>
       </div>
@@ -2019,7 +2056,7 @@ function renderVenueImages() {
         ${usedLabel ? `<div class="venue-image-label">${escapeHtml(usedLabel)}</div>` : ''}
       </div>
     `;
-  }).join('') : '<div class="section-empty">Нет фото. Загрузите свои, найдите в интернете или укажите Instagram.</div>';
+  }).join('') : '<div class="section-empty">Нет фото. Загрузите свои или найдите в интернете.</div>';
 
   const sectionTargets = sections.length ? sections.map(s => `
     <div class="section-row">
@@ -2038,15 +2075,15 @@ function renderVenueImages() {
       </div>
       <div class="platform-title">Фото заведения</div>
       <div class="platform-form">
-        <label class="platform-label">Instagram заведения</label>
-        <input class="platform-input" type="text" id="venue-instagram" value="${escapeHtml(venue.instagram || '')}" placeholder="@username" onchange="updateVenueInstagram(this.value)">
-        <button class="stats-btn" style="${cementStyle()}" onclick="fetchInstagramPhotos()">Загрузить фото из Instagram</button>
-        <p class="settings-hint">Без API-токена Instagram эта функция недоступна.</p>
-
-        <label class="platform-label" style="margin-top:16px;">Загрузить свои фото</label>
+        <label class="platform-label">Загрузить свои фото</label>
         <input type="file" class="platform-input" id="venue-image-upload" accept="image/*" multiple onchange="handleVenueImageUpload(this.files)">
 
+        <label class="platform-label" style="margin-top:16px;">Или найдите по запросу</label>
+        <input class="platform-input" type="text" id="custom-image-query" placeholder="например, капучино">
+        <button class="stats-btn" style="${cementStyle()}" onclick="searchCustomVenueImage(document.getElementById('custom-image-query').value)">Найти</button>
+
         <button class="stats-btn" style="${cementStyle()}margin-top:12px" onclick="searchVenueImagesOnline()">Найти фото в интернете по названию</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="clearSearchImages()">Убрать найденные фото</button>
         <button class="stats-btn" style="${cementStyle()}" onclick="autoAssignVenueImages()">Автораспределить фото</button>
         <button class="stats-btn" style="${cementStyle()}" onclick="clearVenueBackground()">Убрать фон</button>
 
@@ -2058,14 +2095,6 @@ function renderVenueImages() {
       </div>
     </div>
   `;
-}
-
-function updateVenueInstagram(value) {
-  const venue = state.venue;
-  if (!venue) return;
-  venue.instagram = (value || '').trim().replace(/^@/, '');
-  saveProgress({ venue: venue });
-  syncVenue();
 }
 
 function handleVenueImageUpload(files) {
@@ -2182,66 +2211,193 @@ function clearSectionCover(sectionId) {
   render();
 }
 
+const IMAGE_BAD_URL_TERMS = ['youtube','ytimg','steam','24smi','pockettactics','allthings.how','ttk-internet','adesk','maximilians','gruppa','festivalsreda','imzagazetesi','sreda','shared.fastly','vk.com','gta','csgo','counter-strike','pubg','fortnite','logo','clipart','pngkey','icon','emoji','meme','wallpaper','demo','test','ttk','pdf','game','gaming','play','app','apk','iphone','android','steamstatic','fastly','demo-','test-','kinoafisha','kpcdn','plus2net','gmesupply'];
+const IMAGE_GOOD_DOMAINS = ['pinterest','pinimg','tripadvisor','restoclub','timeout','restaurantguru','unsplash','pexels','pixabay','wikimedia','alamy','gettyimages','shutterstock','dreamstime','flickr','yandex','yelp','restocdn','zoon','restobook','booking','googleusercontent','fbcdn','instagram','cdninstagram'];
+const IMAGE_STOPWORDS = new Set(['cafe','restaurant','interior','inside','menu','food','drink','dessert','coffee','tea','cake','bar','shop','venue','place','the','and','of','a','an','в','и','на','к','для','с','из','по','за','под','напитки','десерты','кухня','кофе','чай','test','demo','ttk','тест','демо']);
+
+function getImageHostname(url) {
+  try { return new URL(url).hostname.toLowerCase(); } catch (e) { return ''; }
+}
+
+function isGoodImageDomain(hostname) {
+  if (!hostname) return false;
+  const parts = hostname.split('.');
+  return IMAGE_GOOD_DOMAINS.some(d => parts.includes(d));
+}
+
+function isBadImageDomain(hostname) {
+  if (!hostname) return false;
+  const h = hostname;
+  return IMAGE_BAD_URL_TERMS.some(t => h.includes(t));
+}
+
+function isImageRelevantForQuery(url, query) {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  const hostname = getImageHostname(url);
+  if (isBadImageDomain(hostname) || IMAGE_BAD_URL_TERMS.some(t => u.includes(t))) return false;
+  const q = (query || '').toLowerCase().trim();
+  const qWords = q.split(/[^a-zа-я0-9]+/i).map(w => w.trim()).filter(w => w.length > 1);
+  const meaningful = qWords.filter(w => !IMAGE_STOPWORDS.has(w));
+  if (meaningful.length && meaningful.some(w => u.includes(w))) return true;
+  if (q.includes('interior') || q.includes('интерьер') || q.includes('inside')) {
+    if (['interior','inside','cafe','coffee','restaurant','bar','shop','room','table','chair','window'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('coffee') || q.includes('кофе')) {
+    if (['coffee','cafe','espresso','cappuccino','latte','cup','mug'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('drink') || q.includes('напит')) {
+    if (['drink','coffee','tea','beverage','cup','glass','cocktail','juice'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('dessert') || q.includes('десерт')) {
+    if (['dessert','cake','sweet','pastry','tart','croissant','chocolate'].some(h => u.includes(h))) return true;
+  }
+  if (q.includes('food')) {
+    if (['food','dish','meal','plate','cuisine','lunch','dinner'].some(h => u.includes(h))) return true;
+  }
+  if (isGoodImageDomain(hostname)) return true;
+  return false;
+}
+
+function clearSearchImages() {
+  const venue = state.venue;
+  if (!venue) return;
+  const yandexUrls = new Set((venue.images || []).filter(i => i.source === 'yandex').map(i => i.url));
+  venue.images = (venue.images || []).filter(i => i.source !== 'yandex');
+  if (venue.bgImage && yandexUrls.has(venue.bgImage)) venue.bgImage = '';
+  venue.sections.forEach(s => { if (yandexUrls.has(s.image)) s.image = ''; });
+  saveProgress({ venue: venue });
+  syncVenue();
+  render();
+  showPlatformToast('Найденные фото удалены');
+}
+
+async function searchCustomVenueImage(query) {
+  const venue = state.venue;
+  if (!venue) return;
+  const q = (query || '').trim();
+  if (!q) return;
+  showPlatformToast('Ищем фото...');
+  try {
+    const results = await searchYandexImages(q, 6);
+    const seen = new Set((venue.images || []).map(i => i.url));
+    results.forEach(r => {
+      if (!seen.has(r.url)) {
+        seen.add(r.url);
+        addVenueImage(r.url, 'yandex', { query: q, title: r.title });
+      }
+    });
+    render();
+    showPlatformToast('Фото добавлены');
+  } catch (e) {
+    console.error('Custom image search error', e);
+    showPlatformToast('Не удалось найти фото');
+  }
+}
+
 async function searchVenueImagesOnline() {
   const venue = state.venue;
   if (!venue) return;
-  showPlatformToast('Ищем фото...');
+  showPlatformToast('Ищем фото в Яндекс Картинках...');
   const sections = getVenueSections();
-  const venueName = venue.name || '';
-  const queries = [`${venueName} interior`, `${venueName} food`, `${venueName} drink`, `${venueName} dessert`];
+  const venueName = (venue.name || '').trim();
+  const baseQueries = [];
+  if (venueName) {
+    baseQueries.push(`${venueName} interior`, `${venueName} inside`);
+  }
+  baseQueries.push('coffee shop interior', 'cafe interior');
+  const sectionQueries = [];
   sections.forEach(s => {
-    queries.push(`${venueName} ${s.name}`);
+    const sn = (s.name || '').trim();
+    if (!sn) return;
+    const hint = sectionSearchHint(sn);
+    const meaningfulWords = sn.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(w => w.length > 1 && !IMAGE_STOPWORDS.has(w));
+    if (!hint && !meaningfulWords.length) return;
+    if (venueName) sectionQueries.push(`${venueName} ${sn}`);
+    if (hint) {
+      sectionQueries.push(`${sn} ${hint}`, `${hint} cafe`);
+    } else {
+      sectionQueries.push(`${sn} cafe`, `${sn} restaurant`);
+    }
   });
-  queries.push('coffee shop interior', 'cafe drink', 'restaurant food', 'dessert', 'coffee');
+  const allQueries = [...baseQueries, ...sectionQueries];
+  const yandexUrls = new Set((venue.images || []).filter(i => i.source === 'yandex').map(i => i.url));
+  venue.images = (venue.images || []).filter(i => i.source !== 'yandex');
+  if (venue.bgImage && yandexUrls.has(venue.bgImage)) venue.bgImage = '';
+  venue.sections.forEach(s => { if (yandexUrls.has(s.image)) s.image = ''; });
   const seen = new Set((venue.images || []).map(i => i.url));
-  for (const q of queries) {
+  const MAX_TOTAL = 20;
+  for (const q of allQueries) {
+    if ((venue.images || []).length >= MAX_TOTAL) break;
     try {
-      const results = await searchWikimediaImages(q, 3);
+      const results = await searchYandexImages(q, 2);
       results.forEach(r => {
         if (!seen.has(r.url)) {
           seen.add(r.url);
-          addVenueImage(r.url, 'wikimedia', { query: q, title: r.title });
+          addVenueImage(r.url, 'yandex', { query: q, title: r.title });
         }
       });
     } catch (e) {
-      console.error('Wikimedia search error', q, e);
+      console.error('Yandex search error', q, e);
     }
   }
   render();
   showPlatformToast('Фото из интернета добавлены');
 }
 
-async function searchWikimediaImages(query, limit) {
-  const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=${limit}&format=json&origin=*`;
-  const searchRes = await fetch(searchUrl);
-  const searchData = await searchRes.json();
-  const titles = (searchData.query && searchData.query.search || []).map(s => s.title);
-  if (!titles.length) return [];
-  const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&titles=${titles.map(encodeURIComponent).join('|')}&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`;
-  const infoRes = await fetch(infoUrl);
-  const infoData = await infoRes.json();
-  return Object.values(infoData.query.pages || {}).map(p => {
-    if (!p.imageinfo || !p.imageinfo[0]) return null;
-    const url = p.imageinfo[0].thumburl || p.imageinfo[0].url;
-    const title = p.title || '';
-    if (/\.pdf/i.test(title) || /\.pdf/i.test(url)) return null;
-    if (!/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url)) return null;
-    return { url, title };
-  }).filter(Boolean);
+function sectionSearchHint(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('напит') || n.includes('кофе') || n.includes('чай') || n.includes('drink') || n.includes('coffee') || n.includes('tea')) return 'drink';
+  if (n.includes('десерт') || n.includes('сладк') || n.includes('cake') || n.includes('dessert') || n.includes('pastry')) return 'dessert';
+  if (n.includes('кухн') || n.includes('блюдо') || n.includes('еда') || n.includes('food') || n.includes('dish') || n.includes('kitchen')) return 'food';
+  if (n.includes('сэндвич') || n.includes('бургер') || n.includes('sandwich') || n.includes('burger')) return 'sandwich';
+  if (n.includes('салат') || n.includes('salad')) return 'salad';
+  if (n.includes('суп') || n.includes('soup')) return 'soup';
+  return '';
+}
+
+async function searchYandexImages(query, limit) {
+  if (!query || !query.trim()) return [];
+  const target = `https://yandex.com/images/search?text=${encodeURIComponent(query)}&lr=10415`;
+  const proxy = 'https://corsproxy.io/?' + encodeURIComponent(target);
+  const res = await fetch(proxy);
+  const text = await res.text();
+  const urls = [];
+  const re = /&quot;img_href&quot;:&quot;([^&]+)&quot;/g;
+  let m;
+  while ((m = re.exec(text))) {
+    if (urls.length >= 10) break;
+    let url = m[1].replace(/&amp;/g, '&');
+    if (!/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url)) continue;
+    if (urls.includes(url)) continue;
+    if (!isImageRelevantForQuery(url, query)) continue;
+    urls.push(url);
+  }
+  return urls.slice(0, limit).map(url => ({ url, title: query }));
 }
 
 function autoAssignVenueImages() {
   const venue = state.venue;
   if (!venue || !venue.images) return;
   const sections = getVenueSections();
-  const interior = findBestImageForKeywords(venue.images, ['interior', 'inside', 'room', 'cafe', 'restaurant', 'coffee shop']);
-  if (interior && !venue.bgImage) {
-    venue.bgImage = interior.url;
-  }
+  const venueName = (venue.name || '').trim();
+  const bg = pickRelevantImageByQuery(venue.images, `${venueName} interior`)
+    || pickRelevantImageByQuery(venue.images, `${venueName} inside`)
+    || pickRelevantImageByQuery(venue.images, 'coffee shop interior')
+    || pickRelevantImageByQuery(venue.images, 'cafe interior')
+    || findBestImageForKeywords(venue.images, ['interior', 'inside', 'room', 'cafe', 'restaurant']);
+  if (bg && !venue.bgImage) venue.bgImage = bg.url;
   sections.forEach(s => {
     if (s.image) return;
-    const words = s.name.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(Boolean);
-    const img = findBestImageForKeywords(venue.images, words) || findBestImageForKeywords(venue.images, ['food', 'drink', 'dessert']);
+    const sn = (s.name || '').trim();
+    const hint = sectionSearchHint(sn);
+    let img = pickRelevantImageByQuery(venue.images, `${venueName} ${sn}`)
+      || pickRelevantImageByQuery(venue.images, hint ? `${sn} ${hint}` : `${sn} cafe`)
+      || pickRelevantImageByQuery(venue.images, sn);
+    if (!img) {
+      const words = sn.toLowerCase().split(/[^a-zа-я0-9]+/i).filter(Boolean);
+      img = findBestImageForKeywords(venue.images, words) || findBestImageForKeywords(venue.images, ['food', 'drink', 'dessert']);
+    }
     if (img) s.image = img.url;
   });
   saveProgress({ venue: venue });
@@ -2251,26 +2407,29 @@ function autoAssignVenueImages() {
   showPlatformToast('Фото распределены');
 }
 
+function pickRelevantImageByQuery(images, query) {
+  if (!query || !images || !images.length) return null;
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  for (const img of images) {
+    const metaQuery = ((img.meta && img.meta.query) || '').toLowerCase();
+    if (metaQuery === q && isImageRelevantForQuery(img.url, query)) return img;
+  }
+  return findBestImageForKeywords(images, q.split(/\s+/).filter(Boolean));
+}
+
 function findBestImageForKeywords(images, keywords) {
   if (!images || !images.length || !keywords || !keywords.length) return null;
   const scored = images.map(img => {
+    if (!isImageRelevantForQuery(img.url, (img.meta && img.meta.query) || '')) return null;
     const text = ((img.meta && img.meta.query) || img.name || img.url || '').toLowerCase();
     let score = 0;
     keywords.forEach(k => {
-      if (text.includes(k.toLowerCase())) score += 1;
+      if (k && text.includes(k.toLowerCase())) score += 1;
     });
     return { img, score };
-  }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+  }).filter(Boolean).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
   return scored.length ? scored[0].img : null;
-}
-
-async function fetchInstagramPhotos() {
-  const venue = state.venue;
-  if (!venue || !venue.instagram) {
-    showPlatformToast('Укажите Instagram-аккаунт');
-    return;
-  }
-  showPlatformToast('Загрузка фото из Instagram требует API-токена. Добавьте Instagram Basic Display API access token в настройки проекта.');
 }
 
 // ====================== PARSERS ======================
