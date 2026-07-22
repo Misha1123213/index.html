@@ -751,21 +751,63 @@ function showStaffStats() {
 
 function renderAuthOptions() {
   app.innerHTML = `
-    <div class="platform-screen role-select">
-      <div class="platform-mascot"></div>
-      <div class="platform-title">Cognitio</div>
-      <div class="platform-subtitle">Платформа для изучения составов блюд и напитков</div>
-      <div class="role-cards">
-        <button class="role-card" onclick="state.screen='login'; state.platformDraft={}; render()">
-          <div class="role-icon"></div>
-          <div class="role-label">Войти</div>
-        </button>
-        <button class="role-card" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">
-          <div class="role-icon"></div>
-          <div class="role-label">Регистрация</div>
-        </button>
+    <div class="platform-screen landing-layout">
+      <div class="landing-hero">
+        <div class="brand">Cognitio</div>
+        <h1>Знания, которые создают качество сервиса</h1>
+        <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
+        <div class="landing-cta">
+          <button class="onboarding-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Попробовать бесплатно</button>
+          <button class="stats-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Смотреть демо</button>
+        </div>
+        <div class="landing-logos">
+          <span class="landing-logo">Cofix</span>
+          <span class="landing-logo">Teremok</span>
+          <span class="landing-logo">Додо</span>
+          <span class="landing-logo">Вкусно — и точка</span>
+        </div>
       </div>
-      <button class="link-btn" style="margin-top:20px" onclick="state.screen='forgotPassword'; state.platformDraft={}; render()">Забыли пароль?</button>
+      <div class="landing-phones">
+        <div class="phone-mockup phone-1">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="phone-title">УРОК 1</div>
+            <div class="phone-dish">Какие ингредиенты входят в состав Цезарь с курицей?</div>
+            <div class="phone-options">
+              <div class="phone-option">Куриное филе</div>
+              <div class="phone-option">Салат романо</div>
+              <div class="phone-option">Соус цезарь</div>
+              <div class="phone-option">Пармезан</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-mockup phone-2">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div class="phone-title">ВАШ ПРОГРЕСС</div>
+            <div class="phone-xp">675 XP</div>
+            <div class="phone-level">Уровень 12</div>
+            <div class="phone-progress">
+              <div class="phone-progress-label">Цель дня</div>
+              <div class="phone-progress-bar"><div class="phone-progress-fill" style="width:67%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="landing-auth">
+        <div class="auth-panel">
+          <div class="platform-title">Cognitio</div>
+          <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
+          <button class="onboarding-btn" style="width:100%;margin-bottom:10px;" onclick="state.screen='login'; state.platformDraft={}; render()">Войти</button>
+          <button class="stats-btn" style="width:100%;margin-bottom:16px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Регистрация</button>
+          <div class="auth-divider">или</div>
+          <button class="social-btn" onclick="showPlatformToast('Google-вход в разработке')">Продолжить с Google</button>
+          <button class="social-btn" onclick="showPlatformToast('Apple-вход в разработке')">Продолжить с Apple</button>
+          <button class="social-btn" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Продолжить с Email</button>
+          <div class="auth-privacy">Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</div>
+          <button class="link-btn" style="margin-top:16px;" onclick="state.screen='forgotPassword'; state.platformDraft={}; render()">Забыли пароль?</button>
+        </div>
+      </div>
     </div>
   `;
 }
