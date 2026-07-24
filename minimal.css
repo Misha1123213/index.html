@@ -995,18 +995,12 @@ body::before { display: none !important; }
     cursor: pointer !important;
     line-height: 1 !important;
 }
-.editor-save-btn {
-    background: var(--green) !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 8px 14px !important;
-    font-size: 13px !important;
+.editor-save-status {
+    font-size: 12px !important;
     font-weight: 600 !important;
-    cursor: pointer !important;
-    transition: opacity 0.15s ease, transform 0.1s ease !important;
+    color: var(--green) !important;
     white-space: nowrap !important;
+    min-width: 72px !important;
+    text-align: right !important;
+    line-height: 1.2 !important;
 }
-.editor-save-btn:not(.disabled):hover { background: var(--green-light) !important; }
-.editor-save-btn:not(.disabled):active { transform: translateY(1px) !important; }
-.editor-save-btn.disabled { background: var(--text-dim) !important; cursor: not-allowed !important; opacity: 0.7 !important; }

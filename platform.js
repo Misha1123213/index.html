@@ -618,15 +618,25 @@ function markEditorDirty() {
   if (state.screen !== 'courseEditor') return;
   state.editorDirty = true;
   const titleEl = document.getElementById('editor-sticky-title');
-  const saveBtn = document.getElementById('editor-save-btn');
+  const statusEl = document.getElementById('editor-save-status');
   const draft = state.platformDraft || {};
   const sectionName = (draft.sectionName || '').trim() || 'Новый раздел';
   if (titleEl) titleEl.textContent = `Редактор (${sectionName})`;
-  if (saveBtn) {
-    saveBtn.style.display = '';
-    saveBtn.textContent = `Сохранить (${(draft.parsedItems || []).length})`;
+  if (statusEl) statusEl.textContent = 'Сохранение...';
+  if (state.editorSaveTimeout) clearTimeout(state.editorSaveTimeout);
+  state.editorSaveTimeout = setTimeout(() => autoSaveCourseFromEditor(), 600);
+}
+
+function autoSaveCourseFromEditor() {
+  if (state.screen !== 'courseEditor') return;
+  if (!state.editorDirty) return;
+  const statusEl = document.getElementById('editor-save-status');
+  if (persistCourseEditor()) {
+    state.editorDirty = false;
+    if (statusEl) statusEl.textContent = 'Сохранено';
+  } else {
+    if (statusEl) statusEl.textContent = '';
   }
-  validatePlatformButton();
 }
 
 function selectVenueStyle(styleId) {
@@ -1850,14 +1860,13 @@ function renderCourseEditor() {
   const sectionOptions = hasExisting
     ? `<option value="">Новый раздел</option>` + state.venue.sections.map(s => `<option value="${s.name}">${s.name}</option>`).join('')
     : `<option value="">Основное меню</option>`;
-  const saveDisplay = state.editorDirty ? '' : 'display:none;';
-  const saveDisabled = !(items.length && rawSectionName) ? 'disabled' : '';
+  const saveStatus = state.editorDirty ? 'Сохранение...' : '';
   app.innerHTML = `
     <div class="platform-screen">
       <div class="editor-sticky-header">
         <button class="editor-back-btn" onclick="goBack()">←</button>
         <div class="editor-sticky-title" id="editor-sticky-title">Редактор (${escapeHtml(displayName)})</div>
-        <button id="editor-save-btn" class="editor-save-btn ${saveDisabled}" style="${saveDisplay}" onclick="saveCourseFromEditor()">Сохранить (${items.length})</button>
+        <div class="editor-save-status" id="editor-save-status">${saveStatus}</div>
       </div>
       <div class="platform-form">
         <label class="platform-label">Сохранить в раздел</label>
@@ -1874,7 +1883,7 @@ function renderCourseEditor() {
       </div>
     </div>
   `;
-  validatePlatformButton();
+  if (state.editorDirty) markEditorDirty();
 }
 
 function onEditorSectionChange(val) {
@@ -2041,29 +2050,29 @@ function cleanParsedItemForSave(item) {
   return { ...item, name: (item.name || '').trim(), correct };
 }
 
-function saveCourseFromEditor() {
-  state.editorDirty = false;
+function persistCourseEditor() {
   const draft = state.platformDraft || {};
   const items = draft.parsedItems || [];
-  if (!items.length) return;
+  if (!items.length) return false;
+  if (!state.venue) return false;
 
   const sectionName = (draft.sectionName || '').trim();
-  if (!sectionName) {
-    showPlatformToast('Укажите название раздела');
-    state.editorDirty = true;
-    return;
-  }
+  if (!sectionName) return false;
 
   const cleanedItems = items.map(cleanParsedItemForSave).filter(it => it.name && it.correct.length);
-  if (!cleanedItems.length) {
-    showPlatformToast('Нет позиций для сохранения');
-    return;
-  }
+  if (!cleanedItems.length) return false;
 
   const venue = state.venue;
   venue.sections = venue.sections || [];
 
-  let target = venue.sections.find(s => s.name === sectionName);
+  let target = null;
+  if (draft.targetSectionId) {
+    target = venue.sections.find(s => s.id === draft.targetSectionId);
+    if (target) target.name = sectionName;
+  }
+  if (!target) {
+    target = venue.sections.find(s => s.name === sectionName);
+  }
   if (!target) {
     target = { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
     venue.sections.push(target);
@@ -2103,13 +2112,21 @@ function saveCourseFromEditor() {
     }
   });
 
-  state.platformDraft = null;
   saveProgress({ venue: venue });
   syncVenue();
-  window.renderHome = renderPlatformHome;
-  replaceScreen('home');
-  showPlatformToast(`Курс «${target.name}» сохранён`);
-  playSound('correct');
+  return true;
+}
+
+function saveCourseFromEditor() {
+  if (state.editorSaveTimeout) clearTimeout(state.editorSaveTimeout);
+  if (persistCourseEditor()) {
+    state.platformDraft = null;
+    state.editorDirty = false;
+    window.renderHome = renderPlatformHome;
+    replaceScreen('home');
+    showPlatformToast('Курс сохранён');
+    playSound('correct');
+  }
 }
 
 function promptNewSection() {
@@ -2144,6 +2161,7 @@ function editSection(sectionId) {
     return copy;
   });
   draft.sectionName = section.name;
+  draft.targetSectionId = section.id;
   state.platformDraft = draft;
   state.editorDirty = false;
   goToScreen('courseEditor');
