@@ -207,8 +207,8 @@ function importVenueFile(file, thenScreen) {
       state.venue = normalizeVenue(venue);
       saveProgress({ venue: state.venue });
       syncVenue();
-      if (thenScreen) state.screen = thenScreen;
-      render();
+      if (thenScreen) replaceScreen(thenScreen);
+      else render();
       showPlatformToast('Заведение импортировано');
     } catch (err) {
       showPlatformToast(err.message || 'Не удалось импортировать файл');
@@ -423,6 +423,7 @@ function initPlatform() {
   state.auth = p.auth || null;
   state.venue = normalizeVenue(p.venue || null);
   state.staff = p.staff || null;
+  window.renderHome = renderPlatformHome;
 
   if (state.venue && state.venue.style) {
     applyVenueStyle(state.venue.style, state.venue.bgImage || null);
@@ -430,25 +431,23 @@ function initPlatform() {
 
   const joinCode = getUrlParam('venue');
   if (!state.auth && joinCode && /^\d{6}$/.test(joinCode)) {
-    state.platformDraft = { ...(state.platformDraft || {}), code: joinCode };
-    state.screen = 'staffJoin';
+    replaceScreen('staffJoin', { code: joinCode });
   } else if (state.auth && state.venue) {
     window.renderHome = renderPlatformHome;
     if (state.auth.role === 'owner') {
-      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
+      replaceScreen((state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup');
     } else {
-      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'home';
+      replaceScreen('home');
     }
   } else if (p.profile) {
-    state.screen = 'home';
+    replaceScreen('home');
   } else {
-    state.screen = 'authOptions';
+    replaceScreen('authOptions');
   }
 
   applyTheme(getSettings().theme);
   applyAnimationPref();
   checkAchievements();
-  render();
   loadAvatarConfig().then(() => {
     if (!isPlatformScreen()) render();
   });
@@ -476,21 +475,39 @@ function loadVenueIntoState(sectionId) {
 }
 
 function selectRole(role) {
-  state.platformDraft = { role };
-  state.screen = 'register';
+  goToScreen('register', { role });
+}
+
+function goToScreen(screen, draftPatch) {
+  if (!state.navStack) state.navStack = [];
+  if (state.screen && state.screen !== screen) state.navStack.push(state.screen);
+  state.screen = screen;
+  if (draftPatch === true) state.platformDraft = {};
+  else if (draftPatch && typeof draftPatch === 'object') state.platformDraft = { ...(state.platformDraft || {}), ...draftPatch };
+  render();
+}
+
+function replaceScreen(screen, draftPatch) {
+  state.navStack = [];
+  state.screen = screen;
+  if (draftPatch === true) state.platformDraft = {};
+  else if (draftPatch && typeof draftPatch === 'object') state.platformDraft = { ...(state.platformDraft || {}), ...draftPatch };
+  render();
+}
+
+function goBack() {
+  const prev = state.navStack && state.navStack.length ? state.navStack.pop() : (state.auth && state.venue ? 'home' : 'authOptions');
+  state.screen = prev;
+  state.platformDraft = {};
   render();
 }
 
 function backToRoleSelect() {
-  state.platformDraft = null;
-  state.screen = 'roleSelect';
-  render();
+  goBack();
 }
 
 function backToAuthOptions() {
-  state.platformDraft = null;
-  state.screen = 'authOptions';
-  render();
+  goBack();
 }
 
 function updatePlatformDraft(key, value) {
@@ -524,7 +541,7 @@ function validatePlatformButton() {
   } else if (state.screen === 'staffRegister') {
     valid = !!(draft.name && draft.name.trim());
   } else if (state.screen === 'staffJoin' || state.screen === 'ownerLogin') {
-    valid = (draft.code || '').trim().length === 6 && (state.screen !== 'ownerLogin' || (draft.ownerPin || '').trim().length === 6);
+    valid = (draft.code || '').trim().length === 6;
   } else if (state.screen === 'courseEditor') {
     valid = !!(draft.parsedItems && draft.parsedItems.length && draft.sectionName && draft.sectionName.trim());
   }
@@ -581,17 +598,14 @@ async function registerOwner() {
   saveProgress({ auth: auth, venue: finalVenue, profile: state.profile });
   applyVenueStyle(style);
   window.renderHome = renderPlatformHome;
-  state.screen = 'ownerSetup';
-  render();
+  replaceScreen('ownerSetup');
 }
 
 function registerStaff() {
   const draft = state.platformDraft || {};
   const name = (draft.name || '').trim();
   if (!name) return;
-  state.platformDraft = { ...draft, step: 'code' };
-  state.screen = 'staffJoin';
-  render();
+  goToScreen('staffJoin', { ...draft, step: 'code' });
 }
 
 async function joinStaffVenue() {
@@ -629,8 +643,7 @@ async function joinStaffVenue() {
   applyVenueStyle(venue.style, venue.bgImage || null);
   loadVenueIntoState();
   window.renderHome = renderPlatformHome;
-  state.screen = 'home';
-  render();
+  replaceScreen('home');
   syncPendingResults();
   playSound('correct');
 }
@@ -677,19 +690,17 @@ function logoutPlatform() {
   state.auth = null;
   state.staff = null;
   state.profile = null;
-  state.screen = 'authOptions';
-  render();
+  state.navStack = [];
+  replaceScreen('authOptions');
 }
 
 function ownerDashboard() {
-  state.screen = 'ownerDashboard';
-  render();
+  goToScreen('ownerDashboard');
   loadStaffList();
 }
 
 function ownerBackToHome() {
-  state.screen = 'home';
-  render();
+  goBack();
 }
 
 async function loadStaffList() {
@@ -736,14 +747,12 @@ async function loadTrainingStats() {
 }
 
 function showOwnerStats() {
-  state.screen = 'ownerStats';
-  render();
+  goToScreen('ownerStats');
   loadTrainingStats();
 }
 
 function showStaffStats() {
-  state.screen = 'staffStats';
-  render();
+  goToScreen('staffStats');
   loadTrainingStats();
 }
 
@@ -757,8 +766,8 @@ function renderAuthOptions() {
         <h1>Знания, которые создают качество сервиса</h1>
         <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
         <div class="landing-cta">
-          <button class="onboarding-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Попробовать бесплатно</button>
-          <button class="stats-btn" style="flex:1;max-width:220px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Смотреть демо</button>
+          <button class="onboarding-btn" style="flex:1;max-width:220px;" onclick="goToScreen('roleSelect', true)">Начать бесплатно</button>
+          <button class="stats-btn" style="flex:1;max-width:220px;" onclick="goToScreen('roleSelect', true)">Смотреть демо</button>
         </div>
         <div class="landing-logos">
           <span class="landing-logo">Cofix</span>
@@ -798,14 +807,11 @@ function renderAuthOptions() {
         <div class="auth-panel">
           <div class="platform-title">Cognitio</div>
           <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
-          <button class="onboarding-btn" style="width:100%;margin-bottom:10px;" onclick="state.screen='login'; state.platformDraft={}; render()">Войти</button>
-          <button class="stats-btn" style="width:100%;margin-bottom:16px;" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Регистрация</button>
-          <div class="auth-divider">или</div>
-          <button class="social-btn" onclick="showPlatformToast('Google-вход в разработке')">Продолжить с Google</button>
-          <button class="social-btn" onclick="showPlatformToast('Apple-вход в разработке')">Продолжить с Apple</button>
-          <button class="social-btn" onclick="state.screen='roleSelect'; state.platformDraft={}; render()">Продолжить с Email</button>
+          <button class="onboarding-btn" style="width:100%;margin-bottom:10px;" onclick="goToScreen('login', true)">Войти</button>
+          <button class="stats-btn" style="width:100%;margin-bottom:16px;" onclick="goToScreen('roleSelect', true)">Регистрация</button>
+          <button class="onboarding-btn" style="width:100%;margin-top:4px;" onclick="goToScreen('roleSelect', true)">Продолжить с Email</button>
           <div class="auth-privacy">Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</div>
-          <button class="link-btn" style="margin-top:16px;" onclick="state.screen='forgotPassword'; state.platformDraft={}; render()">Забыли пароль?</button>
+          <button class="link-btn" style="margin-top:16px;" onclick="goToScreen('forgotPassword', { login: '' })">Забыли пароль?</button>
         </div>
       </div>
     </div>
@@ -852,7 +858,7 @@ function renderLogin() {
         <label class="platform-label">Пароль</label>
         <input class="platform-input" type="password" id="auth-password" oninput="updatePlatformDraft('password', this.value); validatePlatformButton()">
         <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="loginUser()">Войти</button>
-        <button class="link-btn" style="margin-top:12px" onclick="state.screen='forgotPassword'; state.platformDraft={login:draft.login||''}; render()">Забыли пароль?</button>
+        <button class="link-btn" style="margin-top:12px" onclick="goToScreen('forgotPassword', { login: draft.login || '' })">Забыли пароль?</button>
       </div>
     </div>
   `;
@@ -866,7 +872,6 @@ function renderRegister() {
   const answer = (draft.securityAnswer || '').replace(/"/g, '&quot;');
   const venueName = (draft.venueName || '').replace(/"/g, '&quot;');
   const venueCode = draft.venueCode || '';
-  const venuePin = draft.venuePin || '';
   const customQuestion = (draft.customQuestion || '').replace(/"/g, '&quot;');
   const question = draft.securityQuestion || '';
   const customSelected = question === 'custom' || question === 'Свой вопрос';
@@ -885,7 +890,7 @@ function renderRegister() {
   let valid = false;
   if (isOwner) {
     const hasExistingCode = isValidVenueCode(draft.venueCode);
-    valid = baseValid && ((draft.venueName || '').trim().length > 0 || hasExistingCode) && (!(draft.venueCode || '').trim() || isValidVenueCode(draft.venueCode)) && (!(draft.venuePin || '').trim() || isValidVenueCode(draft.venuePin));
+    valid = baseValid && ((draft.venueName || '').trim().length > 0 || hasExistingCode) && (!(draft.venueCode || '').trim() || isValidVenueCode(draft.venueCode));
   } else {
     valid = baseValid && isValidVenueCode(draft.venueCode);
   }
@@ -917,8 +922,6 @@ function renderRegister() {
           <input class="platform-input" type="text" id="auth-venue-name" value="${venueName}" placeholder="Mad Espresso team" maxlength="40" oninput="updatePlatformDraft('venueName', this.value); validatePlatformButton()">
           <label class="platform-label">Код заведения (6 цифр, опционально)</label>
           <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="auth-venue-code" value="${venueCode}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('venueCode', v); validatePlatformButton()">
-          <label class="platform-label">Пин владельца (6 цифр, опционально)</label>
-          <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="auth-venue-pin" value="${venuePin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('venuePin', v); validatePlatformButton()">
         ` : `
           <label class="platform-label">Код заведения</label>
           <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="auth-venue-code" value="${venueCode}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('venueCode', v); validatePlatformButton()">
@@ -957,7 +960,7 @@ function renderResetPassword() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="state.screen='forgotPassword'; state.platformDraft={login:draft.login||''}; render()">← Назад</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">Новый пароль</div>
       <div class="platform-form">
@@ -1010,11 +1013,10 @@ function handleAuthData(data) {
   window.renderHome = renderPlatformHome;
   loadVenueIntoState();
   if (user.role === 'owner') {
-    state.screen = (remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
+    replaceScreen((remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup');
   } else {
-    state.screen = 'home';
+    replaceScreen('home');
   }
-  render();
   syncPendingResults();
   showPlatformToast(user.role === 'owner' ? 'Заведение загружено' : 'Добро пожаловать');
 }
@@ -1030,7 +1032,6 @@ async function registerUser() {
   const answer = (draft.securityAnswer || '').trim();
   const venueName = (draft.venueName || '').trim();
   const venueCode = (draft.venueCode || '').trim();
-  const venuePin = (draft.venuePin || '').trim();
 
   if (login.length < 3 || password.length < 4 || password !== passwordRepeat || !question || !answer) {
     showPlatformToast('Заполните все поля корректно');
@@ -1048,10 +1049,7 @@ async function registerUser() {
     showPlatformToast('Код заведения должен быть 6 цифр');
     return;
   }
-  if (role === 'owner' && venuePin && !isValidVenueCode(venuePin)) {
-    showPlatformToast('Пин владельца должен быть 6 цифр');
-    return;
-  }
+  const venuePin = venueCode;
 
   if (!supabaseClient) { showPlatformToast('Нет подключения к серверу'); return; }
 
@@ -1096,8 +1094,7 @@ async function getRecoveryQuestion() {
     const data = await safeRpc('get_recovery_question', { p_login: login });
     if (!data) { showPlatformToast('Пользователь не найден'); return; }
     draft.securityQuestion = data;
-    state.screen = 'resetPassword';
-    render();
+    goToScreen('resetPassword');
   } catch (e) {
     if (isNetworkError(e)) { showPlatformToast(networkErrorMessage(e)); return; }
     showPlatformToast('Ошибка: ' + (e.message || e));
@@ -1116,9 +1113,7 @@ async function resetUserPassword() {
     const data = await safeRpc('reset_password', { p_login: login, p_security_answer: answer, p_new_password: newPassword });
     if (data) {
       showPlatformToast('Пароль обновлён. Войдите с новым паролем.');
-      state.screen = 'login';
-      state.platformDraft = { login };
-      render();
+      replaceScreen('login', { login });
     } else {
       showPlatformToast('Неверный ответ на контрольный вопрос');
     }
@@ -1162,7 +1157,7 @@ function renderOwnerOptions() {
       </div>
       <div class="platform-title">Я владелец</div>
       <div class="platform-form">
-        <button class="onboarding-btn" style="margin-bottom:12px" onclick="state.screen='ownerRegister'; render()">Создать заведение</button>
+        <button class="onboarding-btn" style="margin-bottom:12px" onclick="goToScreen('ownerRegister')">Создать заведение</button>
         <button class="onboarding-btn secondary" onclick="openExistingVenue()">У меня уже есть заведение</button>
       </div>
     </div>
@@ -1171,32 +1166,25 @@ function renderOwnerOptions() {
 
 function openExistingVenue() {
   if (state.venue && state.auth && state.auth.role === 'owner') {
-    state.screen = 'ownerDashboard';
-    render();
+    replaceScreen('ownerDashboard');
     return;
   }
-  state.platformDraft = { role: 'owner' };
-  state.screen = 'ownerLogin';
-  render();
+  goToScreen('ownerLogin', { role: 'owner' });
 }
 
 function renderOwnerLogin() {
   const draft = state.platformDraft || {};
   const code = draft.code || '';
-  const ownerPin = draft.ownerPin || '';
-  const valid = isValidVenueCode(code) && isValidVenueCode(ownerPin);
+  const valid = isValidVenueCode(code);
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="backToRoleSelect()">← Назад</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">Вход для владельца</div>
       <div class="platform-form">
         <label class="platform-label">Код заведения</label>
         <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-code" value="${code}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('code', v); validatePlatformButton()">
-        <label class="platform-label">Пин владельца</label>
-        <input class="platform-input code-input" type="text" inputmode="numeric" pattern="[0-9]{6}" id="owner-login-pin" value="${ownerPin}" placeholder="178617" maxlength="6" oninput="let v = this.value.replace(/[^0-9]/g,''); if (v !== this.value) this.value = v; updatePlatformDraft('ownerPin', v); validatePlatformButton()">
-        <div class="platform-hint" style="font-size:13px;color:var(--muted);margin-bottom:12px">Изначально пин владельца совпадает с кодом заведения.</div>
         <button id="platform-primary-btn" class="onboarding-btn ${valid ? '' : 'disabled'}" onclick="ownerLogin()">Войти</button>
       </div>
     </div>
@@ -1206,8 +1194,8 @@ function renderOwnerLogin() {
 async function ownerLogin() {
   const draft = state.platformDraft || {};
   const code = (draft.code || '').trim();
-  const ownerPin = (draft.ownerPin || '').trim();
-  if (!isValidVenueCode(code) || !isValidVenueCode(ownerPin)) return;
+  if (!isValidVenueCode(code)) return;
+  const ownerPin = code;
 
   if (!supabaseClient) {
     showPlatformToast('Нет подключения к серверу. Создайте или импортируйте заведение.');
@@ -1218,7 +1206,7 @@ async function ownerLogin() {
   try {
     remoteData = await safeRpc('owner_login', { p_code: code, p_owner_pin: ownerPin });
     if (!remoteData) {
-      showPlatformToast('Код или пин владельца не найдены.');
+      showPlatformToast('Код заведения не найден.');
       return;
     }
   } catch (e) {
@@ -1246,8 +1234,7 @@ async function ownerLogin() {
   saveProgress({ auth: auth, venue: remoteVenue, profile: state.profile });
   applyVenueStyle(remoteVenue.style || 'modern', remoteVenue.bgImage || null);
   window.renderHome = renderPlatformHome;
-  state.screen = remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length) ? 'home' : 'ownerSetup';
-  render();
+  replaceScreen(remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length) ? 'home' : 'ownerSetup');
   showPlatformToast('Заведение загружено');
 }
 
@@ -1256,7 +1243,7 @@ function renderOwnerSetup() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="logoutPlatform()">← Выйти</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">${venue.name}</div>
       <div class="platform-subtitle">Код для сотрудников: <span class="venue-code">${venue.code}</span></div>
@@ -1272,8 +1259,6 @@ function renderOwnerSetup() {
         <label class="platform-label" style="margin-top:18px;">Или вставьте текст ТТК</label>
         <textarea id="ttk-paste" class="platform-input" rows="6" placeholder="Например:\nКапучино\n• Эспрессо 30 мл\n• Молоко 150 мл\n• Молочная пена 30 г"></textarea>
         <button class="onboarding-btn" onclick="parseTTKPastePreview()">Распознать и открыть редактор</button>
-
-        <div class="demo-hint">Нет файла? <button class="link-btn" onclick="loadDemoVenue()">Загрузить демо-меню</button></div>
       </div>
     </div>
   `;
@@ -1344,7 +1329,7 @@ function renderOwnerDashboard() {
         <button class="onboarding-btn secondary" onclick="promptNewSection()">+ Новый раздел</button>
       </div>
       <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="state.screen='ownerSetup'; render()">Загрузить ТТК</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('ownerSetup')">Загрузить ТТК</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="renderTrainingSettings()">Настройки обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="openVenueImages()">Фото заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
@@ -1527,7 +1512,7 @@ function renderOwnerStats() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="ownerDashboard()">← Назад</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">Прогресс сотрудников</div>
       <div class="platform-form">
@@ -1609,7 +1594,7 @@ function renderStaffStats() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="state.screen='home'; render()">← Назад</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">Моя статистика</div>
       <div class="platform-form">
@@ -1651,7 +1636,7 @@ function renderStaffJoin() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="state.screen='staffRegister'; render()">← Назад</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">Код заведения</div>
       <div class="platform-subtitle">Введите 6-значный код, который вам дал владелец</div>
@@ -1765,8 +1750,7 @@ function openCourseEditor() {
     showPlatformToast('Сначала распознайте ТТК');
     return;
   }
-  state.screen = 'courseEditor';
-  render();
+  goToScreen('courseEditor');
 }
 
 function renderCourseEditor() {
@@ -1780,7 +1764,7 @@ function renderCourseEditor() {
   app.innerHTML = `
     <div class="platform-screen">
       <div class="platform-header">
-        <button class="close-btn" onclick="state.screen='ownerSetup'; render()">← Назад</button>
+        <button class="close-btn" onclick="goBack()">← Назад</button>
       </div>
       <div class="platform-title">Редактор блюд</div>
       <div class="platform-subtitle">Проверьте названия, состав и граммовки</div>
@@ -2017,8 +2001,7 @@ function saveCourseFromEditor() {
   saveProgress({ venue: venue });
   syncVenue();
   window.renderHome = renderPlatformHome;
-  state.screen = 'home';
-  render();
+  replaceScreen('home');
   showPlatformToast(`Курс «${target.name}» сохранён`);
   playSound('correct');
 }
@@ -2056,8 +2039,7 @@ function editSection(sectionId) {
   });
   draft.sectionName = section.name;
   state.platformDraft = draft;
-  state.screen = 'courseEditor';
-  render();
+  goToScreen('courseEditor');
 }
 
 function deleteSection(sectionId) {
@@ -2070,8 +2052,7 @@ function deleteSection(sectionId) {
 }
 
 function openVenueImages() {
-  state.screen = 'venueImages';
-  render();
+  goToScreen('venueImages');
 }
 
 function renderVenueImages() {
@@ -3190,8 +3171,7 @@ function buildVenueFromParsedItems(items, sourceName) {
   saveProgress({ venue: venue });
   syncVenue();
   window.renderHome = renderPlatformHome;
-  state.screen = 'home';
-  render();
+  replaceScreen('home');
   showPlatformToast(`Меню загружено: ${items.length} позиций`);
   playSound('correct');
 }

@@ -2248,13 +2248,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:'Жизни: '; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=8">
+    <link rel="stylesheet" href="minimal.css?v=9">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=14"></script>
+<script src="platform.js?v=16"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -5173,8 +5173,12 @@ function confirmQuit() {
 
 function quitLesson() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
-    state.screen = 'path';
-    render();
+    if (state.section && (state.section === '__mixed__' || state.section === '__weak__')) {
+        goHome();
+    } else {
+        state.screen = 'path';
+        render();
+    }
 }
 
 // ====================== INIT ======================
