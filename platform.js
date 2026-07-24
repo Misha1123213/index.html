@@ -791,6 +791,15 @@ function ownerBackToHome() {
   goBack();
 }
 
+function toggleOwnerSettingsGroup(btn) {
+  const group = document.getElementById('owner-settings-group');
+  if (!group) return;
+  const isOpen = group.style.display !== 'none';
+  group.style.display = isOpen ? 'none' : 'block';
+  const chevron = btn.querySelector('.settings-chevron');
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
 function renderOwnerHome() {
   loadStaffList();
   replaceScreen('ownerDashboard');
@@ -1430,13 +1439,18 @@ function renderOwnerDashboard() {
         `).join('') : '<div class="section-empty">Пока нет разделов</div>'}
         <button class="onboarding-btn secondary" onclick="promptNewSection()">+ Новый раздел</button>
       </div>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('ownerSetup')">Загрузить ТТК</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="openVenueImages()">Фото заведения</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импортировать бэкап</button>
-      <input type="file" id="venue-import-file" style="display:none" accept=".json,application/json" onchange="importVenueBackup(this.files[0])">
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
+      <button class="stats-btn" style="${cementStyle()};display:flex;align-items:center;justify-content:space-between;" onclick="toggleOwnerSettingsGroup(this)">
+        Настройки <span class="settings-chevron" style="transition:transform .2s">▸</span>
+      </button>
+      <div id="owner-settings-group" style="display:none;padding-left:12px;">
+        <button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('ownerSetup')">Загрузить ТТК</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="openVenueImages()">Фото заведения</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать данные</button>
+        <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импорт бэкапа</button>
+        <input type="file" id="venue-import-file" style="display:none" accept=".json,application/json" onchange="importVenueBackup(this.files[0])">
+      </div>
       <button class="stats-btn" style="${cementStyle()}" onclick="logoutPlatform()">Выйти из аккаунта</button>
     </div>
   `;
