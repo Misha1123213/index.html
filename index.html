@@ -2227,13 +2227,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=21">
+    <link rel="stylesheet" href="minimal.css?v=22">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=34"></script>
+<script src="platform.js?v=35"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2910,10 +2910,7 @@ function renderPhotoFallback(item, cls = 'dish-photo') {
 }
 
 function renderPhotoFallbackString(name, cls) {
-    const cat = getSectionCategory(state.section) || (name ? getDishCategory(name) : null);
-    const label = cat ? cat.label : 'Блюдо';
-    const initial = (name && name[0]) || (label[0]) || '?';
-    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${initial}</span><span class="dish-fallback-label">${label}</span></div>`;
+    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-name">${escapeHtml(name || 'Блюдо')}</span></div>`;
 }
 
 // ====================== RENDERING ======================
@@ -2974,7 +2971,6 @@ function render() {
         case 'browse': renderBrowse(); break;
         case 'leaderboard': renderLeaderboard(); break;
         case 'avatarEditor': renderAvatarEditor(); break;
-        case 'lessonPreview': renderLessonPreview(); break;
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
     }
@@ -3694,52 +3690,6 @@ function buildLessons() {
     }
 }
 
-function showLessonPreview(idx) {
-    state.previewLessonIdx = idx;
-    goToScreen('lessonPreview');
-}
-
-function renderLessonPreview() {
-    const idx = state.previewLessonIdx || 0;
-    const items = state.lessons[idx] || [];
-    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { showGrams: true });
-    const itemsHTML = items.map(item => {
-        const ingredientsHTML = item._ingredients.map(ing => {
-            const showGrams = item._hasGrams && venueSettings.showGrams !== false;
-            const hasGram = Number(item._grams[ing]) > 0;
-            const unit = (item._gramUnit && item._gramUnit[ing]) || 'г';
-            const grams = showGrams && hasGram ? `<span class="browse-grams">&nbsp;${item._grams[ing]} ${unit}</span>` : '';
-            return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
-        }).join('');
-        return `
-            <div class="browse-item open">
-                <button class="browse-item-header" style="${cementStyle()}">
-                    ${getDishPhotoHTML(item, 'browse-item-photo')}
-                    <span class="browse-item-name">${item.name}</span>
-                </button>
-                <div class="browse-item-body" style="display:block">
-                    ${ingredientsHTML}
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    app.innerHTML = `
-        <div class="top-bar">
-            <button class="close-btn" onclick="goBack()" style="position:static;margin:0">← Назад</button>
-        </div>
-        <div class="browse-screen" style="padding-bottom:120px">
-            <div class="path-title">Повтор перед уроком ${idx + 1}</div>
-            <div class="browse-container">
-                ${itemsHTML || '<div class="section-empty">Нет позиций</div>'}
-            </div>
-        </div>
-        <div class="bottom-area" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg-card);padding:16px;border-top:1px solid var(--concrete-border);z-index:10">
-            <button class="check-btn active" onclick="startLesson(${idx})">Начать тест</button>
-        </div>
-    `;
-}
-
 function renderPath() {
     const stats = getGlobalStats();
     const weakItems = getWeakItems(state.section);
@@ -3816,7 +3766,7 @@ function renderBrowse() {
         return `
             <div class="browse-item">
                 <button class="browse-item-header" style="${cementStyle()}" onclick="toggleBrowseItem(this)">
-                    ${getDishPhotoHTML(item, 'browse-item-photo')}
+                    ${item._image ? getDishPhotoHTML(item, 'browse-item-photo') : ''}
                     <span class="browse-item-name">${item.name}</span>
                     <span class="browse-arrow">▼</span>
                 </button>

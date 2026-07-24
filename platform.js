@@ -1629,7 +1629,7 @@ function buildLessonSkillNodes(weakItems) {
       name: `Урок ${i + 1}`,
       meta: `${items.length} карт`,
       icon: getSkillNodeIcon(items[0] || {}, st),
-      click: st === 'locked' ? '' : (st === 'broken' ? `startLesson(${i})` : `showLessonPreview(${i})`),
+      click: st === 'locked' ? '' : `startLesson(${i})`,
       ariaLabel: st === 'locked' ? 'Заблокировано' : `Урок ${i + 1}`
     });
   }

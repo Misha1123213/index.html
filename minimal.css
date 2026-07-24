@@ -946,9 +946,10 @@ body::before { display: none !important; }
 .xp-popup { background: var(--gold) !important; color: #3b2e00 !important; font-weight: 800 !important; border-radius: 999px !important; padding: 10px 20px !important; box-shadow: 0 6px 0 #d9a000 !important; animation: pop 0.4s ease !important; }
 
 /* Dish photo fallback */
-.dish-photo-fallback { background: var(--bg-card) !important; border: 1px solid var(--border) !important; color: var(--text-secondary) !important; height: 120px !important; }
-.dish-fallback-emoji { font-size: 32px !important; font-weight: 800 !important; color: var(--text-primary) !important; }
-.dish-fallback-label { font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.6px !important; color: var(--text-dim) !important; }
+.dish-photo-fallback { background: var(--bg-card) !important; border: 1px solid var(--border) !important; color: var(--text-secondary) !important; height: auto !important; min-height: 40px !important; padding: 8px 12px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+.dish-fallback-name { font-size: 14px !important; font-weight: 700 !important; color: var(--text-primary) !important; text-align: center !important; }
+.dish-fallback-emoji { display: none !important; }
+.dish-fallback-label { display: none !important; }
 
 /* Sort columns */
 .sort-column { border: 1px solid var(--border) !important; border-radius: 12px !important; background: var(--bg-card) !important; padding: 10px !important; }
