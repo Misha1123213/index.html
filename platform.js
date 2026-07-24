@@ -764,6 +764,7 @@ function startMixedPractice() {
   state.sessionXP = 0;
   state.sessionCorrect = 0;
   state.sessionTotal = 0;
+  state._sessionCorrectStreak = 0;
   state.mistakeIds = [];
   state.basicMistakeIds = [];
   state._sessionDishNames = new Set();
@@ -1994,6 +1995,10 @@ function renderPlatformHome() {
         <span class="icon"></span>
         <span class="xp-count">${stats.totalXP} XP</span>
       </div>
+      <div class="top-bar-stat gem-balance" onclick="goToScreen('shop')">
+        <svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>
+        <span class="gem-count">${typeof getGems === 'function' ? getGems() : 0}</span>
+      </div>
       ` : ''}
       <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">≡</button>
     </div>
@@ -2026,6 +2031,7 @@ function renderPlatformHome() {
       ` : ''}
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">Прогресс</button>` : ''}
       ${!isOwner && hasSections ? `<button class="stats-btn" style="${cementStyle()}" onclick="startMixedPractice()">Случайный тест</button>` : ''}
+      ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('shop')">Магазин</button>` : ''}
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>

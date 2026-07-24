@@ -1510,6 +1510,28 @@
             60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
         }
+        .gem-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--blue);
+            text-shadow: 0 4px 20px rgba(96,165,250,0.5);
+            animation: gemPop 1.2s ease forwards;
+            z-index: 9998;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        @keyframes gemPop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
+        }
 
         /* Shake animation */
         @keyframes shake {
@@ -2230,13 +2252,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=23">
+    <link rel="stylesheet" href="minimal.css?v=25">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=36"></script>
+<script src="platform.js?v=38"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2378,17 +2400,23 @@ function updateDishMasteryFromSession(perfect) {
     const p = getProgress();
     if (!p.dishMastery) p.dishMastery = {};
     let newCrowns = 0;
+    let crownGems = 0;
     names.forEach(name => {
         const m = p.dishMastery[name] || { level: 0, perfectCount: 0, lastSeen: 0 };
         if (perfect && m.level < 5) {
             m.level = m.level + 1;
             m.perfectCount = (m.perfectCount || 0) + 1;
             newCrowns++;
+            crownGems += 10 * m.level;
         }
         m.lastSeen = Date.now();
         p.dishMastery[name] = m;
     });
     saveProgress(p);
+    if (crownGems) {
+        addGems(crownGems);
+        state._gemsEarned = (state._gemsEarned || 0) + crownGems;
+    }
     return newCrowns;
 }
 function getAverageMasteryLevel(names) {
@@ -2407,15 +2435,78 @@ function getGlobalStats() {
         totalCrowns: getTotalCrowns(),
     };
 }
-function addXP(amount) {
+function getGems() { return (getProgress().gems || 0); }
+function addGems(amount) {
+    const p = getProgress();
+    p.gems = (p.gems || 0) + amount;
+    saveProgress(p);
+    return p.gems;
+}
+function spendGems(amount) {
+    const p = getProgress();
+    if ((p.gems || 0) < amount) return false;
+    p.gems -= amount;
+    saveProgress(p);
+    return true;
+}
+function getInventory() { return getProgress().inventory || {}; }
+function addInventoryItem(key, count = 1) {
+    const p = getProgress();
+    if (!p.inventory) p.inventory = {};
+    p.inventory[key] = (p.inventory[key] || 0) + count;
+    saveProgress(p);
+}
+function useInventoryItem(key) {
+    const p = getProgress();
+    if (!p.inventory || !(p.inventory[key] > 0)) return false;
+    p.inventory[key]--;
+    if (p.inventory[key] <= 0) delete p.inventory[key];
+    saveProgress(p);
+    return true;
+}
+function getActiveBoosts() { return getProgress().activeBoosts || {}; }
+function hasActiveBoost(type) { return (getProgress().activeBoosts || {})[type] > 0; }
+function activateBoost(type) {
+    const p = getProgress();
+    if (!p.activeBoosts) p.activeBoosts = {};
+    p.activeBoosts[type] = (p.activeBoosts[type] || 0) + 1;
+    saveProgress(p);
+}
+function consumeBoost(type) {
+    const p = getProgress();
+    if (!p.activeBoosts || !(p.activeBoosts[type] > 0)) return false;
+    p.activeBoosts[type]--;
+    if (p.activeBoosts[type] <= 0) delete p.activeBoosts[type];
+    saveProgress(p);
+    return true;
+}
+function getOwnedSkins() { return getProgress().ownedSkins || ['default']; }
+function addSkin(skinId) {
+    const p = getProgress();
+    if (!p.ownedSkins) p.ownedSkins = ['default'];
+    if (!p.ownedSkins.includes(skinId)) { p.ownedSkins.push(skinId); saveProgress(p); return true; }
+    return false;
+}
+function getActiveSkin() { return getProgress().activeSkin || 'default'; }
+function setActiveSkin(skinId) {
+    const p = getProgress();
+    if ((p.ownedSkins || ['default']).includes(skinId)) { p.activeSkin = skinId; saveProgress(p); render(); }
+}
+function addXP(amount, countLesson = true) {
     const p = getProgress();
     p.totalXP = (p.totalXP || 0) + amount;
     const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
     if (p.lastDate !== today) {
-        if (p.lastDate === new Date(Date.now() - 86400000).toDateString()) {
+        if (p.lastDate === yesterday) {
             p.streak = (p.streak || 0) + 1;
-        } else if (p.lastDate !== today) {
-            p.streak = 1;
+        } else {
+            if (consumeBoost('streakFreeze')) {
+                p.streak = (p.streak || 0);
+                if (typeof showPlatformToast === 'function') showPlatformToast('Зелье сохранения серии сработало');
+            } else {
+                p.streak = 1;
+            }
         }
         p.lastDate = today;
     }
@@ -2430,7 +2521,7 @@ function addXP(amount) {
     const goal = getSettings().dailyGoal;
     const justMetGoal = !p.dailyGoalMet && p.dailyXP >= goal && before < goal;
     if (justMetGoal) p.dailyGoalMet = true;
-    p.totalLessons = (p.totalLessons || 0) + 1;
+    if (countLesson) p.totalLessons = (p.totalLessons || 0) + 1;
     saveProgress(p);
     return { justMetGoal };
 }
@@ -2892,6 +2983,13 @@ function showXPPopup(amount) {
     document.body.appendChild(popup);
     setTimeout(() => popup.remove(), 1600);
 }
+function showGemPopup(amount) {
+    const popup = document.createElement('div');
+    popup.className = 'gem-popup';
+    popup.innerHTML = `${getGemIcon(18)} +${amount}`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1200);
+}
 
 // ====================== THEME ======================
 function applyTheme(theme) {
@@ -3044,6 +3142,7 @@ function render() {
         case 'browse': renderBrowse(); break;
         case 'leaderboard': renderLeaderboard(); break;
         case 'avatarEditor': renderAvatarEditor(); break;
+        case 'shop': renderShop(); break;
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
     }
@@ -3112,6 +3211,7 @@ function showAchievements() {
 function renderHome() {
     const stats = getGlobalStats();
     const profile = state.profile || { nickname: 'Ты', avatar: null };
+    const gemIcon = `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
     app.innerHTML = `
         <div class="top-bar">
             <button class="profile-chip" onclick="openAvatarEditor()">
@@ -3126,6 +3226,10 @@ function renderHome() {
             <div class="top-bar-stat">
                 <span class="icon"></span>
                 <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+            <div class="top-bar-stat gem-balance" onclick="goToScreen('shop')">
+                ${gemIcon}
+                <span class="gem-count">${getGems()}</span>
             </div>
             <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">≡</button>
         </div>
@@ -3333,6 +3437,237 @@ function renderAvatarEditor() {
             ${renderAvatarEditorContent('edit')}
         </div>
     `;
+}
+
+const LOOTBOXES = [
+    { id: 'copper', name: 'Медный', cost: 30, color: '#b87333', dropBias: [40, 30, 15, 10, 5] },
+    { id: 'iron', name: 'Железный', cost: 70, color: '#6d7a86', dropBias: [25, 35, 20, 12, 8] },
+    { id: 'gold', name: 'Золотой', cost: 150, color: '#d4a017', dropBias: [15, 30, 25, 18, 12] },
+    { id: 'diamond', name: 'Алмазный', cost: 300, color: '#4ec4e6', dropBias: [5, 20, 30, 25, 20] },
+    { id: 'crystal', name: 'Хрустальный', cost: 500, color: '#c084fc', dropBias: [2, 10, 25, 30, 33] }
+];
+const SHOP_POTIONS = [
+    { id: 'streakFreeze', name: 'Зелье сохранения серии', desc: 'Сохраняет серию дней, если пропустил занятие', price: 50, icon: 'fire' },
+    { id: 'doubleXP', name: 'Зелье двойного XP', desc: 'Удваивает XP следующего урока', price: 80, icon: 'xp' }
+];
+const COSMETIC_NAMES = {
+    skin: { default: 'Классическая', gold: 'Золотая', dark: 'Тёмная', neon: 'Неоновая', crystal: 'Хрустальная' },
+    avatar: { hat_crown: 'Корона', hat_wizard: 'Шляпа волшебника', glasses_cool: 'Крутые очки', beard_royal: 'Королевская борода', aura_gold: 'Золотая аура' }
+};
+
+function getGemIcon(size) {
+    return `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor" style="width:${size}px;height:${size}px"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
+}
+function weightedPick(list) {
+    const total = list.reduce((s, w) => s + w, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < list.length; i++) { r -= list[i]; if (r <= 0) return i; }
+    return list.length - 1;
+}
+function generateLootDrops(box) {
+    const drops = [];
+    const count = 1 + Math.floor(Math.random() * (box.id === 'crystal' ? 4 : box.id === 'diamond' ? 3 : 2));
+    for (let i = 0; i < count; i++) {
+        const tier = weightedPick(box.dropBias);
+        const typeRoll = Math.random();
+        let reward = { tier };
+        if (typeRoll < 0.42) {
+            const amount = [10, 30, 60, 120, 250][tier] + Math.floor(Math.random() * ([15, 20, 40, 80, 150][tier]));
+            reward = { type: 'gems', amount, tier };
+        } else if (typeRoll < 0.72) {
+            const amount = [15, 40, 80, 170, 350][tier] + Math.floor(Math.random() * ([15, 20, 40, 80, 150][tier]));
+            reward = { type: 'xp', amount, tier };
+        } else if (typeRoll < 0.88) {
+            const variants = ['streakFreeze', 'doubleXP'];
+            const variant = variants[Math.floor(Math.random() * variants.length)];
+            const amount = 1 + Math.floor(tier / 3);
+            reward = { type: 'potion', variant, amount, tier };
+        } else if (typeRoll < 0.95) {
+            const variants = ['hat_crown', 'hat_wizard', 'glasses_cool', 'beard_royal', 'aura_gold'];
+            const variant = variants[tier] || variants[0];
+            reward = { type: 'avatar', variant, tier };
+        } else {
+            const variants = ['gold', 'dark', 'neon', 'crystal'];
+            const variant = variants[tier - 1] || variants[0];
+            reward = { type: 'skin', variant, tier };
+        }
+        drops.push(reward);
+    }
+    return drops;
+}
+function applyLootDrops(drops) {
+    let gems = 0, xp = 0, inventory = {};
+    drops.forEach(d => {
+        if (d.type === 'gems') gems += d.amount;
+        if (d.type === 'xp') xp += d.amount;
+        if (d.type === 'potion') { addInventoryItem(d.variant, d.amount); inventory[d.variant] = (inventory[d.variant] || 0) + d.amount; }
+        if (d.type === 'avatar') {
+            if (!addSkin('avatar_' + d.variant)) gems += 20 * (d.tier + 1);
+            else inventory['avatar_' + d.variant] = 1;
+        }
+        if (d.type === 'skin') {
+            if (!addSkin(d.variant)) gems += 30 * (d.tier + 1);
+            else inventory['skin_' + d.variant] = 1;
+        }
+    });
+    if (gems) addGems(gems);
+    if (xp) addXP(xp, false);
+    return { gems, xp, inventory };
+}
+function openLootBox(boxId) {
+    const box = LOOTBOXES.find(b => b.id === boxId);
+    if (!box) return;
+    if (!spendGems(box.cost)) { showPlatformToast('Недостаточно кристаллов'); return; }
+    const drops = generateLootDrops(box);
+    showLootboxAnimation(box, drops);
+}
+function showLootboxAnimation(box, drops) {
+    const overlay = document.createElement('div');
+    overlay.className = 'lootbox-overlay';
+    overlay.innerHTML = `
+        <div class="lootbox-stage">
+            <div class="lootbox-chest-large" id="lootbox-chest" style="--chest-color:${box.color}">${getChestSVG(box)}</div>
+            <div class="lootbox-status">Открываем ${box.name.toLowerCase()} сундук...</div>
+            <div class="lootbox-rewards" id="lootbox-rewards" style="display:none"></div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    const chest = document.getElementById('lootbox-chest');
+    setTimeout(() => chest.classList.add('shake'), 50);
+    setTimeout(() => { chest.classList.remove('shake'); chest.classList.add('glow'); }, 700);
+    setTimeout(() => {
+        const res = applyLootDrops(drops);
+        const rewardsEl = document.getElementById('lootbox-rewards');
+        rewardsEl.style.display = 'flex';
+        rewardsEl.innerHTML = drops.map(d => `
+            <div class="loot-reward ${d.type}">
+                <div class="reward-icon">${getRewardIcon(d)}</div>
+                <div class="reward-name">${getRewardName(d)}</div>
+                ${d.type === 'gems' ? `<div class="reward-amount">+${d.amount}</div>` : ''}
+                ${d.type === 'xp' ? `<div class="reward-amount">+${d.amount} XP</div>` : ''}
+                ${d.type === 'potion' ? `<div class="reward-amount">x${d.amount}</div>` : ''}
+            </div>
+        `).join('') + `
+            <button class="check-btn" style="margin-top:16px" onclick="this.closest('.lootbox-overlay').remove(); goToScreen('shop')">Забрать</button>
+        `;
+        document.querySelector('.lootbox-status').textContent = 'Награды!';
+    }, 1600);
+}
+function getChestSVG(box) {
+    return `<svg viewBox="0 0 64 64" width="80" height="80"><rect x="8" y="20" width="48" height="36" rx="4" fill="${box.color}"/><rect x="8" y="12" width="48" height="14" rx="3" fill="${box.color}" style="filter:brightness(1.3)"/><circle cx="32" cy="38" r="5" fill="#1a1a1a"/></svg>`;
+}
+function getRewardIcon(d) {
+    if (d.type === 'gems') return getGemIcon(24);
+    if (d.type === 'xp') return '☆';
+    if (d.type === 'potion') return d.variant === 'streakFreeze' ? 'F' : 'XP';
+    if (d.type === 'avatar') return 'A';
+    if (d.type === 'skin') return 'S';
+    return '?';
+}
+function getRewardName(d) {
+    if (d.type === 'gems') return 'Кристаллы';
+    if (d.type === 'xp') return 'Опыт';
+    if (d.type === 'potion') return (SHOP_POTIONS.find(p => p.id === d.variant) || {}).name || d.variant;
+    if (d.type === 'avatar') return (COSMETIC_NAMES.avatar[d.variant] || d.variant);
+    if (d.type === 'skin') return (COSMETIC_NAMES.skin[d.variant] || d.variant);
+    return 'Приз';
+}
+
+function renderShop() {
+    const tab = state.shopTab || 'loot';
+    const gems = getGems();
+    const activeBoosts = getActiveBoosts();
+    const inventory = getInventory();
+    const ownedSkins = getOwnedSkins();
+    const activeSkin = getActiveSkin();
+
+    let content = '';
+    if (tab === 'potions') {
+        content = `<div class="shop-section"><div class="shop-section-title">Зелья</div><div class="shop-grid">
+            ${SHOP_POTIONS.map(p => `
+                <div class="shop-card" style="${cementStyle()}">
+                    <div class="shop-card-icon">${p.id === 'streakFreeze' ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20" style="color:#f59e0b"/></svg>' : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" style="color:#a78bfa"/></svg>'}</div>
+                    <div class="shop-card-title">${p.name}</div>
+                    <div class="shop-card-desc">${p.desc}</div>
+                    <div class="shop-card-footer">
+                        <div class="shop-price">${getGemIcon(14)} ${p.price}</div>
+                        <button class="shop-buy-btn" onclick="buyPotion('${p.id}', ${p.price})">Купить</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div></div>`;
+    } else if (tab === 'loot') {
+        content = `<div class="shop-section"><div class="shop-section-title">Лутбоксы</div><div class="shop-grid">
+            ${LOOTBOXES.map(box => `
+                <div class="shop-card lootbox-card" style="${cementStyle()};border-color:${box.color}">
+                    <div class="lootbox-chest" style="--chest-color:${box.color}">${getChestSVG(box)}</div>
+                    <div class="shop-card-title" style="color:${box.color}">${box.name}</div>
+                    <div class="shop-card-desc">${['обычные', 'базовые', 'редкие', 'очень редкие', 'премиальные'][LOOTBOXES.indexOf(box)]} призы</div>
+                    <div class="shop-card-footer">
+                        <div class="shop-price">${getGemIcon(14)} ${box.cost}</div>
+                        <button class="shop-buy-btn" onclick="openLootBox('${box.id}')">Открыть</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div></div>`;
+    } else if (tab === 'skins') {
+        const skins = Object.keys(COSMETIC_NAMES.skin);
+        content = `<div class="shop-section"><div class="shop-section-title">Скины</div><div class="shop-grid">
+            ${skins.map(skin => {
+                const owned = ownedSkins.includes(skin);
+                const active = activeSkin === skin;
+                return `<div class="shop-card" style="${cementStyle()}${owned ? '' : ';opacity:0.6'}">
+                    <div class="shop-card-title">${COSMETIC_NAMES.skin[skin]}</div>
+                    <div class="shop-card-desc">${owned ? 'в коллекции' : 'выпадает из лутбоксов'}</div>
+                    ${owned ? `<button class="shop-buy-btn ${active ? 'active' : ''}" onclick="setActiveSkin('${skin}')">${active ? 'Выбрано' : 'Экипировать'}</button>` : '<div class="shop-card-desc">Не открыт</div>'}
+                </div>`;
+            }).join('')}
+        </div></div>`;
+    } else if (tab === 'inventory') {
+        const inv = Object.entries(inventory).map(([k, v]) => ({ id: k, count: v }));
+        const boostKeys = Object.keys(activeBoosts);
+        content = `<div class="shop-section"><div class="shop-section-title">Инвентарь</div>
+            ${inv.length ? `<div class="shop-grid">${inv.map(item => {
+                const potion = SHOP_POTIONS.find(p => p.id === item.id);
+                return `<div class="shop-card" style="${cementStyle()}">
+                    <div class="shop-card-title">${potion ? potion.name : item.id}</div>
+                    <div class="shop-card-desc">В наличии: ${item.count}</div>
+                    ${potion ? `<button class="shop-buy-btn" onclick="activatePotion('${item.id}')">Активировать</button>` : ''}
+                </div>`;
+            }).join('')}</div>` : '<div class="shop-empty">Инвентарь пуст</div>'}
+            ${boostKeys.length ? `<div class="shop-boosts"><div class="shop-section-title">Активные бусты</div>${boostKeys.map(k => `<div class="shop-boost">${k}: ${activeBoosts[k]}</div>`).join('')}</div>` : ''}
+        </div>`;
+    }
+
+    app.innerHTML = `
+        <div class="shop-screen">
+            <div class="shop-header">
+                <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
+                <div class="shop-title">Магазин</div>
+                <div class="shop-balance">${getGemIcon(18)} <span>${gems}</span></div>
+            </div>
+            <div class="shop-tabs">
+                <button class="shop-tab ${tab === 'loot' ? 'active' : ''}" onclick="setShopTab('loot')">Лутбоксы</button>
+                <button class="shop-tab ${tab === 'potions' ? 'active' : ''}" onclick="setShopTab('potions')">Зелья</button>
+                <button class="shop-tab ${tab === 'skins' ? 'active' : ''}" onclick="setShopTab('skins')">Скины</button>
+                <button class="shop-tab ${tab === 'inventory' ? 'active' : ''}" onclick="setShopTab('inventory')">Инвентарь</button>
+            </div>
+            <div class="shop-content">${content}</div>
+        </div>
+    `;
+}
+function setShopTab(tab) { state.shopTab = tab; render(); }
+function buyPotion(id, price) {
+    if (!spendGems(price)) { showPlatformToast('Недостаточно кристаллов'); return; }
+    addInventoryItem(id, 1);
+    showPlatformToast('Зелье куплено');
+    render();
+}
+function activatePotion(id) {
+    if (!useInventoryItem(id)) { showPlatformToast('Нет в инвентаре'); return; }
+    activateBoost(id);
+    showPlatformToast(SHOP_POTIONS.find(p => p.id === id).name + ' активировано');
+    render();
 }
 
 function getLeaderboard() {
@@ -3775,6 +4110,7 @@ function renderPath() {
         ? renderSkillTree(buildLessonSkillNodes(weakItems))
         : '';
 
+    const gemIcon = `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
     app.innerHTML = `
         <div class="top-bar">
             <div class="top-bar-stat">
@@ -3784,6 +4120,10 @@ function renderPath() {
             <div class="top-bar-stat">
                 <span class="icon"></span>
                 <span class="xp-count">${stats.totalXP} XP</span>
+            </div>
+            <div class="top-bar-stat gem-balance">
+                ${gemIcon}
+                <span class="gem-count">${getGems()}</span>
             </div>
             <div class="top-bar-stat">
                 <span class="icon"></span>
@@ -3895,6 +4235,7 @@ function startLesson(idx) {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
     state.basicMistakeIds = [];
     state._sessionDishNames = new Set();
@@ -3920,6 +4261,7 @@ function startPractice() {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
     state._sessionDishNames = new Set();
     state.feedbackShown = false;
@@ -3966,8 +4308,10 @@ function startWeakPractice() {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
     state.basicMistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
@@ -4898,6 +5242,15 @@ function processAnswer(isCorrect, item, format, timeTaken) {
     state._lastSpeedBonus = 0;
     if (isCorrect) {
         state.sessionCorrect++;
+        state.sessionCorrectStreak = (state.sessionCorrectStreak || 0) + 1;
+        const streak = state.sessionCorrectStreak;
+        let streakMult = 1;
+        if (streak >= 10) streakMult = 2;
+        else if (streak >= 5) streakMult = 1.5;
+        const baseGems = 1 + Math.floor(Math.random() * 3);
+        const gemsEarned = Math.max(1, Math.round(baseGems * streakMult));
+        addGems(gemsEarned);
+        if (typeof showGemPopup === 'function') showGemPopup(gemsEarned);
         state.sessionXP += 10;
         state._lastCorrect = true;
 
@@ -4916,6 +5269,7 @@ function processAnswer(isCorrect, item, format, timeTaken) {
         haptic(40);
     } else {
         state.hearts--;
+        state.sessionCorrectStreak = 0;
         state._lastCorrect = false;
         playSound('wrong');
         haptic([60, 50, 90]);
@@ -4995,13 +5349,19 @@ function nextQuestion() {
 function finishLesson() {
     const perfect = state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0;
     const avgMultiplier = perfect ? getSessionAverageMultiplier() : 1;
+    const doubleXPMult = consumeBoost('doubleXP') ? 2 : 1;
     const baseXP = state.sessionXP + (state.hearts > 0 ? 15 : 0);
-    const xpEarned = Math.round(baseXP * avgMultiplier);
+    const xpEarned = Math.round(baseXP * avgMultiplier * doubleXPMult);
+    state._gemsEarned = 0;
     if (perfect) {
         const p = getProgress();
         p.perfectLessons = (p.perfectLessons || 0) + 1;
         saveProgress(p);
+        const perfectGems = 10 + Math.floor(Math.random() * 41);
+        addGems(perfectGems);
+        state._gemsEarned += perfectGems;
     }
+    if (doubleXPMult > 1 && typeof showPlatformToast === 'function') showPlatformToast('Зелье двойного XP удвоило награду');
     const { justMetGoal } = addXP(xpEarned);
 
     if (!state.isPractice && state.currentLessonIdx >= 0 && state.hearts > 0) {
@@ -5043,7 +5403,12 @@ function renderResult() {
                         accuracy >= 80 ? 'Отличная работа!' :
                         accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
     const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
-                      `Ты заработал ${state._finalXP} XP!`;
+                      `Ты заработал ${state._finalXP} XP${state._gemsEarned > 0 ? ' и ' + state._gemsEarned + ' кристаллов' : ''}!`;
+    const gemsHTML = state._gemsEarned > 0 ?
+        `<div class="result-stat">
+            <div class="result-stat-value" style="color:var(--blue)">${state._gemsEarned}</div>
+            <div class="result-stat-label">Кристаллов</div>
+        </div>` : '';
     const crownsHTML = state._newCrowns > 0 ?
         `<div class="result-stat" style="border:2px solid var(--gold);border-radius:12px;padding:10px 0">
             <div class="result-stat-value" style="color:var(--gold)">${'★'.repeat(Math.min(5, state._averageMasteryLevel || 1))}</div>
@@ -5067,6 +5432,7 @@ function renderResult() {
                     <div class="result-stat-value" style="color:var(--gold)">${state._finalXP}</div>
                     <div class="result-stat-label">XP</div>
                 </div>
+                ${gemsHTML}
                 ${crownsHTML}
             </div>
             <div class="result-accuracy-bar">
@@ -5101,6 +5467,7 @@ function retryMistakes() {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
     state._sessionDishNames = new Set();
     state.feedbackShown = false;
