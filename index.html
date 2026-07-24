@@ -2237,24 +2237,23 @@
             --concrete-text: #18181b;
             --concrete-border: rgba(0,0,0,0.08);
         }
-        body { font-family: 'Inter', sans-serif; background-image: none !important; }
-        body::before { display: none !important; }
-        .mascot, .onboarding-mascot, .platform-mascot, .result-mascot, .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: none !important; }
+        body { font-family: 'Inter', 'Nunito', sans-serif; }
+        .mascot, .onboarding-mascot, .platform-mascot, .result-mascot, .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: inline-flex !important; }
         .mascot-area { padding: 16px 0 8px !important; }
-        .top-bar .streak-count::before { content:'Серия '; }
-        .top-bar .hearts-count::before { content:'Жизни '; }
-        .section-card .card-info small, .section-card .card-arrow, .daily-stat-card .stat-label, .lesson-node.locked, .question-type-label { color: rgba(24,24,27,0.55) !important; }
-        .section-row-action { width: auto !important; padding: 4px 10px !important; font-size: 11px !important; border-radius: 6px !important; border: 1px solid var(--concrete-border) !important; background: rgba(255,255,255,0.1) !important; }
+        .top-bar .streak-count::before { content:'🔥 '; }
+        .top-bar .hearts-count::before { content:'❤️ '; }
+        .section-card .card-info small, .section-card .card-arrow, .daily-stat-card .stat-label, .lesson-node.locked, .question-type-label { color: var(--text-dim) !important; }
+        .section-row-action { width: auto !important; padding: 4px 10px !important; font-size: 11px !important; border-radius: 6px !important; border: 1px solid var(--border) !important; background: var(--bg-card-hover) !important; }
         .card-img-placeholder { font-weight: 800 !important; }
-        #hearts-display::before { content:'Жизни: '; }
+        #hearts-display::before { content:'❤️ '; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=9">
+    <link rel="stylesheet" href="minimal.css?v=14">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=16"></script>
+<script src="platform.js?v=18"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2297,21 +2296,8 @@ window.state = state;
 
 // Cement texture images for variety
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
-const AVATAR_EMOJIS = ['А','Б','В','Г','Д','Е','Ж','З','И','К','Л','М'];
-// Editable categories shown in the avatar editor. Ears are still rendered
-// (see AVATAR_RENDER_ORDER) but are not user-editable.
-const AVATAR_LAYERS = [
-    { key: 'face', label: 'Лицо' },
-    { key: 'eyes', label: 'Глаза' },
-    { key: 'brows', label: 'Брови' },
-    { key: 'nose', label: 'Нос' },
-    { key: 'mouth', label: 'Рот' },
-    { key: 'hair', label: 'Причёска' }
-];
-const AVATAR_RENDER_ORDER = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair'];
-const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
-const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1' };
-const DEFAULT_AVATAR_EMOJI = '?';
+const AVATAR_EMOJIS = ['🙂','😺','🐶','🦉','🐼','🐨','🦁','🦊','🐰','🐻','🐷','🐯','🐙','🦄','🐲','👽','🤖','👻','💀','🎃','🤠','😎','🥳','🤩'];
+const DEFAULT_AVATAR_EMOJI = '🙂';
 let avatarConfig = null;
 let cementCounter = 0;
 function nextCement() {
@@ -2935,11 +2921,10 @@ function renderPhotoFallback(item, cls = 'dish-photo') {
 }
 
 function renderPhotoFallbackString(name, cls) {
-    const cat = state.section === 'kitchen'
-        ? (name ? getDishCategory(name) : null)
-        : (state.section ? getSectionCategory(state.section) : (name ? getDishCategory(name) : null));
+    const cat = getSectionCategory(state.section) || (name ? getDishCategory(name) : null);
     const label = cat ? cat.label : 'Блюдо';
-    const emoji = (cat ? ((cat.label || 'Блюдо')[0] || '?') : '?');
+    const emojis = { 'Завтрак':'🍳', 'Сэндвич':'🥪', 'Обед':'🍲', 'Десерт':'🍰', 'Напиток':'☕', 'ПФ Напитков':'🥤', 'ПФ Кухни':'🍳', 'Блюдо':'🍽️' };
+    const emoji = emojis[label] || (label[0] || '?');
     return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${emoji}</span><span class="dish-fallback-label">${label}</span></div>`;
 }
 
@@ -2947,36 +2932,32 @@ function renderPhotoFallbackString(name, cls) {
 const app = document.getElementById('app');
 
 function renderAvatar(avatar, size = 32) {
-    if (!avatar) {
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${DEFAULT_AVATAR_EMOJI}</span>`;
-    }
-    if (typeof avatar === 'string') {
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${avatar}</span>`;
-    }
-    // if assets are not generated yet, show the migrated emoji or default
-    if (!avatarConfig || Object.keys(avatarConfig).length === 0) {
-        const emoji = DEFAULT_AVATAR_EMOJI;
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${emoji}</span>`;
-    }
-    const order = AVATAR_RENDER_ORDER;
-    const parts = order.map(layer => {
-        const id = avatar[layer];
-        if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) return '';
-        return `<img class="avatar-layer" src="img/avatar/${layer}/${id}.png" alt="" onerror="this.style.display='none'">`;
-    }).join('');
-    return `<div class="avatar-stack" style="width:${size}px;height:${size}px">${parts}</div>`;
+    let emoji = DEFAULT_AVATAR_EMOJI;
+    if (typeof avatar === 'string' && avatar) emoji = avatar;
+    else if (avatar && typeof avatar === 'object' && avatar.emoji) emoji = avatar.emoji;
+    return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px">${emoji}</span>`;
+}
+
+const MASCOT_IDLE = '🦉';
+const MASCOT_CORRECT = '🎉';
+const MASCOT_WRONG = '😓';
+const MASCOT_PRAISES = ['Отлично!', 'Супер!', 'Молодец!', 'Правильно!', 'Так держать!'];
+function getMascotHTML(mood, text) {
+    const t = text || (mood === 'correct' ? MASCOT_PRAISES[Math.floor(Math.random() * MASCOT_PRAISES.length)] : mood === 'wrong' ? 'Не расстраивайся, попробуй ещё!' : 'Выбери правильный ответ!');
+    return `<div class="mascot-area lesson-mascot"><span class="mascot" data-mood="${mood}"></span><span class="mascot-speech">${t}</span></div>`;
 }
 
 function cloneAvatar(avatar) {
-    return { ...DEFAULT_AVATAR, ...(avatar || {}) };
+    if (typeof avatar === 'string' && avatar) return avatar;
+    if (avatar && typeof avatar === 'object' && avatar.emoji) return avatar.emoji;
+    return DEFAULT_AVATAR_EMOJI;
 }
 
 function migrateProfileAvatar(profile) {
-    if (!profile || !profile.avatar) return profile;
-    if (typeof profile.avatar === 'string') {
-        return { ...profile, avatar: cloneAvatar(), avatarEmoji: profile.avatar };
-    }
-    return { ...profile, avatar: cloneAvatar(profile.avatar) };
+    if (!profile) return profile;
+    if (typeof profile.avatar === 'string') return { ...profile, avatar: profile.avatar };
+    if (profile && typeof profile.avatar === 'object' && profile.avatar && profile.avatar.emoji) return { ...profile, avatar: profile.avatar.emoji };
+    return { ...profile, avatar: profile.avatarEmoji || DEFAULT_AVATAR_EMOJI };
 }
 
 let _lastRenderedScreen = null;
@@ -3177,28 +3158,16 @@ function loadAvatarConfig() {
 function renderAvatarEditorContent(mode) {
     const editor = state.avatarEditor;
     if (!editor) return '';
-    const cfg = avatarConfig || {};
-    const category = editor.category;
-    const options = cfg[category] || [];
-    const catsHTML = AVATAR_LAYERS.map(l => `
-        <button class="avatar-editor-cat ${category === l.key ? 'active' : ''}" onclick="selectAvatarCategory('${l.key}')">${l.label}</button>
-    `).join('');
-    const isOptional = OPTIONAL_LAYERS.includes(category);
-    const noneHTML = isOptional
-        ? `<div class="avatar-editor-option avatar-editor-option-none ${!editor.avatar[category] ? 'selected' : ''}" onclick="clearAvatarOption('${category}')">Нет</div>`
-        : '';
-    const optionsHTML = options.length === 0 && !isOptional
-        ? '<div class="avatar-editor-empty" style="padding:24px 0;text-align:center;color:var(--text-dim);font-size:13px">Нет вариантов для этой категории</div>'
-        : noneHTML + options.map(id => {
-            const selected = editor.avatar[category] === id;
-            const previewAvatar = { ...editor.avatar, [category]: id };
-            return `<div class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatarOption('${category}', '${id}')">${renderAvatar(previewAvatar, 48)}</div>`;
-        }).join('');
+    const current = editor.emoji || DEFAULT_AVATAR_EMOJI;
+    const optionsHTML = AVATAR_EMOJIS.map(emoji => {
+        const selected = emoji === current;
+        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatarEmoji('${emoji}')">${emoji}</button>`;
+    }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
     return `
-        <div class="avatar-editor-preview">${renderAvatar(editor.avatar, 140)}</div>
-        <div class="avatar-editor-categories">${catsHTML}</div>
-        <div class="avatar-editor-options">${optionsHTML}</div>
+        <div class="avatar-editor-preview">${renderAvatar(current, 120)}</div>
+        <div class="avatar-editor-title">Выбери аватар</div>
+        <div class="avatar-editor-options" style="grid-template-columns:repeat(6,1fr);gap:10px;margin:16px 0;">${optionsHTML}</div>
         <div class="avatar-editor-actions">
             <button class="avatar-editor-btn secondary" onclick="backAvatarEditor()">Назад</button>
             <button class="avatar-editor-btn primary" onclick="${mode === 'onboarding' ? 'finishOnboarding()' : 'saveAvatarEditor()'}">${doneLabel}</button>
@@ -3223,23 +3192,13 @@ function renderOnboarding() {
     }
 
     if (!state.avatarEditor) {
-        state.avatarEditor = { avatar: cloneAvatar(state.onboardingAvatar), category: 'face', mode: 'onboarding' };
-    }
-
-    if (avatarConfig === null) {
-        app.innerHTML = `
-            <div class="onboarding-screen">
-                <div class="onboarding-title">Загружаю варианты...</div>
-                <div class="onboarding-subtitle">Секундочку</div>
-            </div>
-        `;
-        return;
+        state.avatarEditor = { emoji: state.onboardingAvatar || DEFAULT_AVATAR_EMOJI, mode: 'onboarding' };
     }
 
     app.innerHTML = `
         <div class="avatar-editor-screen">
             <div class="avatar-editor-header">
-                <div class="avatar-editor-title">Собери персонажа</div>
+                <div class="avatar-editor-title">Выбери аватар</div>
             </div>
             ${renderAvatarEditorContent('onboarding')}
         </div>
@@ -3256,29 +3215,15 @@ function setOnboardingNickname(value) {
 
 function goToAvatar() {
     if (!state.onboardingNickname.trim()) return;
-    state.onboardingAvatar = cloneAvatar();
-    state.avatarEditor = { avatar: cloneAvatar(), category: 'face', mode: 'onboarding' };
+    state.onboardingAvatar = DEFAULT_AVATAR_EMOJI;
+    state.avatarEditor = { emoji: DEFAULT_AVATAR_EMOJI, mode: 'onboarding' };
     state.onboardingStep = 'avatar';
-    loadAvatarConfig().then(render);
     render();
 }
 
-function selectAvatarCategory(key) {
+function selectAvatarEmoji(emoji) {
     if (!state.avatarEditor) return;
-    state.avatarEditor.category = key;
-    render();
-}
-
-function selectAvatarOption(category, id) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: id };
-    tapFeedback();
-    render();
-}
-
-function clearAvatarOption(category) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: null };
+    state.avatarEditor.emoji = emoji;
     tapFeedback();
     render();
 }
@@ -3289,57 +3234,53 @@ function backAvatarEditor() {
         state.avatarEditor = null;
         state.onboardingStep = 'nickname';
         state.onboardingAvatar = null;
+        render();
     } else {
         state.avatarEditor = null;
-        state.screen = 'home';
+        goBack();
     }
-    render();
 }
 
 function saveAvatarEditor() {
     if (!state.avatarEditor || state.avatarEditor.mode !== 'edit') return;
-    state.profile = { ...state.profile, avatar: state.avatarEditor.avatar };
+    state.profile = { ...state.profile, avatar: state.avatarEditor.emoji || DEFAULT_AVATAR_EMOJI };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
-    state.screen = 'home';
-    render();
+    goBack();
 }
 
 function finishOnboarding() {
     if (!state.onboardingNickname.trim()) return;
-    const avatar = state.avatarEditor ? state.avatarEditor.avatar : (state.onboardingAvatar || cloneAvatar());
+    const avatar = state.avatarEditor ? (state.avatarEditor.emoji || DEFAULT_AVATAR_EMOJI) : (state.onboardingAvatar || DEFAULT_AVATAR_EMOJI);
     state.profile = {
         nickname: state.onboardingNickname.trim(),
         avatar: avatar,
     };
     saveProgress({ profile: state.profile });
-    state.screen = 'home';
     state.avatarEditor = null;
     state.onboardingStep = 'nickname';
-    render();
+    replaceScreen('home');
 }
 
 function openAvatarEditor() {
-    state.avatarEditor = { avatar: cloneAvatar(state.profile && state.profile.avatar), category: 'face', mode: 'edit' };
-    state.screen = 'avatarEditor';
-    loadAvatarConfig().then(render);
+    state.avatarEditor = { emoji: (state.profile && state.profile.avatar) || DEFAULT_AVATAR_EMOJI, mode: 'edit' };
+    goToScreen('avatarEditor');
     render();
 }
 
 function renderAvatarEditor() {
     if (!state.avatarEditor) {
-        state.screen = 'home';
-        render();
+        replaceScreen('home');
         return;
     }
     app.innerHTML = `
         <div class="avatar-editor-screen">
             <div class="avatar-editor-header">
                 <button class="close-btn" onclick="backAvatarEditor()" style="position:static;margin:0">← Назад</button>
-                <div class="avatar-editor-title">Редактор аватара</div>
+                <div class="avatar-editor-title">Аватар</div>
                 <div style="width:44px"></div>
             </div>
-            ${avatarConfig === null ? '<div class="onboarding-screen"><div class="onboarding-title">Загружаю варианты...</div></div>' : renderAvatarEditorContent('edit')}
+            ${renderAvatarEditorContent('edit')}
         </div>
     `;
 }
@@ -3408,14 +3349,12 @@ function renderLeaderboard() {
 }
 
 function goLeaderboard() {
-    state.screen = 'leaderboard';
-    render();
+    goToScreen('leaderboard');
 }
 
 function showBranchSelection(section) {
     state.branchSection = section;
-    state.screen = 'branch';
-    render();
+    goToScreen('branch');
 }
 
 function renderBranchSelection() {
@@ -3744,8 +3683,7 @@ async function selectSection(section) {
         const data = await response.json();
         state.allData = data.map(normalizeItem);
         buildLessons();
-        state.screen = 'path';
-        render();
+        goToScreen('path');
     } catch (e) {
         app.innerHTML = `
             <div class="loading-screen">
@@ -3777,8 +3715,7 @@ function buildLessons() {
 
 function showLessonPreview(idx) {
     state.previewLessonIdx = idx;
-    state.screen = 'lessonPreview';
-    render();
+    goToScreen('lessonPreview');
 }
 
 function renderLessonPreview() {
@@ -3808,7 +3745,7 @@ function renderLessonPreview() {
 
     app.innerHTML = `
         <div class="top-bar">
-            <button class="close-btn" onclick="state.screen='path'; render()" style="position:static;margin:0">← Назад</button>
+            <button class="close-btn" onclick="goBack()" style="position:static;margin:0">← Назад</button>
         </div>
         <div class="browse-screen" style="padding-bottom:120px">
             <div class="path-title">Повтор перед уроком ${idx + 1}</div>
@@ -3907,19 +3844,15 @@ function renderPath() {
 }
 
 function goHome() {
-    state.screen = 'home';
-    state.section = null;
-    render();
+    goBack();
 }
 
 function openBrowse() {
-    state.screen = 'browse';
-    render();
+    goToScreen('browse');
 }
 
 function closeBrowse() {
-    state.screen = 'path';
-    render();
+    goBack();
 }
 
 function filterBrowse(value) {
@@ -4005,8 +3938,7 @@ function startLesson(idx) {
     state.gramInputs = {};
     state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    replaceScreen('lesson');
 }
 
 function startPractice() {
@@ -4029,8 +3961,7 @@ function startPractice() {
     state.gramInputs = {};
     state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    goToScreen('lesson');
 }
 
 function getGlobalWeakCount() {
@@ -4076,8 +4007,7 @@ function startWeakPractice() {
     state.gramInputs = {};
     state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    goToScreen('lesson');
 }
 
 // ====================== QUESTION GENERATION ======================
@@ -4604,7 +4534,7 @@ function renderLesson() {
         </div>`;
     }
 
-    const catInfo = state.section === 'kitchen' ? getDishCategory(q.item.name) : getSectionCategory(state.section);
+    const catInfo = getSectionCategory(state.section) || getDishCategory(q.item.name);
     const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
     const dishPhotoHTML = getDishPhotoHTML(q.item);
 
@@ -4801,6 +4731,7 @@ function renderLesson() {
         </div>
     ` : '';
 
+    const mascotHTML = getMascotHTML(fb ? (state._lastCorrect ? 'correct' : 'wrong') : 'idle');
     app.innerHTML = `
         <div class="lesson-screen">
             <div class="lesson-header">
@@ -4813,6 +4744,7 @@ function renderLesson() {
                 </div>
                 <div class="hearts-display" id="hearts-display">${heartsStr}</div>
             </div>
+            ${mascotHTML}
             ${questionHTML}
             ${bottomHTML}
         </div>
@@ -5060,9 +4992,8 @@ function finishLesson() {
         saveLessonComplete(state.section, state.currentLessonIdx, state.sessionCorrect, state.sessionTotal);
     }
 
-    state.screen = 'result';
     state._finalXP = xpEarned;
-    render();
+    replaceScreen('result');
 
     playSound('finish');
     haptic(perfect ? [40, 60, 40, 60, 120] : 60);
@@ -5083,15 +5014,18 @@ function renderResult() {
         : 0;
 
     const barColor = accuracy >= 80 ? 'var(--green)' : accuracy >= 50 ? 'var(--gold)' : 'var(--red)';
-    const resultEmoji = accuracy === 100 ? '' : accuracy >= 80 ? '' : accuracy >= 50 ? '' : '';
+    const resultEmoji = accuracy === 100 ? '🏆' : accuracy >= 80 ? '✨' : accuracy >= 50 ? '👍' : '💪';
     const resultTitle = accuracy === 100 ? 'Идеально!' :
                         accuracy >= 80 ? 'Отличная работа!' :
                         accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
     const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
                       `Ты заработал ${state._finalXP} XP!`;
+    const resultMascotMood = accuracy === 100 ? 'correct' : accuracy >= 50 ? 'idle' : 'wrong';
 
     app.innerHTML = `
         <div class="result-screen">
+            <div class="result-mascot mascot" data-mood="${resultMascotMood}"></div>
+            <div class="result-emoji">${resultEmoji}</div>
             <div class="result-title">${resultTitle}</div>
             <div class="result-subtitle">${resultSub}</div>
             <div class="result-stats">
@@ -5124,12 +5058,7 @@ function renderResult() {
 }
 
 function returnToPath() {
-    if (!state.lessons || state.lessons.length === 0) {
-        goHome();
-        return;
-    }
-    state.screen = 'path';
-    render();
+    goBack();
 }
 
 function retryMistakes() {
@@ -5152,8 +5081,7 @@ function retryMistakes() {
     state.gramInputs = {};
     state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    replaceScreen('lesson');
 }
 
 // ====================== QUIT CONFIRMATION ======================
@@ -5173,12 +5101,7 @@ function confirmQuit() {
 
 function quitLesson() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
-    if (state.section && (state.section === '__mixed__' || state.section === '__weak__')) {
-        goHome();
-    } else {
-        state.screen = 'path';
-        render();
-    }
+    goBack();
 }
 
 // ====================== INIT ======================
