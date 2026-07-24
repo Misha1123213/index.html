@@ -2240,20 +2240,20 @@
         body { font-family: 'Inter', 'Nunito', sans-serif; }
         .mascot, .onboarding-mascot, .platform-mascot, .result-mascot, .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: inline-flex !important; }
         .mascot-area { padding: 16px 0 8px !important; }
-        .top-bar .streak-count::before { content:'🔥 '; }
-        .top-bar .hearts-count::before { content:'❤️ '; }
+        .top-bar .streak-count::before { content:''; }
+        .top-bar .hearts-count::before { content:''; }
         .section-card .card-info small, .section-card .card-arrow, .daily-stat-card .stat-label, .lesson-node.locked, .question-type-label { color: var(--text-dim) !important; }
         .section-row-action { width: auto !important; padding: 4px 10px !important; font-size: 11px !important; border-radius: 6px !important; border: 1px solid var(--border) !important; background: var(--bg-card-hover) !important; }
         .card-img-placeholder { font-weight: 800 !important; }
-        #hearts-display::before { content:'❤️ '; }
+        #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=14">
+    <link rel="stylesheet" href="minimal.css?v=15">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=18"></script>
+<script src="platform.js?v=19"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2296,8 +2296,14 @@ window.state = state;
 
 // Cement texture images for variety
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
-const AVATAR_EMOJIS = ['🙂','😺','🐶','🦉','🐼','🐨','🦁','🦊','🐰','🐻','🐷','🐯','🐙','🦄','🐲','👽','🤖','👻','💀','🎃','🤠','😎','🥳','🤩'];
-const DEFAULT_AVATAR_EMOJI = '🙂';
+const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+const DEFAULT_AVATAR = 'A';
+function avatarColor(str) {
+    if (!str) return 'var(--text-dim)';
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h * 31) + str.charCodeAt(i)) % 360;
+    return `hsl(${h}, 45%, 35%)`;
+}
 let avatarConfig = null;
 let cementCounter = 0;
 function nextCement() {
@@ -2923,41 +2929,34 @@ function renderPhotoFallback(item, cls = 'dish-photo') {
 function renderPhotoFallbackString(name, cls) {
     const cat = getSectionCategory(state.section) || (name ? getDishCategory(name) : null);
     const label = cat ? cat.label : 'Блюдо';
-    const emojis = { 'Завтрак':'🍳', 'Сэндвич':'🥪', 'Обед':'🍲', 'Десерт':'🍰', 'Напиток':'☕', 'ПФ Напитков':'🥤', 'ПФ Кухни':'🍳', 'Блюдо':'🍽️' };
-    const emoji = emojis[label] || (label[0] || '?');
-    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${emoji}</span><span class="dish-fallback-label">${label}</span></div>`;
+    const initial = (name && name[0]) || (label[0]) || '?';
+    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${initial}</span><span class="dish-fallback-label">${label}</span></div>`;
 }
 
 // ====================== RENDERING ======================
 const app = document.getElementById('app');
 
 function renderAvatar(avatar, size = 32) {
-    let emoji = DEFAULT_AVATAR_EMOJI;
-    if (typeof avatar === 'string' && avatar) emoji = avatar;
-    else if (avatar && typeof avatar === 'object' && avatar.emoji) emoji = avatar.emoji;
-    return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px">${emoji}</span>`;
+    let letter = DEFAULT_AVATAR;
+    if (typeof avatar === 'string' && avatar) letter = avatar;
+    else if (avatar && typeof avatar === 'object' && avatar.emoji) letter = avatar.emoji;
+    const color = avatarColor(letter);
+    return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px;background:${color}!important;border-color:${color}!important;color:#fff!important">${letter}</span>`;
 }
 
-const MASCOT_IDLE = '🦉';
-const MASCOT_CORRECT = '🎉';
-const MASCOT_WRONG = '😓';
-const MASCOT_PRAISES = ['Отлично!', 'Супер!', 'Молодец!', 'Правильно!', 'Так держать!'];
-function getMascotHTML(mood, text) {
-    const t = text || (mood === 'correct' ? MASCOT_PRAISES[Math.floor(Math.random() * MASCOT_PRAISES.length)] : mood === 'wrong' ? 'Не расстраивайся, попробуй ещё!' : 'Выбери правильный ответ!');
-    return `<div class="mascot-area lesson-mascot"><span class="mascot" data-mood="${mood}"></span><span class="mascot-speech">${t}</span></div>`;
-}
+function getMascotHTML() { return ''; }
 
 function cloneAvatar(avatar) {
     if (typeof avatar === 'string' && avatar) return avatar;
     if (avatar && typeof avatar === 'object' && avatar.emoji) return avatar.emoji;
-    return DEFAULT_AVATAR_EMOJI;
+    return DEFAULT_AVATAR;
 }
 
 function migrateProfileAvatar(profile) {
     if (!profile) return profile;
     if (typeof profile.avatar === 'string') return { ...profile, avatar: profile.avatar };
     if (profile && typeof profile.avatar === 'object' && profile.avatar && profile.avatar.emoji) return { ...profile, avatar: profile.avatar.emoji };
-    return { ...profile, avatar: profile.avatarEmoji || DEFAULT_AVATAR_EMOJI };
+    return { ...profile, avatar: profile.avatarEmoji || DEFAULT_AVATAR };
 }
 
 let _lastRenderedScreen = null;
@@ -3158,10 +3157,10 @@ function loadAvatarConfig() {
 function renderAvatarEditorContent(mode) {
     const editor = state.avatarEditor;
     if (!editor) return '';
-    const current = editor.emoji || DEFAULT_AVATAR_EMOJI;
-    const optionsHTML = AVATAR_EMOJIS.map(emoji => {
+    const current = editor.emoji || DEFAULT_AVATAR;
+    const optionsHTML = AVATAR_LETTERS.map(emoji => {
         const selected = emoji === current;
-        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatarEmoji('${emoji}')">${emoji}</button>`;
+        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatar('${emoji}')">${emoji}</button>`;
     }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
     return `
@@ -3192,7 +3191,7 @@ function renderOnboarding() {
     }
 
     if (!state.avatarEditor) {
-        state.avatarEditor = { emoji: state.onboardingAvatar || DEFAULT_AVATAR_EMOJI, mode: 'onboarding' };
+        state.avatarEditor = { emoji: state.onboardingAvatar || DEFAULT_AVATAR, mode: 'onboarding' };
     }
 
     app.innerHTML = `
@@ -3215,13 +3214,13 @@ function setOnboardingNickname(value) {
 
 function goToAvatar() {
     if (!state.onboardingNickname.trim()) return;
-    state.onboardingAvatar = DEFAULT_AVATAR_EMOJI;
-    state.avatarEditor = { emoji: DEFAULT_AVATAR_EMOJI, mode: 'onboarding' };
+    state.onboardingAvatar = DEFAULT_AVATAR;
+    state.avatarEditor = { emoji: DEFAULT_AVATAR, mode: 'onboarding' };
     state.onboardingStep = 'avatar';
     render();
 }
 
-function selectAvatarEmoji(emoji) {
+function selectAvatar(emoji) {
     if (!state.avatarEditor) return;
     state.avatarEditor.emoji = emoji;
     tapFeedback();
@@ -3243,7 +3242,7 @@ function backAvatarEditor() {
 
 function saveAvatarEditor() {
     if (!state.avatarEditor || state.avatarEditor.mode !== 'edit') return;
-    state.profile = { ...state.profile, avatar: state.avatarEditor.emoji || DEFAULT_AVATAR_EMOJI };
+    state.profile = { ...state.profile, avatar: state.avatarEditor.emoji || DEFAULT_AVATAR };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
     goBack();
@@ -3251,7 +3250,7 @@ function saveAvatarEditor() {
 
 function finishOnboarding() {
     if (!state.onboardingNickname.trim()) return;
-    const avatar = state.avatarEditor ? (state.avatarEditor.emoji || DEFAULT_AVATAR_EMOJI) : (state.onboardingAvatar || DEFAULT_AVATAR_EMOJI);
+    const avatar = state.avatarEditor ? (state.avatarEditor.emoji || DEFAULT_AVATAR) : (state.onboardingAvatar || DEFAULT_AVATAR);
     state.profile = {
         nickname: state.onboardingNickname.trim(),
         avatar: avatar,
@@ -3263,7 +3262,7 @@ function finishOnboarding() {
 }
 
 function openAvatarEditor() {
-    state.avatarEditor = { emoji: (state.profile && state.profile.avatar) || DEFAULT_AVATAR_EMOJI, mode: 'edit' };
+    state.avatarEditor = { emoji: (state.profile && state.profile.avatar) || DEFAULT_AVATAR, mode: 'edit' };
     goToScreen('avatarEditor');
     render();
 }
@@ -4575,7 +4574,7 @@ function renderLesson() {
             if (!byCat[cat]) return '';
             const items = byCat[cat].map(ing => `<span class="missing-item" style="${cementStyle()}">${ing}</span>`).join('');
             const missingSlot = missingCat === cat ? (fb
-                ? `<span class="missing-item" style="background:${state._lastCorrect ? '#a8d5a2' : '#e8a8a5'};color:${state._lastCorrect ? '#1b5e20' : '#b71c1c'}">${q.missing}</span>`
+                ? `<span class="missing-item ${state._lastCorrect ? 'correct-reveal' : 'wrong-reveal'}">${q.missing}</span>`
                 : `<span class="missing-slot">?</span>`) : '';
             return `<div class="sort-column" style="${cementStyle()}">
                 <div class="sort-column-label">${catLabels[cat]}</div>
@@ -5014,18 +5013,14 @@ function renderResult() {
         : 0;
 
     const barColor = accuracy >= 80 ? 'var(--green)' : accuracy >= 50 ? 'var(--gold)' : 'var(--red)';
-    const resultEmoji = accuracy === 100 ? '🏆' : accuracy >= 80 ? '✨' : accuracy >= 50 ? '👍' : '💪';
     const resultTitle = accuracy === 100 ? 'Идеально!' :
                         accuracy >= 80 ? 'Отличная работа!' :
                         accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
     const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
                       `Ты заработал ${state._finalXP} XP!`;
-    const resultMascotMood = accuracy === 100 ? 'correct' : accuracy >= 50 ? 'idle' : 'wrong';
 
     app.innerHTML = `
         <div class="result-screen">
-            <div class="result-mascot mascot" data-mood="${resultMascotMood}"></div>
-            <div class="result-emoji">${resultEmoji}</div>
             <div class="result-title">${resultTitle}</div>
             <div class="result-subtitle">${resultSub}</div>
             <div class="result-stats">
