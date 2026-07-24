@@ -957,3 +957,56 @@ body::before { display: none !important; }
 
 /* Category badges */
 .category-badge { background: transparent !important; color: var(--gold) !important; border: 1px solid rgba(212,175,55,0.30) !important; border-radius: 6px !important; font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.6px !important; padding: 3px 8px !important; }
+
+/* Editor sticky header */
+.editor-sticky-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 12px 28px !important;
+    margin: 0 -28px 18px -28px !important;
+    width: calc(100% + 56px) !important;
+    box-sizing: border-box !important;
+    background: rgba(38,38,38,0.96) !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 12px 12px 0 0 !important;
+    backdrop-filter: blur(10px) !important;
+}
+.editor-sticky-title {
+    flex: 1 !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    color: var(--text-primary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+.editor-back-btn {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    font-size: 20px !important;
+    padding: 4px 8px !important;
+    cursor: pointer !important;
+    line-height: 1 !important;
+}
+.editor-save-btn {
+    background: var(--green) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: opacity 0.15s ease, transform 0.1s ease !important;
+    white-space: nowrap !important;
+}
+.editor-save-btn:not(.disabled):hover { background: var(--green-light) !important; }
+.editor-save-btn:not(.disabled):active { transform: translateY(1px) !important; }
+.editor-save-btn.disabled { background: var(--text-dim) !important; cursor: not-allowed !important; opacity: 0.7 !important; }
