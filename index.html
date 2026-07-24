@@ -2227,13 +2227,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=20">
+    <link rel="stylesheet" href="minimal.css?v=21">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=33"></script>
+<script src="platform.js?v=34"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -3742,58 +3742,10 @@ function renderLessonPreview() {
 
 function renderPath() {
     const stats = getGlobalStats();
-    const sp = getSectionProgress(state.section);
     const weakItems = getWeakItems(state.section);
-
-    let firstIncomplete = state.lessons.length;
-    for (let i = 0; i < state.lessons.length; i++) {
-        const ld = sp[`lesson_${i}`];
-        if (!ld || !ld.completed) {
-            firstIncomplete = i;
-            break;
-        }
-    }
-
-    let nodesHTML = '';
-    const offsets = [0, 40, 60, 40, 0, -40, -60, -40];
-
-    for (let i = 0; i < state.lessons.length; i++) {
-        const ld = sp[`lesson_${i}`] || {};
-        let nodeClass = 'locked';
-        let clickHandler = '';
-
-        if (i < firstIncomplete) {
-            nodeClass = 'completed';
-            clickHandler = `onclick="showLessonPreview(${i})"`;
-        } else if (i === firstIncomplete) {
-            nodeClass = 'available';
-            clickHandler = `onclick="showLessonPreview(${i})"`;
-        }
-
-        const offset = offsets[i % offsets.length];
-        const crownHTML = ld.crowns > 0 ? `<span class="crown-badge">${ld.crowns > 1 ? ld.crowns : ''}</span>` : '';
-        const connectorClass = i < firstIncomplete ? 'completed' : '';
-
-        if (i > 0) {
-            nodesHTML += `<div class="path-connector ${connectorClass}"></div>`;
-        }
-
-        nodesHTML += `
-            <div class="path-row">
-                <button class="lesson-node ${nodeClass}" ${clickHandler} style="margin-left:${offset}px">
-                    ${crownHTML}
-                    ${i + 1}
-                    <span class="node-sub">${state.lessons[i].length} карт</span>
-                </button>
-            </div>
-        `;
-    }
-
-    const practiceHTML = weakItems.length > 0 ? `
-        <button class="practice-btn" style="${cementStyle()}" onclick="startPractice()">
-            Тренировка слабых мест (${weakItems.length})
-        </button>
-    ` : '';
+    const skillTreeHTML = typeof renderSkillTree === 'function'
+        ? renderSkillTree(buildLessonSkillNodes(weakItems))
+        : '';
 
     app.innerHTML = `
         <div class="top-bar">
@@ -3814,12 +3766,9 @@ function renderPath() {
             <div class="path-header">
                 <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
                 <div class="path-title">${state.sectionLabel}</div>
-                <button class="browse-btn" style="${cementStyle()}" onclick="openBrowse()" aria-label="Справочник">i</button>
+                <div style="width:40px"></div>
             </div>
-            ${practiceHTML}
-            <div class="path-container">
-                ${nodesHTML}
-            </div>
+            ${skillTreeHTML}
         </div>
     `;
 }

@@ -1082,6 +1082,16 @@ body::before { display: none !important; }
     box-shadow: 0 0 0 0 rgba(229,57,53,0.2) !important;
     animation: pulse-red 2s infinite !important;
 }
+.skill-node.guidebook {
+    border-color: var(--blue) !important;
+    background: rgba(96,165,250,0.08) !important;
+    color: var(--blue) !important;
+}
+.skill-node.practice {
+    border-color: var(--green) !important;
+    background: rgba(76,175,80,0.08) !important;
+    color: var(--green) !important;
+}
 .skill-icon {
     display: inline-flex !important;
     align-items: center !important;
