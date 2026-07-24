@@ -466,11 +466,11 @@ function initPlatform() {
 
   const joinCode = getUrlParam('venue');
   state.platformDraft = {};
+  window.renderHome = (state.auth && state.auth.role === 'owner') ? renderOwnerHome : renderPlatformHome;
   if (!state.auth && joinCode && /^\d{6}$/.test(joinCode)) {
     state.screen = 'staffJoin';
     state.platformDraft = { code: joinCode };
   } else if (state.auth && state.venue) {
-    window.renderHome = renderPlatformHome;
     if (state.auth.role === 'owner') {
       state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
     } else {
@@ -688,7 +688,7 @@ async function registerOwner() {
 
   saveProgress({ auth: auth, venue: finalVenue, profile: state.profile });
   applyVenueStyle(style);
-  window.renderHome = renderPlatformHome;
+  window.renderHome = renderOwnerHome;
   replaceScreen('ownerSetup');
 }
 
@@ -789,6 +789,11 @@ function ownerDashboard() {
 
 function ownerBackToHome() {
   goBack();
+}
+
+function renderOwnerHome() {
+  loadStaffList();
+  replaceScreen('ownerDashboard');
 }
 
 async function loadStaffList() {
@@ -1098,7 +1103,7 @@ function handleAuthData(data) {
   state.platformDraft = null;
   saveProgress({ auth, venue: remoteVenue, profile: state.profile });
   applyVenueStyle(remoteVenue.style || 'modern', remoteVenue.bgImage || null);
-  window.renderHome = renderPlatformHome;
+  window.renderHome = user.role === 'owner' ? renderOwnerHome : renderPlatformHome;
   loadVenueIntoState();
   if (user.role === 'owner') {
     replaceScreen((remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup');
@@ -1321,7 +1326,7 @@ async function ownerLogin() {
   state.platformDraft = null;
   saveProgress({ auth: auth, venue: remoteVenue, profile: state.profile });
   applyVenueStyle(remoteVenue.style || 'modern', remoteVenue.bgImage || null);
-  window.renderHome = renderPlatformHome;
+  window.renderHome = renderOwnerHome;
   replaceScreen(remoteVenue.sections && remoteVenue.sections.some(s => s.items && s.items.length) ? 'home' : 'ownerSetup');
   showPlatformToast('Заведение загружено');
 }
@@ -1431,6 +1436,8 @@ function renderOwnerDashboard() {
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импортировать бэкап</button>
       <input type="file" id="venue-import-file" style="display:none" accept=".json,application/json" onchange="importVenueBackup(this.files[0])">
+      <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="logoutPlatform()">Выйти из аккаунта</button>
     </div>
   `;
 }
@@ -1757,6 +1764,10 @@ function renderStaffJoin() {
 }
 
 function renderPlatformHome() {
+  if (state.auth && state.auth.role === 'owner') {
+    renderOwnerHome();
+    return;
+  }
   const stats = getGlobalStats();
   const venue = state.venue;
   const isOwner = state.auth && state.auth.role === 'owner';
@@ -2130,7 +2141,7 @@ function saveCourseFromEditor() {
   if (persistCourseEditor()) {
     state.platformDraft = null;
     state.editorDirty = false;
-    window.renderHome = renderPlatformHome;
+    window.renderHome = renderOwnerHome;
     replaceScreen('home');
     showPlatformToast('Курс сохранён');
     playSound('correct');
@@ -3512,7 +3523,7 @@ function buildVenueFromParsedItems(items, sourceName) {
   state.platformDraft = null;
   saveProgress({ venue: venue });
   syncVenue();
-  window.renderHome = renderPlatformHome;
+  window.renderHome = renderOwnerHome;
   replaceScreen('home');
   showPlatformToast(`Меню загружено: ${items.length} позиций`);
   playSound('correct');
