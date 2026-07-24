@@ -1344,6 +1344,14 @@ function renderOwnerSetup() {
         </div>
         <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx" onchange="handleTTKFile(this.files[0])">
 
+        <label class="platform-label" style="margin-top:18px;">Или фото / скан ТТК</label>
+        <div class="upload-zone" onclick="document.getElementById('ttk-image-file').click()">
+          <div class="upload-icon"></div>
+          <div class="upload-text">Выберите фото меню или ТТК</div>
+          <div class="upload-hint">.jpg, .png, .webp</div>
+        </div>
+        <input type="file" id="ttk-image-file" style="display:none" accept="image/*" multiple onchange="handleTTKImageFiles(this.files)">
+
         <label class="platform-label" style="margin-top:18px;">Или вставьте текст ТТК</label>
         <textarea id="ttk-paste" class="platform-input" rows="6" placeholder="Например:\nКапучино\n• Эспрессо 30 мл\n• Молоко 150 мл\n• Молочная пена 30 г"></textarea>
         <button class="onboarding-btn" onclick="parseTTKPastePreview()">Распознать и открыть редактор</button>
@@ -2618,6 +2626,164 @@ function handleDocxFile(file) {
   });
 }
 
+async function handleTTKImageFiles(files) {
+  if (!files || !files.length) return;
+  showPlatformToast('Распознаём фото...');
+  try {
+    await loadTesseract();
+    const worker = await Tesseract.createWorker('rus');
+    const results = [];
+    for (const file of files) {
+      const items = await processTTKImageWithWorker(file, worker);
+      results.push(items);
+    }
+    await worker.terminate();
+    const allItems = results.flat().filter(Boolean);
+    if (!allItems.length) {
+      showPlatformToast('Не удалось распознать позиции на фото');
+      return;
+    }
+    const sourceName = files.length === 1 ? (files[0].name.replace(/\.[^.]+$/, '').trim() || 'Фото ТТК') : 'Фото ТТК';
+    state.platformDraft = { parsedItems: allItems, sectionName: sourceName };
+    state.editorDirty = true;
+    openCourseEditor();
+  } catch (e) {
+    console.error('TTK image OCR error:', e);
+    showPlatformToast('Ошибка распознавания фото');
+  }
+}
+
+function loadTesseract() {
+  if (typeof Tesseract !== 'undefined') return Promise.resolve();
+  return loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+}
+
+async function processTTKImageWithWorker(file, worker) {
+  const imageUrl = await resizeImageFile(file, 1400, 0.9);
+  const ret = await worker.recognize(imageUrl);
+  const text = ret.data.text || '';
+  const words = ret.data.words || [];
+  const photoUrl = words.length ? await extractDishPhoto(imageUrl, words) : null;
+  const items = parseTTKOCRText(text);
+  if (photoUrl && items.length) {
+    items[0].image = photoUrl;
+  }
+  return items;
+}
+
+async function extractDishPhoto(imageDataUrl, words) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const width = img.width;
+      const height = img.height;
+      if (width < 80 || height < 80) { resolve(null); return; }
+      const pad = Math.min(width, height) * 0.02;
+      const cols = 24, rows = 24;
+      const cw = width / cols;
+      const ch = height / rows;
+      const grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+      for (const w of words) {
+        const b = w.bbox;
+        const c0 = Math.max(0, Math.floor((b.x0 - pad) / cw));
+        const c1 = Math.min(cols - 1, Math.ceil((b.x1 + pad) / cw));
+        const r0 = Math.max(0, Math.floor((b.y0 - pad) / ch));
+        const r1 = Math.min(rows - 1, Math.ceil((b.y1 + pad) / ch));
+        for (let r = r0; r <= r1; r++) {
+          for (let c = c0; c <= c1; c++) {
+            grid[r][c] = 1;
+          }
+        }
+      }
+      let gridCopy = grid.map(row => row.slice());
+      let attempts = 5;
+      while (attempts-- > 0) {
+        const rect = maximalRectangleOfZeros(gridCopy);
+        if (!rect) break;
+        const left = Math.max(0, Math.floor(rect.left * cw));
+        const top = Math.max(0, Math.floor(rect.top * ch));
+        const right = Math.min(width, Math.ceil((rect.right + 1) * cw));
+        const bottom = Math.min(height, Math.ceil((rect.bottom + 1) * ch));
+        const cropW = right - left;
+        const cropH = bottom - top;
+        if (cropW >= 80 && cropH >= 80) {
+          const canvas = document.createElement('canvas');
+          canvas.width = cropW;
+          canvas.height = cropH;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, left, top, cropW, cropH, 0, 0, cropW, cropH);
+          const stats = computeImageStats(canvas);
+          if (stats.variance >= 150 && stats.nonWhiteRatio > 0.1) {
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+            return;
+          }
+        }
+        for (let r = rect.top; r <= rect.bottom; r++) {
+          for (let c = rect.left; c <= rect.right; c++) {
+            gridCopy[r][c] = 1;
+          }
+        }
+      }
+      resolve(null);
+    };
+    img.onerror = reject;
+    img.src = imageDataUrl;
+  });
+}
+
+function maximalRectangleOfZeros(matrix) {
+  if (!matrix.length || !matrix[0].length) return null;
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  const heights = new Array(cols).fill(0);
+  let best = null;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      heights[c] = matrix[r][c] === 0 ? heights[c] + 1 : 0;
+    }
+    const stack = [];
+    for (let c = 0; c <= cols; c++) {
+      const h = c === cols ? 0 : heights[c];
+      let start = c;
+      while (stack.length && h < stack[stack.length - 1].h) {
+        const top = stack.pop();
+        const width = c - top.i;
+        const height = top.h;
+        const area = width * height;
+        if (!best || area > best.area) {
+          best = { area, top: r - height + 1, left: top.i, bottom: r, right: c - 1 };
+        }
+        start = top.i;
+      }
+      stack.push({ i: start, h });
+    }
+  }
+  return best;
+}
+
+function computeImageStats(canvas) {
+  const ctx = canvas.getContext('2d');
+  const { width, height } = canvas;
+  if (width < 2 || height < 2) return { variance: 0, nonWhiteRatio: 0 };
+  const data = ctx.getImageData(0, 0, width, height).data;
+  let sum = 0;
+  let sumSq = 0;
+  let nonWhite = 0;
+  let n = 0;
+  for (let i = 0; i < data.length; i += 16) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const v = 0.299 * r + 0.587 * g + 0.114 * b;
+    sum += v;
+    sumSq += v * v;
+    if (v < 245) nonWhite++;
+    n++;
+  }
+  if (!n) return { variance: 0, nonWhiteRatio: 0 };
+  const mean = sum / n;
+  const variance = (sumSq / n) - mean * mean;
+  return { variance, nonWhiteRatio: nonWhite / n };
+}
+
 function parseWeightToGrams(str) {
   if (!str) return null;
   const s = str.trim()
@@ -2904,6 +3070,53 @@ function parseTTKPlainText(text) {
     if (item) items.push(item);
   }
   return items;
+}
+
+function parseTTKOCRText(text) {
+  if (!text || !text.trim()) return [];
+  const lines = text
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  const items = [];
+  let currentName = null;
+  let currentComponents = [];
+
+  function flush() {
+    if (currentName) {
+      const components = currentComponents
+        .flatMap(extractComponents)
+        .map(parseComponentToken)
+        .filter(Boolean);
+      if (components.length) {
+        const name = cleanItemName(currentName);
+        items.push({
+          type: 'composition',
+          name,
+          correct: components,
+          info_text: buildInfoText(name, components),
+        });
+      }
+    }
+    currentName = null;
+    currentComponents = [];
+  }
+
+  for (const line of lines) {
+    if (isLikelyComponent(line)) {
+      if (currentName) currentComponents.push(line);
+    } else {
+      flush();
+      currentName = line;
+    }
+  }
+  flush();
+
+  return items.length ? items : parseTTKPlainText(text);
 }
 
 function mergeHeadingBlocks(blocks) {
