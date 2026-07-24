@@ -888,7 +888,7 @@ body::before { display: none !important; }
 #hearts-display { font-weight: 700 !important; color: var(--red) !important; }
 .hearts-display.heart-break { animation: shake 0.35s ease !important; }
 
-.mascot, .platform-mascot, .result-mascot, .onboarding-mascot, .mascot-area { display: none !important; }
+.mascot, .platform-mascot, .result-mascot, .onboarding-mascot { display: none !important; }
 .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon {
     display: inline-flex !important;
     align-items: center !important;

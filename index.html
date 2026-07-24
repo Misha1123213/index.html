@@ -298,15 +298,6 @@
             text-align: center;
             padding: 30px 0 20px;
         }
-        .mascot {
-            font-size: 80px;
-            display: block;
-            animation: mascotBounce 2s ease-in-out infinite;
-        }
-        @keyframes mascotBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
         .app-title {
             font-size: 28px;
             font-weight: 900;
@@ -1077,7 +1068,6 @@
             padding: 40px 20px;
             text-align: center;
         }
-        .result-mascot { font-size: 64px; margin-bottom: 16px; }
         .result-title {
             font-size: 26px;
             font-weight: 900;
@@ -1578,10 +1568,6 @@
             color: var(--text-primary);
             text-align: center;
         }
-        .onboarding-mascot {
-            font-size: 80px;
-            margin-bottom: 16px;
-        }
         .onboarding-title {
             font-size: 28px;
             font-weight: 900;
@@ -1936,12 +1922,6 @@
             align-items: center;
             margin-bottom: 20px;
         }
-        .platform-mascot {
-            font-size: 72px;
-            text-align: center;
-            margin: 40px 0 12px;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-        }
         .platform-title {
             font-size: 24px;
             font-weight: 800;
@@ -2238,7 +2218,7 @@
             --concrete-border: rgba(0,0,0,0.08);
         }
         body { font-family: 'Inter', 'Nunito', sans-serif; }
-        .mascot, .onboarding-mascot, .platform-mascot, .result-mascot, .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: inline-flex !important; }
+        .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: inline-flex !important; }
         .mascot-area { padding: 16px 0 8px !important; }
         .top-bar .streak-count::before { content:''; }
         .top-bar .hearts-count::before { content:''; }
@@ -2247,13 +2227,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=15">
+    <link rel="stylesheet" href="minimal.css?v=16">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=19"></script>
+<script src="platform.js?v=20"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2314,6 +2294,7 @@ function nextCement() {
 function cementStyle() {
     return '';
 }
+const GENERIC_DISTRACTORS = ['Вода','Соль','Сахар','Мука','Молоко','Яйцо','Масло сливочное','Перец чёрный','Лук репчатый','Чеснок','Укроп','Петрушка','Сыр','Хлеб','Лимон','Мёд','Соевый соус','Оливковое масло','Картофель','Морковь','Сметана','Сливки','Томат','Огурец','Базилик','Кинза','Рис','Макароны','Гречка','Овсянка'];
 
 // ====================== PERSISTENCE ======================
 function loadProgress() {
@@ -2582,11 +2563,11 @@ function getWeakItems(section) {
 }
 
 // ====================== ADAPTIVE ENGINE ======================
-const FORMATS = ['logical', 'missing', 'color_coded', 'spatial'];
-const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill'];
+const FORMATS = ['logical', 'missing', 'color_coded', 'spatial', 'photo'];
+const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill', 'photo'];
 
 function getEnabledQuestionFormats() {
-    const all = ['logical', 'missing', 'color_coded', 'spatial'];
+    const all = ['logical', 'missing', 'color_coded', 'spatial', 'photo'];
     const settings = (typeof getVenueSettings === 'function') ? getVenueSettings() : {};
     const formats = settings.formats || {};
     const enabled = all.filter(f => formats[f] !== false);
@@ -2733,7 +2714,8 @@ function getFormatLabel(f) {
         logical: 'Логический',
         missing: 'С пропусками',
         color_coded: 'Визуальный',
-        spatial: 'Пространственный'
+        spatial: 'Пространственный',
+        photo: 'По фото'
     };
     return labels[f] || f;
 }
@@ -2743,7 +2725,8 @@ function getFormatDescription(f) {
         logical: 'Текстовые списки ингредиентов',
         missing: 'Найти недостающий ингредиент',
         color_coded: 'Цветовая группировка по категориям',
-        spatial: 'Визуальное расположение компонентов'
+        spatial: 'Визуальное расположение компонентов',
+        photo: 'Угадать состав по фотографии блюда'
     };
     return desc[f] || '';
 }
@@ -2944,7 +2927,7 @@ function renderAvatar(avatar, size = 32) {
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px;background:${color}!important;border-color:${color}!important;color:#fff!important">${letter}</span>`;
 }
 
-function getMascotHTML() { return ''; }
+
 
 function cloneAvatar(avatar) {
     if (typeof avatar === 'string' && avatar) return avatar;
@@ -3078,7 +3061,6 @@ function renderHome() {
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot"></span>
                 <div class="app-title">Cognitio</div>
                 <div class="app-subtitle">Изучай составы блюд</div>
             </div>
@@ -3178,9 +3160,8 @@ function renderOnboarding() {
     if (state.onboardingStep === 'nickname') {
         app.innerHTML = `
             <div class="onboarding-screen">
-                <div class="onboarding-mascot"></div>
                 <div class="onboarding-title">Как тебя зовут?</div>
-                <div class="onboarding-subtitle">Создай персонажа, как в Duolingo</div>
+                <div class="onboarding-subtitle">Создай персонажа</div>
                 <input class="nickname-input" type="text" placeholder="Введи никнейм" maxlength="20" value="${state.onboardingNickname}" oninput="setOnboardingNickname(this.value)">
                 <button class="onboarding-btn ${state.onboardingNickname.trim() ? '' : 'disabled'}" onclick="goToAvatar()">
                     Продолжить
@@ -3389,7 +3370,6 @@ function renderBranchSelection() {
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot"></span>
                 <div class="app-title">${title}</div>
                 <div class="app-subtitle">${subtitle}</div>
             </div>
@@ -3416,7 +3396,8 @@ function getTypeLabel(type) {
         select: 'Выбор',
         missing: 'Пропуск',
         truefalse: 'Верно/неверно',
-        color_fill: 'Цветовые группы'
+        color_fill: 'Цветовые группы',
+        photo: 'По фото'
     };
     return labels[type] || type;
 }
@@ -4028,6 +4009,10 @@ function buildWrongPool(nd, allIngredients) {
         const extra = allIngredients.filter(i => !correctSet.has(i) && !wrongPool.includes(i));
         wrongPool = wrongPool.concat(shuffle(extra).slice(0, 5 - wrongPool.length));
     }
+    if (wrongPool.length < 4) {
+        const generic = GENERIC_DISTRACTORS.filter(i => !correctSet.has(i) && !wrongPool.includes(i));
+        wrongPool = wrongPool.concat(shuffle(generic).slice(0, 6 - wrongPool.length));
+    }
     return wrongPool;
 }
 
@@ -4140,9 +4125,13 @@ function buildColorFillQuestion(nd, wrongPool, allIngredients) {
         const candidates = allIngredients.filter(i => !used.has(i) && getColorCategory(i) === cat);
         distractors.push(...shuffle(candidates).slice(0, 2));
     }
-    if (distractors.length < 2) {
-        const extra = shuffle(wrongPool).filter(i => !used.has(i) && !distractors.includes(i)).slice(0, 2 - distractors.length);
+    if (distractors.length < 3) {
+        const extra = shuffle(wrongPool).filter(i => !used.has(i) && !distractors.includes(i) && missingCats.includes(getColorCategory(i))).slice(0, 4 - distractors.length);
         distractors.push(...extra);
+    }
+    if (distractors.length < 3) {
+        const generic = GENERIC_DISTRACTORS.filter(i => !used.has(i) && !distractors.includes(i) && missingCats.includes(getColorCategory(i)));
+        distractors.push(...shuffle(generic).slice(0, 5 - distractors.length));
     }
     if (distractors.length === 0) return null;
 
@@ -4286,7 +4275,44 @@ function buildSimpleSelect(nd, wrongPool, format) {
     };
 }
 
+function buildPhotoQuestion(nd, wrongPool, allIngredients) {
+    if (!nd._image) return null;
+    const correctCount = nd._ingredients.length;
+    const minDistractors = Math.max(3, Math.ceil(correctCount * 0.5));
+    const correctSet = new Set(nd._ingredients);
+    const used = new Set(nd._ingredients);
+    let pool = [...nd._ingredients];
+
+    // Prefer real wrong options from the menu
+    let extras = [...wrongPool].filter(i => !correctSet.has(i) && !used.has(i));
+    extras = shuffle(extras).slice(0, minDistractors);
+    for (const e of extras) {
+        pool.push(e);
+        used.add(e);
+    }
+
+    // Pad with generic distractors if still not enough
+    if (pool.length - correctCount < 3) {
+        const generic = GENERIC_DISTRACTORS.filter(i => !correctSet.has(i) && !used.has(i));
+        const needed = 4 - (pool.length - correctCount);
+        for (const g of shuffle(generic).slice(0, needed)) {
+            pool.push(g);
+            used.add(g);
+        }
+    }
+
+    return {
+        type: 'photo',
+        item: nd,
+        pool: shuffle(pool),
+        format: 'photo',
+        showGrams: false,
+        requireGrams: false,
+    };
+}
+
 function buildQuestionByFormat(format, nd, wrongPool, allIngredients) {
+    if (format === 'photo') return buildPhotoQuestion(nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
     if (format === 'color_coded') return buildColorFillQuestion(nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
     if (format === 'spatial') return buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildBasicSelect(nd, wrongPool);
     if (format === 'missing') return buildMissingQuestion(nd, wrongPool, 'missing') || buildBasicSelect(nd, wrongPool);
@@ -4528,18 +4554,20 @@ function renderLesson() {
         }
         const speedBonusText = ic && (state._lastSpeedBonus || 0) > 0 ? ` +${state._lastSpeedBonus} XP` : '';
         resultStripHTML = `<div class="inline-result ${ic ? 'correct' : 'wrong'}">
-            <span class="result-icon">${ic ? '✓' : '✗'}</span>
             ${ic ? 'Верно!' + speedBonusText : 'Неверно' + extraInfo}
         </div>`;
     }
 
     const catInfo = getSectionCategory(state.section) || getDishCategory(q.item.name);
     const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
-    const dishPhotoHTML = getDishPhotoHTML(q.item);
+    const dishPhotoHTML = q.type === 'photo' && q.item._image
+        ? `<img class="dish-photo" src="${q.item._image}" alt="" style="max-height:220px;width:auto;object-fit:cover;border-radius:10px;margin:10px auto;display:block;" onerror="this.style.display='none'">`
+        : '';
 
-    if (q.type === 'select') {
+    if (q.type === 'select' || q.type === 'photo') {
         const dishName = q.item.name;
         const ingredientsHTML = renderIngredientsForFormat(q.pool, q.format, !fb, q);
+        const title = q.type === 'photo' ? `По фото собери состав:` : `Выбери состав:`;
 
         questionHTML = `
             <div class="question-area">
@@ -4547,7 +4575,7 @@ function renderLesson() {
                     ${categoryBadge}
                     ${dishPhotoHTML}
                     <div class="question-title">
-                        Выбери состав: <span class="question-dish-name">${dishName}</span>
+                        ${title} <span class="question-dish-name">${dishName}</span>
                         ${q.requireGrams ? '<div style="font-size:12px;color:rgba(24,24,27,0.55);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
                     </div>
                 </div>
@@ -4718,8 +4746,8 @@ function renderLesson() {
             </button>
            </div>`
         : (q.type === 'truefalse' ? '' : `<div class="bottom-area">
-            <button class="check-btn ${(q.type === 'color_fill' ? state.selectedOptions.size === q.totalSlots : (q.type === 'select' ? state.selectedOptions.size > 0 : state.selectedChoice !== null)) ? 'active' : 'disabled'}"
-                    onclick="${(q.type === 'color_fill' ? (state.selectedOptions.size === q.totalSlots ? 'checkColorFillAnswer()' : '') : (q.type === 'select' ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : '')))}">
+            <button class="check-btn ${(q.type === 'color_fill' ? state.selectedOptions.size === q.totalSlots : ((q.type === 'select' || q.type === 'photo') ? state.selectedOptions.size > 0 : state.selectedChoice !== null)) ? 'active' : 'disabled'}"
+                    onclick="${(q.type === 'color_fill' ? (state.selectedOptions.size === q.totalSlots ? 'checkColorFillAnswer()' : '') : ((q.type === 'select' || q.type === 'photo') ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : '')))}">
                 Проверить
             </button>
            </div>`);
@@ -4730,7 +4758,6 @@ function renderLesson() {
         </div>
     ` : '';
 
-    const mascotHTML = getMascotHTML(fb ? (state._lastCorrect ? 'correct' : 'wrong') : 'idle');
     app.innerHTML = `
         <div class="lesson-screen">
             <div class="lesson-header">
@@ -4743,7 +4770,6 @@ function renderLesson() {
                 </div>
                 <div class="hearts-display" id="hearts-display">${heartsStr}</div>
             </div>
-            ${mascotHTML}
             ${questionHTML}
             ${bottomHTML}
         </div>
