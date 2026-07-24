@@ -353,7 +353,7 @@ function venueMoodImageUrl(style, venueName) {
 }
 
 function isPlatformScreen() {
-  return ['authOptions', 'login', 'register', 'forgotPassword', 'resetPassword', 'roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'ownerStats', 'staffStats', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
+  return ['authOptions', 'login', 'register', 'forgotPassword', 'resetPassword', 'roleSelect', 'ownerOptions', 'ownerLogin', 'ownerRegister', 'ownerSetup', 'courseEditor', 'ownerDashboard', 'ownerSettings', 'ownerStats', 'staffStats', 'sectionPicker', 'staffRegister', 'staffJoin'].includes(state.screen);
 }
 
 function venueHasGramData(venue) {
@@ -1432,13 +1432,27 @@ function renderOwnerDashboard() {
       </div>
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="showSettings()">Настройки</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('ownerSettings')">Настройки</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="logoutPlatform()">Выйти из аккаунта</button>
+    </div>
+  `;
+}
+
+function renderOwnerSettings() {
+  const venue = state.venue;
+  app.innerHTML = `
+    <div class="top-bar">
+      <button class="close-btn" onclick="goBack()">← Назад</button>
+      <div class="path-title">${venue ? venue.name : 'Cognitio'}</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="platform-dashboard">
+      <div class="platform-title" style="text-align:center;margin:16px 0;">Настройки</div>
       <button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('ownerSetup')">Загрузить ТТК</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="openVenueImages()">Фото заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать данные</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импорт бэкапа</button>
       <input type="file" id="venue-import-file" style="display:none" accept=".json,application/json" onchange="importVenueBackup(this.files[0])">
-      <button class="stats-btn" style="${cementStyle()}" onclick="logoutPlatform()">Выйти из аккаунта</button>
     </div>
   `;
 }
