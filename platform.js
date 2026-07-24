@@ -1461,6 +1461,129 @@ function sectionSettingsKey(sectionId) {
   return 'venue_' + sectionId;
 }
 
+function getSectionNodeState(section, idx, sections) {
+  const key = sectionSettingsKey(section.id);
+  const sp = getSectionProgress(key);
+  const lessonCount = Math.ceil((section.items || []).length / 8) || 1;
+  let completedLessons = 0;
+  for (let i = 0; i < lessonCount; i++) {
+    if (sp[`lesson_${i}`]?.completed) completedLessons++;
+  }
+
+  for (let j = 0; j < idx; j++) {
+    const prev = sections[j];
+    const prevKey = sectionSettingsKey(prev.id);
+    const prevSp = getSectionProgress(prevKey);
+    const prevCount = Math.ceil((prev.items || []).length / 8) || 1;
+    let prevCompleted = 0;
+    for (let k = 0; k < prevCount; k++) {
+      if (prevSp[`lesson_${k}`]?.completed) prevCompleted++;
+    }
+    if (prevCompleted < prevCount) return 'locked';
+  }
+
+  if (completedLessons >= lessonCount) {
+    const p = getProgress();
+    const itemStrength = p.itemStrength || {};
+    const items = section.items || [];
+    let totalStrength = 0;
+    let strengthCount = 0;
+    let weakCount = 0;
+    let lastSeenMax = 0;
+    const now = Date.now();
+    for (const it of items) {
+      const name = it.name || it;
+      const st = itemStrength[name];
+      if (st) {
+        totalStrength += st.strength || 0;
+        strengthCount++;
+        if (st.lastSeen) lastSeenMax = Math.max(lastSeenMax, st.lastSeen);
+        if ((st.strength || 0) < 3) weakCount++;
+      }
+    }
+    const avgStrength = strengthCount ? totalStrength / strengthCount : 5;
+    const daysSince = lastSeenMax ? (now - lastSeenMax) / 86400000 : 999;
+    if (weakCount > 0 || (avgStrength < 3.5 && daysSince > 5)) return 'broken';
+    return 'completed';
+  }
+
+  return 'available';
+}
+
+function getSkillNodeIcon(section, state) {
+  if (state === 'completed') return `<span class="skill-icon skill-star">★</span>`;
+  if (state === 'broken') return `<span class="skill-icon skill-crack">✕</span>`;
+  if (state === 'locked') return `<svg class="skill-icon skill-lock" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a4 4 0 0 1 4 4v2H8V6a4 4 0 0 1 4-4zm5 6V6a5 5 0 0 0-10 0v2H5v10h14V8h-2z"/></svg>`;
+  if (section && section.image) {
+    return `<img class="skill-icon skill-img" src="${section.image}" alt="" onerror="this.outerHTML='<span class=\\'skill-icon skill-letter\\'>${(section.name || '?')[0].toUpperCase()}</span>'">`;
+  }
+  return `<span class="skill-icon skill-letter">${(section.name || '?')[0].toUpperCase()}</span>`;
+}
+
+function startSectionReview(sectionId) {
+  if (!state.venue || !state.venue.sections.length) return;
+  loadVenueIntoState(sectionId);
+  const weakItems = getWeakItems(state.section);
+  if (weakItems.length === 0) {
+    showPlatformToast('Нет слабых позиций для повторения');
+    goToScreen('path');
+    return;
+  }
+  startPractice();
+}
+
+function renderSkillTree(sections) {
+  if (!sections.length) return '<div class="section-empty">Владелец ещё не загрузил меню</div>';
+  const treeWidth = 320;
+  const nodeSize = 72;
+  const spacingY = 110;
+  const offsets = [0, 60, 90, 60, 0, -60, -90, -60];
+  const centerX = treeWidth / 2;
+  const height = sections.length * spacingY + nodeSize + 60;
+  let pathD = '';
+  let nodesHTML = '';
+  let prevX = centerX, prevY = 0;
+
+  for (let i = 0; i < sections.length; i++) {
+    const s = sections[i];
+    const st = getSectionNodeState(s, i, sections);
+    const offset = offsets[i % offsets.length];
+    const x = centerX + offset;
+    const y = i * spacingY + nodeSize / 2 + 30;
+    if (i === 0) pathD = `M ${x} ${y}`;
+    else pathD += ` Q ${centerX} ${prevY + (y - prevY) / 2} ${x} ${y}`;
+    prevX = x; prevY = y;
+
+    let click = '';
+    if (st !== 'locked') {
+      click = st === 'broken'
+        ? `onclick="startSectionReview('${s.id}')"`
+        : `onclick="startVenueCourse('${s.id}')"`;
+    }
+    const icon = getSkillNodeIcon(s, st);
+    const labelClass = st === 'locked' ? 'dim' : '';
+    const meta = `${s.items ? s.items.length : 0} позиций`;
+    nodesHTML += `
+      <div class="skill-node-wrap" style="left:${x}px;top:${y}px;">
+        <button class="skill-node ${st}" ${click} aria-label="${st === 'locked' ? 'Заблокировано' : escapeHtml(s.name)}">${icon}</button>
+        <div class="skill-node-label ${labelClass}">${escapeHtml(s.name)}</div>
+        <div class="skill-node-meta ${labelClass}">${meta}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="skill-tree-scroll">
+      <div class="skill-tree" style="width:${treeWidth}px;height:${height}px;">
+        <svg class="skill-tree-svg" width="${treeWidth}" height="${height}" viewBox="0 0 ${treeWidth} ${height}">
+          <path class="skill-tree-path" d="${pathD}" fill="none" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        ${nodesHTML}
+      </div>
+    </div>
+  `;
+}
+
 function renderSectionSettings(sectionId) {
   const sectionKey = sectionSettingsKey(sectionId);
   const section = getVenueSections().find(s => s.id === sectionId);
@@ -1840,18 +1963,7 @@ function renderPlatformHome() {
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>
       ${weakCount > 0 ? `<button class="stats-btn" style="${cementStyle()}" onclick="startWeakPractice()">Тренировка слабых мест (${weakCount})</button>` : ''}` : ''}
-      ${!isOwner ? (hasSections ? sections.map(s => `
-        <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
-          <div class="card-img-wrap">
-            ${s.image ? `<img class="card-img" src="${s.image}" alt="" onerror="this.parentNode.classList.add('no-img')">` : `<div class="card-img-placeholder">${getSectionEmoji(s.name)}</div>`}
-          </div>
-          <div class="card-info">
-            ${s.name}
-            <small>${s.items ? s.items.length : 0} позиций • ${Math.ceil((s.items ? s.items.length : 0) / 8)} уроков</small>
-          </div>
-          <div class="card-arrow">›</div>
-        </button>
-      `).join('') : `<div class="parsed-preview" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${isOwner ? 'Загрузите ТТК, чтобы создать первый раздел' : 'Владелец ещё не загрузил меню'}</div>`) : ''}
+      ${!isOwner ? (hasSections ? renderSkillTree(sections) : `<div class="parsed-preview" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${isOwner ? 'Загрузите ТТК, чтобы создать первый раздел' : 'Владелец ещё не загрузил меню'}</div>`) : ''}
       ${isOwner ? `<button class="section-card" style="${cementStyle()}" onclick="ownerDashboard()">
         <div class="card-img-wrap"><div class="card-img-placeholder">З</div></div>
         <div class="card-info">
