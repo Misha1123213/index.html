@@ -398,6 +398,14 @@ function normalizeVenue(venue) {
   if (venue.instagram === undefined) venue.instagram = '';
   venue.sections.forEach(s => { if (s.image === undefined) s.image = ''; });
   delete venue.items;
+
+  venue.sectionSettings = venue.sectionSettings || {};
+  venue.sections.forEach(s => {
+    const key = 'venue_' + s.id;
+    if (!venue.sectionSettings[key]) {
+      venue.sectionSettings[key] = JSON.parse(JSON.stringify(venue.settings || {}));
+    }
+  });
   return venue;
 }
 
@@ -409,6 +417,33 @@ function getVenueSettings() {
     ...s,
     formats: { ...defaults.formats, ...(s.formats || {}) }
   };
+}
+
+function getSectionSettings(sectionKey = state.section) {
+  const defaults = { showGrams: false, requireGrams: false, speedMode: { enabled: false, timeLimit: 15 }, formats: { logical: true, missing: true, color_coded: true, spatial: true, photo: true } };
+  const venueSettings = (state.venue && state.venue.settings) || {};
+  const sectionSettings = (sectionKey && state.venue && state.venue.sectionSettings && state.venue.sectionSettings[sectionKey]) || {};
+  return {
+    ...defaults,
+    ...venueSettings,
+    ...sectionSettings,
+    formats: { ...defaults.formats, ...(venueSettings.formats || {}), ...(sectionSettings.formats || {}) },
+    speedMode: { ...defaults.speedMode, ...(venueSettings.speedMode || {}), ...(sectionSettings.speedMode || {}) }
+  };
+}
+
+function updateSectionSettings(sectionKey, patch) {
+  if (!state.venue || !sectionKey) return;
+  if (!state.venue.sectionSettings) state.venue.sectionSettings = {};
+  state.venue.sectionSettings[sectionKey] = { ...getSectionSettings(sectionKey), ...patch };
+  if (state.venue.sectionSettings[sectionKey].speedMode && patch.speedMode) {
+    state.venue.sectionSettings[sectionKey].speedMode = { ...getSectionSettings(sectionKey).speedMode, ...patch.speedMode };
+  }
+  if (state.venue.sectionSettings[sectionKey].formats && patch.formats) {
+    state.venue.sectionSettings[sectionKey].formats = { ...getSectionSettings(sectionKey).formats, ...patch.formats };
+  }
+  saveProgress({ venue: state.venue });
+  syncVenue();
 }
 
 function updateVenueSettings(patch) {
@@ -1349,6 +1384,7 @@ function renderOwnerDashboard() {
               <div class="section-row-name">${s.name}</div>
               <div class="section-row-meta">${s.items ? s.items.length : 0} позиций • ${Math.ceil((s.items ? s.items.length : 0) / 8)} уроков</div>
             </div>
+            <button class="section-row-action" onclick="renderSectionSettings('${s.id}')">Настройки</button>
             <button class="section-row-action" onclick="editSection('${s.id}')">Изменить</button>
             <button class="section-row-action" onclick="deleteSection('${s.id}')">Удалить</button>
           </div>
@@ -1357,7 +1393,6 @@ function renderOwnerDashboard() {
       </div>
       <button class="stats-btn" style="${cementStyle()}" onclick="showOwnerStats()">Статистика</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="goToScreen('ownerSetup')">Загрузить ТТК</button>
-      <button class="stats-btn" style="${cementStyle()}" onclick="renderTrainingSettings()">Настройки обучения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="openVenueImages()">Фото заведения</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="exportVenueFile()">Экспортировать заведение</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="document.getElementById('venue-import-file').click()">Импортировать бэкап</button>
@@ -1366,8 +1401,14 @@ function renderOwnerDashboard() {
   `;
 }
 
-function renderTrainingSettings() {
-  const settings = getVenueSettings();
+function sectionSettingsKey(sectionId) {
+  return 'venue_' + sectionId;
+}
+
+function renderSectionSettings(sectionId) {
+  const sectionKey = sectionSettingsKey(sectionId);
+  const section = getVenueSections().find(s => s.id === sectionId);
+  const settings = getSectionSettings(sectionKey);
   const showGrams = settings.showGrams !== false;
   const requireGrams = showGrams && settings.requireGrams !== false;
   const formats = settings.formats || {};
@@ -1375,18 +1416,20 @@ function renderTrainingSettings() {
     logical: 'Логический',
     missing: 'С пропусками',
     color_coded: 'Цветовой',
-    spatial: 'Пространственный'
+    spatial: 'Пространственный',
+    photo: 'По фото'
   };
   const formatDesc = {
     logical: 'Простой выбор ингредиентов',
     missing: 'Указать недостающий компонент',
     color_coded: 'Распределение по цветовым группам',
-    spatial: 'Выбор зон подачи/стакана'
+    spatial: 'Выбор зон подачи/стакана',
+    photo: 'Угадать состав по фотографии блюда'
   };
   const formatToggles = Object.keys(formatLabels).map(f => {
     const on = formats[f] !== false;
     return `
-      <div class="settings-row" style="cursor:pointer" onclick="toggleVenueSetting('format_${f}', this)">
+      <div class="settings-row" style="cursor:pointer" onclick="toggleSectionSetting('${sectionId}', 'format_${f}', this)">
         <div class="settings-row-text">
           <div class="settings-row-label">${formatLabels[f]}</div>
           <div class="settings-row-desc">${formatDesc[f]}</div>
@@ -1405,25 +1448,25 @@ function renderTrainingSettings() {
   overlay.innerHTML = `
     <div class="stats-modal" style="width:min(92vw,420px);max-height:80vh;overflow:auto;">
       <div class="stats-modal-header">
-        <div class="stats-modal-title">Настройки обучения</div>
+        <div class="stats-modal-title">Настройки раздела: ${escapeHtml((section && section.name) || '')}</div>
         <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">×</button>
       </div>
       <div class="settings-list">
-        <div class="settings-row" style="cursor:pointer" onclick="toggleVenueSetting('showGrams', this)">
+        <div class="settings-row" style="cursor:pointer" onclick="toggleSectionSetting('${sectionId}', 'showGrams', this)">
           <div class="settings-row-text">
             <div class="settings-row-label">Показывать граммы</div>
             <div class="settings-row-desc">Показывать сотрудникам граммовки в уроках и справочнике</div>
           </div>
           <div class="toggle ${showGrams ? 'on' : ''}" aria-checked="${showGrams ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
         </div>
-        <div class="settings-row" style="cursor:pointer;opacity:${showGrams ? 1 : 0.5}" onclick="if(getVenueSettings().showGrams===false)return;toggleVenueSetting('requireGrams', this)">
+        <div class="settings-row" style="cursor:pointer;opacity:${showGrams ? 1 : 0.5}" onclick="if(getSectionSettings('${sectionKey}').showGrams===false)return;toggleSectionSetting('${sectionId}', 'requireGrams', this)">
           <div class="settings-row-text">
             <div class="settings-row-label">Требовать ввод граммов</div>
             <div class="settings-row-desc">Сотрудник должен ввести граммовку каждого ингредиента</div>
           </div>
           <div class="toggle ${requireGrams ? 'on' : ''}" aria-checked="${requireGrams ? 'true' : 'false'}"><div class="toggle-knob"></div></div>
         </div>
-        <div class="settings-row" style="cursor:pointer" onclick="toggleVenueSetting('speedEnabled', this)">
+        <div class="settings-row" style="cursor:pointer" onclick="toggleSectionSetting('${sectionId}', 'speedEnabled', this)">
           <div class="settings-row-text">
             <div class="settings-row-label">Скоростной режим</div>
             <div class="settings-row-desc">Таймер на каждый вопрос; быстрые правильные ответы дают бонус XP</div>
@@ -1435,24 +1478,25 @@ function renderTrainingSettings() {
             <div class="settings-row-label">Время на вопрос</div>
             <div class="settings-row-desc">Секунд для ответа в скоростном режиме</div>
           </div>
-          <input class="platform-input" type="number" inputmode="numeric" min="5" max="60" value="${speedLimit}" style="width:70px;text-align:center" onchange="updateSpeedLimit(this.value)">
+          <input class="platform-input" type="number" inputmode="numeric" min="5" max="60" value="${speedLimit}" style="width:70px;text-align:center" onchange="updateSectionSpeedLimit('${sectionId}', this.value)">
         </div>
         <div class="settings-row" style="margin-top:8px;cursor:default;">
           <div class="settings-row-text">
             <div class="settings-row-label">Форматы вопросов</div>
-            <div class="settings-row-desc">Какие типы заданий показывать сотрудникам</div>
+            <div class="settings-row-desc">Какие типы заданий показывать в этом разделе</div>
           </div>
         </div>
         ${formatToggles}
       </div>
-      <p class="settings-hint">Настройки сохраняются для всех сотрудников заведения.</p>
+      <p class="settings-hint">Настройки применяются только для раздела «${escapeHtml((section && section.name) || '')}».</p>
     </div>
   `;
   document.body.appendChild(overlay);
 }
 
-function toggleVenueSetting(key, row) {
-  const settings = getVenueSettings();
+function toggleSectionSetting(sectionId, key, row) {
+  const sectionKey = sectionSettingsKey(sectionId);
+  const settings = getSectionSettings(sectionKey);
   const next = { ...settings };
   if (key === 'showGrams') {
     next.showGrams = !settings.showGrams;
@@ -1466,19 +1510,20 @@ function toggleVenueSetting(key, row) {
     const f = key.replace('format_', '');
     next.formats = { ...(settings.formats || {}), [f]: !(settings.formats || {})[f] };
   }
-  updateVenueSettings(next);
+  updateSectionSettings(sectionKey, next);
   const overlay = row.closest('.modal-overlay');
   if (overlay) overlay.remove();
-  renderTrainingSettings();
+  renderSectionSettings(sectionId);
 }
 
-function updateSpeedLimit(value) {
+function updateSectionSpeedLimit(sectionId, value) {
+  const sectionKey = sectionSettingsKey(sectionId);
   const n = Math.max(5, Math.min(60, parseInt(value) || 15));
-  const settings = getVenueSettings();
-  updateVenueSettings({ ...settings, speedMode: { ...(settings.speedMode || {}), timeLimit: n } });
+  const settings = getSectionSettings(sectionKey);
+  updateSectionSettings(sectionKey, { ...settings, speedMode: { ...(settings.speedMode || {}), timeLimit: n } });
   const overlay = document.querySelector('.modal-overlay');
   if (overlay) overlay.remove();
-  renderTrainingSettings();
+  renderSectionSettings(sectionId);
 }
 
 function formatDateTime(ts) {
@@ -1996,7 +2041,8 @@ function saveCourseFromEditor() {
     it.correct.forEach(c => allComponentNames.add(c.ingredient));
   });
   const allComponentsArray = [...allComponentNames];
-  const showGrams = getVenueSettings().showGrams !== false;
+  const sectionKey = sectionSettingsKey(target.id);
+  const showGrams = getSectionSettings(sectionKey).showGrams !== false;
 
   target.items = cleanedItems.map(item => {
     const hasGrams = item.correct.some(c => c.grams > 0 || c.isCount);
@@ -3148,7 +3194,10 @@ function buildVenueFromParsedItems(items, sourceName) {
   });
   const allComponentsArray = [...allComponentNames];
 
-  const showGrams = getVenueSettings().showGrams !== false;
+  const normalizedKey = name => name.toLowerCase().replace(/[\s_\-]+/g, '');
+  const existingSection = venue.sections && venue.sections.find(s => normalizedKey(s.name) === normalizedKey(sectionName));
+  const settingsKey = existingSection ? sectionSettingsKey(existingSection.id) : null;
+  const showGrams = getSectionSettings(settingsKey).showGrams !== false;
   const sectionItems = items.map(item => {
     const correct = item.correct || [];
     const hasGrams = correct.some(c => typeof c === 'object' && (c.grams > 0 || c.isCount));
@@ -3177,8 +3226,7 @@ function buildVenueFromParsedItems(items, sourceName) {
   });
 
   venue.sections = venue.sections || [];
-  const sectionKey = name => name.toLowerCase().replace(/[\s_\-]+/g, '');
-  const existing = venue.sections.find(s => sectionKey(s.name) === sectionKey(sectionName));
+  const existing = venue.sections.find(s => normalizedKey(s.name) === normalizedKey(sectionName));
   const section = existing || { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
   section.name = sectionName;
   section.items = sectionItems;
@@ -3187,7 +3235,7 @@ function buildVenueFromParsedItems(items, sourceName) {
   // merge any accidental duplicate sections with the same normalized name, keeping the newest
   const bestByKey = new Map();
   for (const s of venue.sections) {
-    const k = sectionKey(s.name);
+    const k = normalizedKey(s.name);
     if (!bestByKey.has(k) || (s.createdAt || 0) > (bestByKey.get(k).createdAt || 0)) {
       bestByKey.set(k, s);
     }
