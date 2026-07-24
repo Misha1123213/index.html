@@ -734,7 +734,11 @@ body {
 .mascot-area { padding: 12px 0 4px !important; }
 
 /* Browse */
-.browse-item-header { padding: 12px 14px !important; }
+.browse-item-header { padding: 12px 14px !important; align-items: center !important; }
+.browse-item-title { flex: 1 !important; display: flex !important; flex-direction: column !important; gap: 2px !important; text-align: left !important; }
+.browse-item-name { font-size: 15px !important; font-weight: 700 !important; }
+.mastery-crowns { color: var(--gold) !important; font-size: 12px !important; letter-spacing: 1px !important; }
+.mastery-label { font-size: 11px !important; color: var(--text-secondary) !important; }
 .browse-item-photo {
     border-radius: 8px !important;
     overflow: hidden !important;

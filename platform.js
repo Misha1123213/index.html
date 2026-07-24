@@ -766,6 +766,7 @@ function startMixedPractice() {
   state.sessionTotal = 0;
   state.mistakeIds = [];
   state.basicMistakeIds = [];
+  state._sessionDishNames = new Set();
   state.feedbackShown = false;
   state.selectedOptions = new Set();
   state.selectedChoice = null;
@@ -2016,6 +2017,10 @@ function renderPlatformHome() {
         <div class="daily-stat-card" style="${cementStyle()}">
           <div class="stat-value" style="color:var(--green)">${stats.totalLessons}</div>
           <div class="stat-label">Уроков</div>
+        </div>
+        <div class="daily-stat-card" style="${cementStyle()}">
+          <div class="stat-value" style="color:var(--gold)">${stats.totalCrowns}</div>
+          <div class="stat-label">Корон</div>
         </div>
       </div>
       ` : ''}

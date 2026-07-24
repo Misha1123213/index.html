@@ -537,7 +537,10 @@
             flex-shrink: 0;
             background: var(--concrete-dark);
         }
-        .browse-item-name { flex: 1; }
+        .browse-item-title { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .browse-item-name { font-size: 16px; font-weight: 700; }
+        .mastery-crowns { color: #f0c040; font-size: 12px; letter-spacing: 1px; }
+        .mastery-label { font-size: 11px; color: var(--text-secondary); }
 
         /* Dish photo in questions */
         .dish-photo {
@@ -2227,13 +2230,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=22">
+    <link rel="stylesheet" href="minimal.css?v=23">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=35"></script>
+<script src="platform.js?v=36"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2320,10 +2323,79 @@ function saveLessonComplete(section, lessonIdx, score, total) {
     const key = `lesson_${lessonIdx}`;
     const prev = p[section][key] || { completed: false, crowns: 0, bestScore: 0 };
     prev.completed = true;
-    prev.crowns = Math.min(5, prev.crowns + 1);
     prev.bestScore = Math.max(prev.bestScore, score);
     p[section][key] = prev;
     saveProgress(p);
+}
+function getDishMastery(itemName) {
+    const p = getProgress();
+    const dm = p.dishMastery || {};
+    return dm[itemName] || { level: 0, perfectCount: 0, lastSeen: 0 };
+}
+function setDishMastery(itemName, data) {
+    const p = getProgress();
+    if (!p.dishMastery) p.dishMastery = {};
+    const prev = p.dishMastery[itemName] || { level: 0, perfectCount: 0, lastSeen: 0 };
+    p.dishMastery[itemName] = { ...prev, ...data };
+    saveProgress(p);
+}
+function getCrownMultiplier(level) {
+    if (level >= 5) return 2.0;
+    if (level === 4) return 1.8;
+    if (level === 3) return 1.5;
+    if (level === 2) return 1.2;
+    return 1.0;
+}
+function getMasteryLabel(level) {
+    if (level >= 5) return 'Мастер';
+    if (level === 4) return 'Эксперт';
+    if (level === 3) return 'Специалист';
+    if (level === 2) return 'Ученик';
+    if (level === 1) return 'Новичок';
+    return '';
+}
+function getTotalCrowns() {
+    const p = getProgress();
+    const dm = p.dishMastery || {};
+    return Object.values(dm).reduce((sum, m) => sum + (m.level || 0), 0);
+}
+function getSessionDishNames() {
+    return [...(state._sessionDishNames || new Set())];
+}
+function getSessionAverageMultiplier() {
+    const names = getSessionDishNames();
+    if (!names.length) return 1;
+    let sum = 0;
+    names.forEach(name => {
+        sum += getCrownMultiplier(getDishMastery(name).level);
+    });
+    return sum / names.length;
+}
+function updateDishMasteryFromSession(perfect) {
+    if (state.isPractice) return 0;
+    const names = getSessionDishNames();
+    if (!names.length) return 0;
+    const p = getProgress();
+    if (!p.dishMastery) p.dishMastery = {};
+    let newCrowns = 0;
+    names.forEach(name => {
+        const m = p.dishMastery[name] || { level: 0, perfectCount: 0, lastSeen: 0 };
+        if (perfect && m.level < 5) {
+            m.level = m.level + 1;
+            m.perfectCount = (m.perfectCount || 0) + 1;
+            newCrowns++;
+        }
+        m.lastSeen = Date.now();
+        p.dishMastery[name] = m;
+    });
+    saveProgress(p);
+    return newCrowns;
+}
+function getAverageMasteryLevel(names) {
+    if (!names || !names.length) return 0;
+    let sum = 0;
+    names.forEach(name => sum += getDishMastery(name).level);
+    return Math.round(sum / names.length);
 }
 function getGlobalStats() {
     const p = getProgress();
@@ -2332,6 +2404,7 @@ function getGlobalStats() {
         streak: p.streak || 0,
         lastDate: p.lastDate || null,
         totalLessons: p.totalLessons || 0,
+        totalCrowns: getTotalCrowns(),
     };
 }
 function addXP(amount) {
@@ -3504,6 +3577,11 @@ function showLearningStats() {
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <div class="strength-card">
+                <div class="strength-label">Короны</div>
+                <div class="strength-value" style="color:var(--gold)">${getTotalCrowns()} корон</div>
+                <div class="strength-desc">Сумма уровней мастерства по всем блюдам</div>
+            </div>
+            <div class="strength-card">
                 <div class="strength-label">Сильная сторона</div>
                 <div class="strength-value">${dom.score > 0 ? getFormatLabel(dom.format) : 'Ещё не определена'}</div>
                 <div class="strength-desc">${dom.score > 0 ? getFormatDescription(dom.format) : 'Проходите вопросы — система постоянно ищет лучший формат'}</div>
@@ -3763,11 +3841,18 @@ function renderBrowse() {
             const grams = showGrams && hasGram ? `<span class="browse-grams">&nbsp;${item._grams[ing]} ${unit}</span>` : '';
             return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
         }).join('');
+        const mastery = getDishMastery(item.name);
+        const crowns = mastery.level > 0 ? '<span class="mastery-crowns">' + '★'.repeat(mastery.level) + '</span>' : '';
+        const masteryLabel = mastery.level > 0 ? `<span class="mastery-label">${getMasteryLabel(mastery.level)}</span>` : '';
         return `
             <div class="browse-item">
                 <button class="browse-item-header" style="${cementStyle()}" onclick="toggleBrowseItem(this)">
                     ${item._image ? getDishPhotoHTML(item, 'browse-item-photo') : ''}
-                    <span class="browse-item-name">${item.name}</span>
+                    <div class="browse-item-title">
+                        <span class="browse-item-name">${item.name}</span>
+                        ${crowns}
+                        ${masteryLabel}
+                    </div>
                     <span class="browse-arrow">▼</span>
                 </button>
                 <div class="browse-item-body">
@@ -3812,6 +3897,7 @@ function startLesson(idx) {
     state.sessionTotal = 0;
     state.mistakeIds = [];
     state.basicMistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
@@ -3835,6 +3921,7 @@ function startPractice() {
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
     state.mistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
@@ -4802,6 +4889,8 @@ function handleQuestionTimeout() {
 
 function processAnswer(isCorrect, item, format, timeTaken) {
     state.sessionTotal++;
+    if (!state._sessionDishNames) state._sessionDishNames = new Set();
+    state._sessionDishNames.add(item.name);
     recordAnswer(item.name, isCorrect);
     recordFormatAnswer(format, isCorrect, timeTaken);
     saveTrainingResult(item.name, isCorrect, format, timeTaken);
@@ -4904,8 +4993,10 @@ function nextQuestion() {
 }
 
 function finishLesson() {
-    const xpEarned = state.sessionXP + (state.hearts > 0 ? 15 : 0);
     const perfect = state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0;
+    const avgMultiplier = perfect ? getSessionAverageMultiplier() : 1;
+    const baseXP = state.sessionXP + (state.hearts > 0 ? 15 : 0);
+    const xpEarned = Math.round(baseXP * avgMultiplier);
     if (perfect) {
         const p = getProgress();
         p.perfectLessons = (p.perfectLessons || 0) + 1;
@@ -4918,6 +5009,15 @@ function finishLesson() {
     }
 
     state._finalXP = xpEarned;
+    state._newCrowns = 0;
+    state._averageMasteryLevel = 0;
+    state._masteryLabel = '';
+    if (!state.isPractice) {
+        state._newCrowns = updateDishMasteryFromSession(perfect);
+        state._averageMasteryLevel = getAverageMasteryLevel(getSessionDishNames());
+        state._masteryLabel = getMasteryLabel(state._averageMasteryLevel);
+    }
+
     replaceScreen('result');
 
     playSound('finish');
@@ -4944,6 +5044,11 @@ function renderResult() {
                         accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
     const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
                       `Ты заработал ${state._finalXP} XP!`;
+    const crownsHTML = state._newCrowns > 0 ?
+        `<div class="result-stat" style="border:2px solid var(--gold);border-radius:12px;padding:10px 0">
+            <div class="result-stat-value" style="color:var(--gold)">${'★'.repeat(Math.min(5, state._averageMasteryLevel || 1))}</div>
+            <div class="result-stat-label">${state._masteryLabel || 'Новая крона'}</div>
+        </div>` : '';
 
     app.innerHTML = `
         <div class="result-screen">
@@ -4962,6 +5067,7 @@ function renderResult() {
                     <div class="result-stat-value" style="color:var(--gold)">${state._finalXP}</div>
                     <div class="result-stat-label">XP</div>
                 </div>
+                ${crownsHTML}
             </div>
             <div class="result-accuracy-bar">
                 <div class="result-accuracy-fill" style="width:0%;background:${barColor}"></div>
@@ -4996,6 +5102,7 @@ function retryMistakes() {
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
     state.mistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
