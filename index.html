@@ -2252,13 +2252,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=25">
+    <link rel="stylesheet" href="minimal.css?v=27">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=38"></script>
+<script src="platform.js?v=40"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -3211,7 +3211,7 @@ function showAchievements() {
 function renderHome() {
     const stats = getGlobalStats();
     const profile = state.profile || { nickname: 'Ты', avatar: null };
-    const gemIcon = `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
+    const gemIcon = getGemIcon(18);
     app.innerHTML = `
         <div class="top-bar">
             <button class="profile-chip" onclick="openAvatarEditor()">
@@ -3456,7 +3456,7 @@ const COSMETIC_NAMES = {
 };
 
 function getGemIcon(size) {
-    return `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor" style="width:${size}px;height:${size}px"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
+    return `<img src="img/shop/crystals.png" class="gem-icon" alt="" style="width:${size}px !important;height:${size}px !important">`;
 }
 function weightedPick(list) {
     const total = list.reduce((s, w) => s + w, 0);
@@ -3526,7 +3526,7 @@ function showLootboxAnimation(box, drops) {
     overlay.className = 'lootbox-overlay';
     overlay.innerHTML = `
         <div class="lootbox-stage">
-            <div class="lootbox-chest-large" id="lootbox-chest" style="--chest-color:${box.color}">${getChestSVG(box)}</div>
+            <img src="img/shop/${box.id}.png" class="lootbox-chest-large" id="lootbox-chest" style="--chest-color:${box.color}" alt="">
             <div class="lootbox-status">Открываем ${box.name.toLowerCase()} сундук...</div>
             <div class="lootbox-rewards" id="lootbox-rewards" style="display:none"></div>
         </div>
@@ -3553,13 +3553,10 @@ function showLootboxAnimation(box, drops) {
         document.querySelector('.lootbox-status').textContent = 'Награды!';
     }, 1600);
 }
-function getChestSVG(box) {
-    return `<svg viewBox="0 0 64 64" width="80" height="80"><rect x="8" y="20" width="48" height="36" rx="4" fill="${box.color}"/><rect x="8" y="12" width="48" height="14" rx="3" fill="${box.color}" style="filter:brightness(1.3)"/><circle cx="32" cy="38" r="5" fill="#1a1a1a"/></svg>`;
-}
 function getRewardIcon(d) {
-    if (d.type === 'gems') return getGemIcon(24);
+    if (d.type === 'gems') return getGemIcon(48);
+    if (d.type === 'potion') return `<img src="img/shop/${d.variant}.png" class="reward-icon-img" alt="">`;
     if (d.type === 'xp') return '☆';
-    if (d.type === 'potion') return d.variant === 'streakFreeze' ? 'F' : 'XP';
     if (d.type === 'avatar') return 'A';
     if (d.type === 'skin') return 'S';
     return '?';
@@ -3586,7 +3583,7 @@ function renderShop() {
         content = `<div class="shop-section"><div class="shop-section-title">Зелья</div><div class="shop-grid">
             ${SHOP_POTIONS.map(p => `
                 <div class="shop-card" style="${cementStyle()}">
-                    <div class="shop-card-icon">${p.id === 'streakFreeze' ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20" style="color:#f59e0b"/></svg>' : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" style="color:#a78bfa"/></svg>'}</div>
+                    <img src="img/shop/${p.id}.png" class="shop-card-img" alt="">
                     <div class="shop-card-title">${p.name}</div>
                     <div class="shop-card-desc">${p.desc}</div>
                     <div class="shop-card-footer">
@@ -3600,7 +3597,7 @@ function renderShop() {
         content = `<div class="shop-section"><div class="shop-section-title">Лутбоксы</div><div class="shop-grid">
             ${LOOTBOXES.map(box => `
                 <div class="shop-card lootbox-card" style="${cementStyle()};border-color:${box.color}">
-                    <div class="lootbox-chest" style="--chest-color:${box.color}">${getChestSVG(box)}</div>
+                    <img src="img/shop/${box.id}.png" class="shop-card-img" alt="">
                     <div class="shop-card-title" style="color:${box.color}">${box.name}</div>
                     <div class="shop-card-desc">${['обычные', 'базовые', 'редкие', 'очень редкие', 'премиальные'][LOOTBOXES.indexOf(box)]} призы</div>
                     <div class="shop-card-footer">
@@ -4110,7 +4107,7 @@ function renderPath() {
         ? renderSkillTree(buildLessonSkillNodes(weakItems))
         : '';
 
-    const gemIcon = `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
+    const gemIcon = getGemIcon(18);
     app.innerHTML = `
         <div class="top-bar">
             <div class="top-bar-stat">
