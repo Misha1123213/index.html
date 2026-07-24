@@ -582,8 +582,6 @@ function updatePlatformDraft(key, value) {
 
 function validatePlatformButton() {
   const draft = state.platformDraft || {};
-  const btn = document.getElementById('platform-primary-btn');
-  if (!btn) return;
   let valid = true;
   if (state.screen === 'login') {
     valid = (draft.login || '').trim().length >= 3 && (draft.password || '').length >= 4;
@@ -610,7 +608,35 @@ function validatePlatformButton() {
   } else if (state.screen === 'courseEditor') {
     valid = !!(draft.parsedItems && draft.parsedItems.length && draft.sectionName && draft.sectionName.trim());
   }
-  btn.classList.toggle('disabled', !valid);
+  const primaryBtn = document.getElementById('platform-primary-btn');
+  const editorSaveBtn = document.getElementById('editor-save-btn');
+  if (primaryBtn) primaryBtn.classList.toggle('disabled', !valid);
+  if (editorSaveBtn) editorSaveBtn.classList.toggle('disabled', !valid);
+}
+
+function markEditorDirty() {
+  if (state.screen !== 'courseEditor') return;
+  state.editorDirty = true;
+  const titleEl = document.getElementById('editor-sticky-title');
+  const statusEl = document.getElementById('editor-save-status');
+  const draft = state.platformDraft || {};
+  const sectionName = (draft.sectionName || '').trim() || 'Новый раздел';
+  if (titleEl) titleEl.textContent = `Редактор (${sectionName})`;
+  if (statusEl) statusEl.textContent = 'Сохранение...';
+  if (state.editorSaveTimeout) clearTimeout(state.editorSaveTimeout);
+  state.editorSaveTimeout = setTimeout(() => autoSaveCourseFromEditor(), 600);
+}
+
+function autoSaveCourseFromEditor() {
+  if (state.screen !== 'courseEditor') return;
+  if (!state.editorDirty) return;
+  const statusEl = document.getElementById('editor-save-status');
+  if (persistCourseEditor()) {
+    state.editorDirty = false;
+    if (statusEl) statusEl.textContent = 'Сохранено';
+  } else {
+    if (statusEl) statusEl.textContent = '';
+  }
 }
 
 function selectVenueStyle(styleId) {
@@ -1828,34 +1854,36 @@ function openCourseEditor() {
 function renderCourseEditor() {
   const draft = state.platformDraft || {};
   const items = draft.parsedItems || [];
-  const sectionName = draft.sectionName || 'Основное меню';
+  const rawSectionName = (draft.sectionName || '').trim();
+  const displayName = rawSectionName || 'Новый раздел';
   const hasExisting = state.venue && state.venue.sections && state.venue.sections.length;
   const sectionOptions = hasExisting
     ? `<option value="">Новый раздел</option>` + state.venue.sections.map(s => `<option value="${s.name}">${s.name}</option>`).join('')
     : `<option value="">Основное меню</option>`;
+  const saveStatus = state.editorDirty ? 'Сохранение...' : '';
   app.innerHTML = `
     <div class="platform-screen">
-      <div class="platform-header">
-        <button class="close-btn" onclick="goBack()">← Назад</button>
+      <div class="editor-sticky-header">
+        <button class="editor-back-btn" onclick="goBack()">←</button>
+        <div class="editor-sticky-title" id="editor-sticky-title">Редактор (${escapeHtml(displayName)})</div>
+        <div class="editor-save-status" id="editor-save-status">${saveStatus}</div>
       </div>
-      <div class="platform-title">Редактор блюд</div>
-      <div class="platform-subtitle">Проверьте названия, состав и граммовки</div>
       <div class="platform-form">
         <label class="platform-label">Сохранить в раздел</label>
         <div class="section-save-row">
           <select class="platform-input" id="editor-section-select" onchange="onEditorSectionChange(this.value)">
             ${sectionOptions}
           </select>
-          <input class="platform-input" type="text" id="editor-section-name" value="${sectionName}" placeholder="Название раздела" oninput="updatePlatformDraft('sectionName', this.value); validatePlatformButton()">
+          <input class="platform-input" type="text" id="editor-section-name" value="${escapeHtml(draft.sectionName || '')}" placeholder="Название раздела" oninput="updatePlatformDraft('sectionName', this.value); markEditorDirty()">
         </div>
         <div class="editor-items">
           ${items.map((it, idx) => renderCourseEditorItem(it, idx)).join('')}
         </div>
         <button class="onboarding-btn secondary" onclick="addParsedItem()">+ Добавить позицию</button>
-        <button id="platform-primary-btn" class="onboarding-btn" onclick="saveCourseFromEditor()">Сохранить (${items.length})</button>
       </div>
     </div>
   `;
+  if (state.editorDirty) markEditorDirty();
 }
 
 function onEditorSectionChange(val) {
@@ -1865,7 +1893,7 @@ function onEditorSectionChange(val) {
     state.platformDraft.sectionName = val;
     if (input) input.value = val;
   }
-  validatePlatformButton();
+  markEditorDirty();
 }
 
 function renderCourseEditorItem(it, idx) {
@@ -1927,6 +1955,7 @@ function updateParsedItem(idx, field, value) {
   const items = draft.parsedItems || [];
   if (!items[idx]) return;
   items[idx][field] = value.trim();
+  markEditorDirty();
 }
 
 function updateParsedComponentName(idx, compIdx, value) {
@@ -1937,6 +1966,7 @@ function updateParsedComponentName(idx, compIdx, value) {
   const correct = items[idx].correct;
   if (!correct[compIdx]) correct[compIdx] = { ingredient: '', grams: '' };
   correct[compIdx].ingredient = value.trim();
+  markEditorDirty();
 }
 
 function updateParsedComponentGrams(idx, compIdx, value) {
@@ -1948,6 +1978,7 @@ function updateParsedComponentGrams(idx, compIdx, value) {
   if (!correct[compIdx]) correct[compIdx] = { ingredient: '', grams: '' };
   const val = value.trim();
   correct[compIdx].grams = val === '' ? '' : parseFloat(val.replace(',', '.'));
+  markEditorDirty();
 }
 
 function removeParsedComponent(idx, compIdx) {
@@ -1956,6 +1987,7 @@ function removeParsedComponent(idx, compIdx) {
   if (!items[idx]) return;
   ensureItemCorrectObjects(idx);
   items[idx].correct.splice(compIdx, 1);
+  state.editorDirty = true;
   render();
 }
 
@@ -1965,6 +1997,7 @@ function addParsedComponent(idx) {
   if (!items[idx]) return;
   ensureItemCorrectObjects(idx);
   items[idx].correct.push({ ingredient: '', grams: '' });
+  state.editorDirty = true;
   render();
 }
 
@@ -1983,6 +2016,7 @@ function deleteParsedItem(idx) {
   const draft = state.platformDraft || {};
   const items = draft.parsedItems || [];
   items.splice(idx, 1);
+  state.editorDirty = true;
   render();
 }
 
@@ -1995,6 +2029,7 @@ function addParsedItem() {
     correct: [{ ingredient: '', grams: '' }],
     info_text: 'Состав:\n• ',
   });
+  state.editorDirty = true;
   render();
 }
 
@@ -2015,22 +2050,29 @@ function cleanParsedItemForSave(item) {
   return { ...item, name: (item.name || '').trim(), correct };
 }
 
-function saveCourseFromEditor() {
+function persistCourseEditor() {
   const draft = state.platformDraft || {};
   const items = draft.parsedItems || [];
-  if (!items.length) return;
+  if (!items.length) return false;
+  if (!state.venue) return false;
+
+  const sectionName = (draft.sectionName || '').trim();
+  if (!sectionName) return false;
 
   const cleanedItems = items.map(cleanParsedItemForSave).filter(it => it.name && it.correct.length);
-  if (!cleanedItems.length) {
-    showPlatformToast('Нет позиций для сохранения');
-    return;
-  }
+  if (!cleanedItems.length) return false;
 
-  const sectionName = (draft.sectionName || 'Основное меню').trim();
   const venue = state.venue;
   venue.sections = venue.sections || [];
 
-  let target = venue.sections.find(s => s.name === sectionName);
+  let target = null;
+  if (draft.targetSectionId) {
+    target = venue.sections.find(s => s.id === draft.targetSectionId);
+    if (target) target.name = sectionName;
+  }
+  if (!target) {
+    target = venue.sections.find(s => s.name === sectionName);
+  }
   if (!target) {
     target = { id: generateId(), name: sectionName, items: [], createdAt: Date.now() };
     venue.sections.push(target);
@@ -2070,13 +2112,21 @@ function saveCourseFromEditor() {
     }
   });
 
-  state.platformDraft = null;
   saveProgress({ venue: venue });
   syncVenue();
-  window.renderHome = renderPlatformHome;
-  replaceScreen('home');
-  showPlatformToast(`Курс «${target.name}» сохранён`);
-  playSound('correct');
+  return true;
+}
+
+function saveCourseFromEditor() {
+  if (state.editorSaveTimeout) clearTimeout(state.editorSaveTimeout);
+  if (persistCourseEditor()) {
+    state.platformDraft = null;
+    state.editorDirty = false;
+    window.renderHome = renderPlatformHome;
+    replaceScreen('home');
+    showPlatformToast('Курс сохранён');
+    playSound('correct');
+  }
 }
 
 function promptNewSection() {
@@ -2111,7 +2161,9 @@ function editSection(sectionId) {
     return copy;
   });
   draft.sectionName = section.name;
+  draft.targetSectionId = section.id;
   state.platformDraft = draft;
+  state.editorDirty = false;
   goToScreen('courseEditor');
 }
 
@@ -2823,6 +2875,7 @@ function parseTTKPastePreview() {
   const items = parseTTKPlainText(text);
   if (!items || !items.length) return showPlatformToast('Не удалось распознать позиции');
   state.platformDraft = { parsedItems: items, sectionName: 'Основное меню' };
+  state.editorDirty = true;
   openCourseEditor();
 }
 
@@ -3173,6 +3226,7 @@ function previewParsedItems(items, sourceName) {
     return;
   }
   state.platformDraft = { parsedItems: items, sectionName: sourceNameToSectionName(sourceName) };
+  state.editorDirty = true;
   openCourseEditor();
 }
 
