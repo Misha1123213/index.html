@@ -430,27 +430,51 @@ function initPlatform() {
   }
 
   const joinCode = getUrlParam('venue');
+  state.platformDraft = {};
   if (!state.auth && joinCode && /^\d{6}$/.test(joinCode)) {
-    replaceScreen('staffJoin', { code: joinCode });
+    state.screen = 'staffJoin';
+    state.platformDraft = { code: joinCode };
   } else if (state.auth && state.venue) {
     window.renderHome = renderPlatformHome;
     if (state.auth.role === 'owner') {
-      replaceScreen((state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup');
+      state.screen = (state.venue.sections && state.venue.sections.some(s => s.items && s.items.length)) ? 'home' : 'ownerSetup';
     } else {
-      replaceScreen('home');
+      state.screen = 'home';
     }
   } else if (p.profile) {
-    replaceScreen('home');
+    state.screen = 'home';
   } else {
-    replaceScreen('authOptions');
+    state.screen = 'authOptions';
   }
 
+  initHistory();
   applyTheme(getSettings().theme);
   applyAnimationPref();
   checkAchievements();
+  render();
   loadAvatarConfig().then(() => {
     if (!isPlatformScreen()) render();
   });
+}
+
+function initHistory() {
+  if (!history.state || !history.state.cognitio) {
+    history.replaceState({ cognitio: true, screen: state.screen }, '');
+    history.pushState({ cognitio: true, screen: state.screen }, '');
+  } else if (history.state.screen !== state.screen) {
+    history.replaceState({ cognitio: true, screen: state.screen }, '');
+  }
+  if (!window.__cognitioPopstate) {
+    window.__cognitioPopstate = true;
+    window.addEventListener('popstate', (e) => {
+      if (e.state && e.state.cognitio) {
+        state.screen = e.state.screen;
+        state.platformDraft = {};
+        if (state.screen === 'home') state.section = null;
+        render();
+      }
+    });
+  }
 }
 
 function getVenueSections() {
@@ -479,27 +503,33 @@ function selectRole(role) {
 }
 
 function goToScreen(screen, draftPatch) {
-  if (!state.navStack) state.navStack = [];
-  if (state.screen && state.screen !== screen) state.navStack.push(state.screen);
-  state.screen = screen;
+  if (state.screen === screen) {
+    if (draftPatch === true) state.platformDraft = {};
+    else if (draftPatch && typeof draftPatch === 'object') state.platformDraft = { ...(state.platformDraft || {}), ...draftPatch };
+    render();
+    return;
+  }
   if (draftPatch === true) state.platformDraft = {};
   else if (draftPatch && typeof draftPatch === 'object') state.platformDraft = { ...(state.platformDraft || {}), ...draftPatch };
+  state.screen = screen;
+  history.pushState({ cognitio: true, screen: screen }, '');
   render();
 }
 
 function replaceScreen(screen, draftPatch) {
-  state.navStack = [];
-  state.screen = screen;
   if (draftPatch === true) state.platformDraft = {};
   else if (draftPatch && typeof draftPatch === 'object') state.platformDraft = { ...(state.platformDraft || {}), ...draftPatch };
+  state.screen = screen;
+  history.replaceState({ cognitio: true, screen: screen }, '');
   render();
 }
 
 function goBack() {
-  const prev = state.navStack && state.navStack.length ? state.navStack.pop() : (state.auth && state.venue ? 'home' : 'authOptions');
-  state.screen = prev;
-  state.platformDraft = {};
-  render();
+  if (history.length > 1) {
+    history.back();
+  } else {
+    replaceScreen(state.auth && state.venue ? 'home' : 'authOptions');
+  }
 }
 
 function backToRoleSelect() {
@@ -651,8 +681,7 @@ async function joinStaffVenue() {
 function startVenueCourse(sectionId) {
   if (!state.venue || !state.venue.sections.length) return;
   loadVenueIntoState(sectionId);
-  state.screen = 'path';
-  render();
+  goToScreen('path');
 }
 
 function startMixedPractice() {
@@ -681,8 +710,7 @@ function startMixedPractice() {
   state.selectedChoice = null;
   state.gramInputs = {};
   state._questionStartTime = Date.now();
-  state.screen = 'lesson';
-  render();
+  goToScreen('lesson');
 }
 
 function logoutPlatform() {
@@ -690,7 +718,6 @@ function logoutPlatform() {
   state.auth = null;
   state.staff = null;
   state.profile = null;
-  state.navStack = [];
   replaceScreen('authOptions');
 }
 
