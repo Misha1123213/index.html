@@ -1846,10 +1846,43 @@
             align-items: center;
             padding: 24px;
         }
-        .avatar-editor-preview .avatar-stack {
+        .avatar-editor-preview svg {
             width: 140px !important;
             height: 140px !important;
-            background: var(--bg-light);
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+        }
+        .avatar-editor-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .avatar-editor-tab {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .avatar-editor-tab.active {
+            background: var(--green);
+            border-color: var(--green);
+            color: #fff;
+        }
+        .avatar-editor-section {
+            padding: 0 16px 8px;
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-primary);
         }
         .avatar-editor-categories {
             display: flex;
@@ -1875,29 +1908,37 @@
         }
         .avatar-editor-options {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             padding: 0 16px 16px;
             overflow-y: auto;
         }
         .avatar-editor-option {
-            aspect-ratio: 1;
-            border-radius: 16px;
+            min-height: 80px;
+            border-radius: 14px;
             border: 3px solid transparent;
             background: var(--bg-light);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 6px;
+            padding: 8px;
             cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
             overflow: hidden;
         }
         .avatar-editor-option.selected {
             border-color: var(--green);
         }
-        .avatar-editor-option .avatar-stack {
-            width: 100% !important;
-            height: 100% !important;
-            background: transparent;
+        .avatar-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
         }
         .avatar-editor-option-none {
             font-size: 13px;
@@ -2252,13 +2293,13 @@
         .card-img-placeholder { font-weight: 800 !important; }
         #hearts-display::before { content:''; }
     </style>
-    <link rel="stylesheet" href="minimal.css?v=28">
+    <link rel="stylesheet" href="minimal.css?v=29">
 </head>
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=41"></script>
+<script src="platform.js?v=42"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2303,6 +2344,50 @@ window.state = state;
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
 const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 const DEFAULT_AVATAR = 'A';
+const DEFAULT_AVATAR_CONFIG = { face: 'default', eyes: 'blue', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none', neck: 'default' };
+const AVATAR_PARTS = {
+    face: { label: 'Лицо', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z', options: [
+        { id: 'default', name: 'Стандарт', skin: '#f5d0a9' },
+        { id: 'dark', name: 'Тёмный', skin: '#8d5524' },
+        { id: 'olive', name: 'Оливковый', skin: '#c68642' },
+        { id: 'pale', name: 'Светлый', skin: '#ffdfc4' },
+    ]},
+    eyes: { label: 'Глаза', icon: 'M12 4.5c-4.5 0-8.2 3.3-9 7.5.8 4.2 4.5 7.5 9 7.5s8.2-3.3 9-7.5c-.8-4.2-4.5-7.5-9-7.5zm0 12c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z', options: [
+        { id: 'blue', name: 'Голубые', color: '#3b82f6' },
+        { id: 'brown', name: 'Карие', color: '#5d4037' },
+        { id: 'green', name: 'Зелёные', color: '#16a34a' },
+        { id: 'gray', name: 'Серые', color: '#6b7280' },
+    ]},
+    expression: { label: 'Выражение', icon: 'M7 10h2v2H7zm8 0h2v2h-2zm-6 5.5c1.5 1.5 4.5 1.5 6 0', options: [
+        { id: 'smile', name: 'Улыбка' },
+        { id: 'neutral', name: 'Спокойное' },
+        { id: 'surprised', name: 'Удивление' },
+        { id: 'happy', name: 'Радость' },
+    ]},
+    hair: { label: 'Волосы', icon: 'M7 8c0-3 2.5-5 5-5s5 2 5 5c0 2-1 4-2 5', options: [
+        { id: 'none', name: 'Нет' },
+        { id: 'short', name: 'Короткие', color: '#2c1a0e' },
+        { id: 'medium', name: 'Средние', color: '#4a3428' },
+        { id: 'blond', name: 'Блонд', color: '#e8c65c' },
+    ]},
+    beard: { label: 'Борода', icon: 'M8 14c0 3 2 6 4 6s4-3 4-6', options: [
+        { id: 'none', name: 'Нет' },
+        { id: 'stubble', name: 'Щетина', color: '#2c1a0e' },
+        { id: 'beard', name: 'Борода', color: '#2c1a0e' },
+        { id: 'mustache', name: 'Усы', color: '#2c1a0e' },
+    ]},
+    glasses: { label: 'Очки', icon: 'M4 10h16M8 10c0-2 1-3 3-3s3 1 3 3 1 3 3 3', options: [
+        { id: 'none', name: 'Нет' },
+        { id: 'round', name: 'Круглые' },
+        { id: 'square', name: 'Прямоугольные' },
+        { id: 'sunglasses', name: 'Солнцезащитные' },
+    ]},
+    neck: { label: 'Шея', icon: 'M8 12c0 4 1.5 8 4 8s4-4 4-8', options: [
+        { id: 'default', name: 'Стандарт' },
+        { id: 'thin', name: 'Узкая' },
+        { id: 'thick', name: 'Широкая' },
+    ]},
+};
 function avatarColor(str) {
     if (!str) return 'var(--text-dim)';
     let h = 0;
@@ -3088,16 +3173,76 @@ function renderPhotoFallbackString(name, cls) {
 const app = document.getElementById('app');
 
 function renderAvatar(avatar, size = 32) {
+    if (avatar && typeof avatar === 'object' && avatar.parts) {
+        return renderConstructedAvatar(avatar.parts, size);
+    }
     let letter = DEFAULT_AVATAR;
     if (typeof avatar === 'string' && avatar) letter = avatar;
     else if (avatar && typeof avatar === 'object' && avatar.emoji) letter = avatar.emoji;
     const color = avatarColor(letter);
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px;background:${color}!important;border-color:${color}!important;color:#fff!important">${letter}</span>`;
 }
-
-
+function renderConstructedAvatar(parts, size) {
+    const cfg = { ...DEFAULT_AVATAR_CONFIG, ...(parts || {}) };
+    const face = (AVATAR_PARTS.face.options.find(o => o.id === cfg.face) || AVATAR_PARTS.face.options[0]);
+    const eyes = (AVATAR_PARTS.eyes.options.find(o => o.id === cfg.eyes) || AVATAR_PARTS.eyes.options[0]);
+    const hair = (AVATAR_PARTS.hair.options.find(o => o.id === cfg.hair) || AVATAR_PARTS.hair.options[0]);
+    const beard = (AVATAR_PARTS.beard.options.find(o => o.id === cfg.beard) || AVATAR_PARTS.beard.options[0]);
+    const glasses = (AVATAR_PARTS.glasses.options.find(o => o.id === cfg.glasses) || AVATAR_PARTS.glasses.options[0]);
+    const skin = face.skin || '#f5d0a9';
+    const neckColor = adjustColor(skin, -20);
+    const neckWidth = cfg.neck === 'thin' ? 24 : cfg.neck === 'thick' ? 40 : 32;
+    const mouth = getMouthPath(cfg.expression);
+    const eyeColor = eyes.color || '#3b82f6';
+    const hairSvg = getAvatarHairSvg(cfg.hair, hair.color || '#2c1a0e', skin);
+    const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beard.color || '#2c1a0e') : '';
+    const glassesSvg = cfg.glasses !== 'none' ? getAvatarGlassesSvg(cfg.glasses) : '';
+    return `<span class="profile-avatar" style="width:${size}px;height:${size}px;background:transparent!important;border:none!important;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 120 120" width="${size}" height="${size}">
+        <path d="M${60-neckWidth/2} 80 L${60-neckWidth/2} 115 L${60+neckWidth/2} 115 L${60+neckWidth/2} 80 Z" fill="${neckColor}" />
+        ${hairSvg}
+        <circle cx="60" cy="55" r="38" fill="${skin}" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+        <circle cx="46" cy="50" r="5" fill="#fff"/><circle cx="46" cy="50" r="2.5" fill="${eyeColor}"/>
+        <circle cx="74" cy="50" r="5" fill="#fff"/><circle cx="74" cy="50" r="2.5" fill="${eyeColor}"/>
+        ${mouth}
+        ${beardSvg}
+        ${glassesSvg}
+    </svg></span>`;
+}
+function adjustColor(hex, amount) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    let r = (num >> 16) + amount; if (r > 255) r = 255; if (r < 0) r = 0;
+    let g = ((num >> 8) & 0x00FF) + amount; if (g > 255) g = 255; if (g < 0) g = 0;
+    let b = (num & 0x0000FF) + amount; if (b > 255) b = 255; if (b < 0) b = 0;
+    return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+}
+function getMouthPath(expression) {
+    if (expression === 'neutral') return '<path d="M48 72 H72" stroke="#8b5e4b" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if (expression === 'surprised') return '<circle cx="60" cy="72" r="4" fill="#8b5e4b"/>';
+    if (expression === 'happy') return '<path d="M46 70 Q60 86 74 70" stroke="#8b5e4b" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    return '<path d="M46 70 Q60 82 74 70" stroke="#8b5e4b" stroke-width="3" fill="none" stroke-linecap="round"/>';
+}
+function getAvatarHairSvg(type, color, skin) {
+    if (type === 'none') return '';
+    if (type === 'short') return `<path d="M26 55 C26 25 94 25 94 55 C94 45 86 35 60 35 C34 35 26 45 26 55 Z" fill="${color}"/>`;
+    if (type === 'medium') return `<path d="M24 60 C20 20 100 20 96 60 C96 40 88 28 60 28 C32 28 24 40 24 60 Z" fill="${color}"/><path d="M24 60 C24 80 28 95 34 98 L38 90 C34 80 32 70 32 60 Z" fill="${color}"/><path d="M96 60 C96 80 92 95 86 98 L82 90 C86 80 88 70 88 60 Z" fill="${color}"/>`;
+    if (type === 'blond') return `<path d="M24 60 C20 20 100 20 96 60 C96 40 88 28 60 28 C32 28 24 40 24 60 Z" fill="${color}"/>`;
+    return '';
+}
+function getAvatarBeardSvg(type, color) {
+    if (type === 'stubble') return `<path d="M36 75 Q60 100 84 75 L84 70 Q60 95 36 70 Z" fill="${color}" opacity="0.35"/>`;
+    if (type === 'beard') return `<path d="M32 70 Q60 108 88 70 L88 65 Q60 100 32 65 Z" fill="${color}"/><path d="M40 68 Q60 85 80 68" stroke="${color}" stroke-width="2" fill="none"/>`;
+    if (type === 'mustache') return `<path d="M45 68 Q55 63 60 68 Q65 63 75 68" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    return '';
+}
+function getAvatarGlassesSvg(type) {
+    if (type === 'round') return `<circle cx="46" cy="50" r="9" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><circle cx="74" cy="50" r="9" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><path d="M55 50 H65" stroke="#1f2937" stroke-width="2.5"/>`;
+    if (type === 'square') return `<rect x="36" y="41" width="18" height="18" rx="3" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><rect x="66" y="41" width="18" height="18" rx="3" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><path d="M54 50 H66" stroke="#1f2937" stroke-width="2.5"/>`;
+    if (type === 'sunglasses') return `<rect x="36" y="42" width="18" height="16" rx="2" fill="#111827"/><rect x="66" y="42" width="18" height="16" rx="2" fill="#111827"/><path d="M54 48 H66" stroke="#111827" stroke-width="3"/>`;
+    return '';
+}
 
 function cloneAvatar(avatar) {
+    if (avatar && typeof avatar === 'object' && avatar.parts) return { ...avatar };
     if (typeof avatar === 'string' && avatar) return avatar;
     if (avatar && typeof avatar === 'object' && avatar.emoji) return avatar.emoji;
     return DEFAULT_AVATAR;
@@ -3310,19 +3455,35 @@ function loadAvatarConfig() {
         });
 }
 
+function cloneAvatarConfig(avatar) {
+    if (avatar && typeof avatar === 'object' && avatar.parts) return { ...DEFAULT_AVATAR_CONFIG, ...avatar.parts };
+    return { ...DEFAULT_AVATAR_CONFIG };
+}
 function renderAvatarEditorContent(mode) {
     const editor = state.avatarEditor;
     if (!editor) return '';
-    const current = editor.emoji || DEFAULT_AVATAR;
-    const optionsHTML = AVATAR_LETTERS.map(emoji => {
-        const selected = emoji === current;
-        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatar('${emoji}')">${emoji}</button>`;
+    const config = editor.config || DEFAULT_AVATAR_CONFIG;
+    const tab = editor.tab || 'face';
+    const part = AVATAR_PARTS[tab];
+    const tabsHTML = Object.keys(AVATAR_PARTS).map(key => {
+        const p = AVATAR_PARTS[key];
+        const active = key === tab;
+        return `<button class="avatar-editor-tab ${active ? 'active' : ''}" onclick="setAvatarTab('${key}')">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${p.icon}"/></svg>
+            <span>${p.label}</span>
+        </button>`;
+    }).join('');
+    const optionsHTML = part.options.map(opt => {
+        const selected = config[tab] === opt.id;
+        const swatch = (tab === 'face' || tab === 'hair' || tab === 'beard') && (opt.skin || opt.color) ? `<span class="avatar-swatch" style="background:${opt.skin || opt.color}"></span>` : '';
+        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${swatch}<span>${opt.name}</span></button>`;
     }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
     return `
-        <div class="avatar-editor-preview">${renderAvatar(current, 120)}</div>
-        <div class="avatar-editor-title">Выбери аватар</div>
-        <div class="avatar-editor-options" style="grid-template-columns:repeat(6,1fr);gap:10px;margin:16px 0;">${optionsHTML}</div>
+        <div class="avatar-editor-preview">${renderAvatar({ parts: config }, 160)}</div>
+        <div class="avatar-editor-tabs">${tabsHTML}</div>
+        <div class="avatar-editor-section">${part.label}</div>
+        <div class="avatar-editor-options" style="grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;">${optionsHTML}</div>
         <div class="avatar-editor-actions">
             <button class="avatar-editor-btn secondary" onclick="backAvatarEditor()">Назад</button>
             <button class="avatar-editor-btn primary" onclick="${mode === 'onboarding' ? 'finishOnboarding()' : 'saveAvatarEditor()'}">${doneLabel}</button>
@@ -3346,7 +3507,7 @@ function renderOnboarding() {
     }
 
     if (!state.avatarEditor) {
-        state.avatarEditor = { emoji: state.onboardingAvatar || DEFAULT_AVATAR, mode: 'onboarding' };
+        state.avatarEditor = { config: cloneAvatarConfig(state.onboardingAvatar), mode: 'onboarding', tab: 'face' };
     }
 
     app.innerHTML = `
@@ -3369,15 +3530,21 @@ function setOnboardingNickname(value) {
 
 function goToAvatar() {
     if (!state.onboardingNickname.trim()) return;
-    state.onboardingAvatar = DEFAULT_AVATAR;
-    state.avatarEditor = { emoji: DEFAULT_AVATAR, mode: 'onboarding' };
+    state.onboardingAvatar = { parts: DEFAULT_AVATAR_CONFIG };
+    state.avatarEditor = { config: { ...DEFAULT_AVATAR_CONFIG }, mode: 'onboarding', tab: 'face' };
     state.onboardingStep = 'avatar';
     render();
 }
 
-function selectAvatar(emoji) {
+function setAvatarTab(tab) {
     if (!state.avatarEditor) return;
-    state.avatarEditor.emoji = emoji;
+    state.avatarEditor.tab = tab;
+    render();
+}
+
+function setAvatarPart(part, id) {
+    if (!state.avatarEditor || !state.avatarEditor.config) return;
+    state.avatarEditor.config[part] = id;
     tapFeedback();
     render();
 }
@@ -3397,7 +3564,8 @@ function backAvatarEditor() {
 
 function saveAvatarEditor() {
     if (!state.avatarEditor || state.avatarEditor.mode !== 'edit') return;
-    state.profile = { ...state.profile, avatar: state.avatarEditor.emoji || DEFAULT_AVATAR };
+    const config = state.avatarEditor.config || DEFAULT_AVATAR_CONFIG;
+    state.profile = { ...state.profile, avatar: { parts: config } };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
     goBack();
@@ -3405,10 +3573,10 @@ function saveAvatarEditor() {
 
 function finishOnboarding() {
     if (!state.onboardingNickname.trim()) return;
-    const avatar = state.avatarEditor ? (state.avatarEditor.emoji || DEFAULT_AVATAR) : (state.onboardingAvatar || DEFAULT_AVATAR);
+    const config = state.avatarEditor ? (state.avatarEditor.config || DEFAULT_AVATAR_CONFIG) : (state.onboardingAvatar && state.onboardingAvatar.parts ? state.onboardingAvatar.parts : DEFAULT_AVATAR_CONFIG);
     state.profile = {
         nickname: state.onboardingNickname.trim(),
-        avatar: avatar,
+        avatar: { parts: config },
     };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
@@ -3417,7 +3585,7 @@ function finishOnboarding() {
 }
 
 function openAvatarEditor() {
-    state.avatarEditor = { emoji: (state.profile && state.profile.avatar) || DEFAULT_AVATAR, mode: 'edit' };
+    state.avatarEditor = { config: cloneAvatarConfig(state.profile && state.profile.avatar), mode: 'edit', tab: 'face' };
     goToScreen('avatarEditor');
     render();
 }
