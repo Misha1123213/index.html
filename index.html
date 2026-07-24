@@ -2233,7 +2233,7 @@
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=20"></script>
+<script src="platform.js?v=21"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2568,7 +2568,7 @@ const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill', 'photo']
 
 function getEnabledQuestionFormats() {
     const all = ['logical', 'missing', 'color_coded', 'spatial', 'photo'];
-    const settings = (typeof getVenueSettings === 'function') ? getVenueSettings() : {};
+    const settings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : {});
     const formats = settings.formats || {};
     const enabled = all.filter(f => formats[f] !== false);
     return enabled.length ? enabled : all;
@@ -3701,7 +3701,7 @@ function showLessonPreview(idx) {
 function renderLessonPreview() {
     const idx = state.previewLessonIdx || 0;
     const items = state.lessons[idx] || [];
-    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: true };
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { showGrams: true });
     const itemsHTML = items.map(item => {
         const ingredientsHTML = item._ingredients.map(ing => {
             const showGrams = item._hasGrams && venueSettings.showGrams !== false;
@@ -3846,7 +3846,7 @@ function toggleBrowseItem(btn) {
 }
 
 function renderBrowse() {
-    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: true };
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { showGrams: true });
     const query = (state.browseFilter || '').trim().toLowerCase();
     const filtered = query
         ? state.allData.filter(item => {
@@ -4017,7 +4017,7 @@ function buildWrongPool(nd, allIngredients) {
 }
 
 function gramSettingsFor(nd) {
-    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { showGrams: false, requireGrams: false };
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { showGrams: false, requireGrams: false });
     const fallback = !state.venue && state.isDrinksChapter;
     const showGrams = nd._hasGrams && (venueSettings.showGrams !== false || fallback);
     const requireGrams = showGrams && (venueSettings.requireGrams !== false || fallback);
@@ -4520,7 +4520,7 @@ function renderLesson() {
     const heartsStr = String(state.hearts);
     const correctSet = new Set(q.item._ingredients);
 
-    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { speedMode: { enabled: false } };
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { speedMode: { enabled: false } });
     const speedMode = venueSettings.speedMode || { enabled: false, timeLimit: 15 };
     const speedEnabled = !fb && speedMode.enabled;
 
@@ -4895,7 +4895,7 @@ function handleQuestionTimeout() {
     if (state.feedbackShown) return;
     const q = state.questions[state.currentQIdx];
     if (!q) return;
-    const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { speedMode: { timeLimit: 15 } };
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { speedMode: { timeLimit: 15 } });
     const timeLimit = Number((venueSettings.speedMode && venueSettings.speedMode.timeLimit) || 15);
     processAnswer(false, q.item, q.format, timeLimit);
 }
@@ -4912,7 +4912,7 @@ function processAnswer(isCorrect, item, format, timeTaken) {
         state.sessionXP += 10;
         state._lastCorrect = true;
 
-        const venueSettings = (typeof getVenueSettings === 'function') ? getVenueSettings() : { speedMode: { enabled: false } };
+        const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { speedMode: { enabled: false } });
         const speedMode = venueSettings.speedMode || { enabled: false, timeLimit: 15 };
         if (speedMode.enabled && typeof timeTaken === 'number' && timeTaken < Number(speedMode.timeLimit || 15)) {
             const limit = Number(speedMode.timeLimit) || 15;
