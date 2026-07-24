@@ -916,7 +916,7 @@ body::before { display: none !important; }
 .screen-enter { animation: slideUp 0.3s ease-out !important; }
 
 /* Gems & shop */
-.gem-icon { height: 22px !important; width: auto !important; object-fit: contain !important; vertical-align: middle !important; display: inline-block !important; }
+.gem-icon { width: 18px !important; height: 18px !important; color: var(--blue) !important; vertical-align: middle !important; }
 .gem-balance { cursor: pointer !important; }
 .gem-count { color: var(--blue) !important; }
 .shop-screen { padding: 12px !important; max-width: 640px !important; margin: 0 auto !important; }
@@ -938,7 +938,6 @@ body::before { display: none !important; }
 .shop-buy-btn { width: 100% !important; padding: 10px !important; border-radius: 10px !important; border: none !important; background: var(--gold) !important; color: #1a1a1a !important; font-weight: 800 !important; cursor: pointer !important; }
 .shop-buy-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; }
 .shop-buy-btn.active { background: var(--green) !important; color: #fff !important; }
-.shop-card-img { max-width: 100% !important; max-height: 140px !important; height: auto !important; width: auto !important; object-fit: contain !important; border-radius: 10px !important; margin: 0 auto 8px !important; background: rgba(0,0,0,0.2) !important; display: block !important; }
 .lootbox-card { border-width: 2px !important; }
 .lootbox-chest { margin-bottom: 8px !important; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)) !important; }
 .shop-empty { color: var(--text-dim) !important; text-align: center !important; padding: 24px !important; }
@@ -946,14 +945,13 @@ body::before { display: none !important; }
 .shop-boost { padding: 8px 12px !important; border-radius: 10px !important; background: var(--bg-card) !important; margin-bottom: 6px !important; font-size: 13px !important; }
 .lootbox-overlay { position: fixed !important; inset: 0 !important; background: rgba(0,0,0,0.85) !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; z-index: 200 !important; padding: 20px !important; }
 .lootbox-stage { text-align: center !important; }
-.lootbox-chest-large { margin-bottom: 16px !important; max-width: 240px !important; max-height: 220px !important; width: auto !important; height: auto !important; object-fit: contain !important; filter: drop-shadow(0 0 16px rgba(255,255,255,0.2)) !important; border-radius: 12px !important; }
+.lootbox-chest-large { margin-bottom: 16px !important; filter: drop-shadow(0 0 12px var(--chest-color, #fff)) !important; }
 .lootbox-chest-large.shake { animation: shakeChest 0.6s ease-in-out !important; }
 .lootbox-chest-large.glow { animation: chestGlow 1.2s ease-in-out infinite alternate !important; }
 .lootbox-status { color: var(--text-secondary) !important; font-weight: 700 !important; margin-bottom: 20px !important; }
 .lootbox-rewards { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; gap: 10px !important; margin-bottom: 16px !important; }
-.loot-reward { display: flex !important; flex-direction: column !important; align-items: center !important; padding: 12px !important; border-radius: 12px !important; background: var(--bg-card) !important; border: 1px solid var(--border) !important; min-width: 90px !important; }
+.loot-reward { display: flex !important; flex-direction: column !important; align-items: center !important; padding: 12px !important; border-radius: 12px !important; background: var(--bg-card) !important; border: 1px solid var(--border) !important; min-width: 80px !important; }
 .reward-icon { width: 28px !important; height: 28px !important; margin-bottom: 6px !important; }
-.reward-icon-img { width: 48px !important; height: 48px !important; object-fit: contain !important; margin-bottom: 6px !important; }
 .reward-name { font-size: 12px !important; font-weight: 700 !important; }
 .reward-amount { color: var(--blue) !important; font-weight: 800 !important; }
 @keyframes shakeChest { 0%,100% { transform: translateX(0) rotate(0deg) !important; } 25% { transform: translateX(-8px) rotate(-5deg) !important; } 75% { transform: translateX(8px) rotate(5deg) !important; } }

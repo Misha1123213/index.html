@@ -1996,7 +1996,7 @@ function renderPlatformHome() {
         <span class="xp-count">${stats.totalXP} XP</span>
       </div>
       <div class="top-bar-stat gem-balance" onclick="goToScreen('shop')">
-        ${typeof getGemIcon === 'function' ? getGemIcon(18) : ''}
+        <svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>
         <span class="gem-count">${typeof getGems === 'function' ? getGems() : 0}</span>
       </div>
       ` : ''}
