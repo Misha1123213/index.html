@@ -1,23 +1,35 @@
 Avatar assets
 =============
 
-The PNGs in these category folders (face, ears, eyes, brows, nose, mouth,
-hair, accessory, feature) are the real hand-drawn character-creator
-sprites provided by the project owner. Each source sprite was composited
-onto a shared 128x142 canvas at a fixed anchor per layer, so every PNG has
-identical dimensions and the app's layer stack (position: absolute, 100%
-width/height, object-fit: contain) lines them up regardless of which
-options are combined.
+PNG character-creator sprites for the MET Academy avatar system.
 
-config.json lists the available ids per layer and the app reads it at
-runtime (loadAvatarConfig).
+Layout
+------
+- All sprites share a 1024x1024 transparent canvas.
+- Each sprite is drawn at the same scale and centered, so the app can stack
+  layers with `position: absolute; width: 100%; height: 100%; object-fit: contain`.
+- Layer order is defined in `manifest.json`:
+  face -> ears -> eyes -> brows -> nose -> mouth -> hair -> accessory -> feature
 
-Layer order in the app (bottom to top):
-face → ears → eyes → brows → nose → mouth → hair → accessory → feature
+Files
+-----
+- `manifest.json` — shared canvas size, anchors, skin-tone filter template,
+  and the list of available items per layer.
+- `config.json` — fallback flat list of ids per layer.
+- `face/` — 5 skin-toned face bases (`skin_*`).
+- `eyes/` — 5 eye layers.
+- `nose/` — 3 nose layers.
+- `mouth/` — 5 mouth layers.
+- `hair/` — 5 hairstyle layers.
 
-accessory and feature are optional (the editor shows a "Нет" / none tile).
+Skin tone
+---------
+Face sprites use a uniform skin tone (#f5d0a9) and are stacked directly
+as PNG layers.
 
-WARNING: generate_avatar_assets.py is the OLD placeholder generator. It
-draws programmatic line-art and, if run, will OVERWRITE these real sprites
-and rewrite config.json. Do NOT run it unless you intend to discard the
-real artwork. It is kept only for reference.
+Adding new parts
+----------------
+1. Draw the new sprite on the same 1024x1024 canvas with the same centering.
+2. Place it in the appropriate folder.
+3. Add the item `{id, name, file}` to `manifest.json` under the right layer.
+4. (Optional) add the id to `config.json`.
