@@ -1,0 +1,118 @@
+{
+  "version": "2.0",
+  "canvas": {
+    "width": 1024,
+    "height": 1024,
+    "origin": {"x": 0.5, "y": 0.5},
+    "unit": "px"
+  },
+  "skinTone": {
+    "enabled": true,
+    "layer": "face",
+    "default": {
+      "hue": -10,
+      "saturation": 120,
+      "brightness": 90,
+      "contrast": 105
+    },
+    "filterTemplate": "sepia(1) saturate({saturation}%) hue-rotate({hue}deg) brightness({brightness}%) contrast({contrast}%)"
+  },
+  "renderOrder": ["face", "ears", "eyes", "brows", "nose", "mouth", "hair", "accessory", "feature"],
+  "anchors": {
+    "face": {"x": 0.5, "y": 0.5},
+    "ears": {"x": 0.5, "y": 0.48},
+    "eyes": {"x": 0.5, "y": 0.42},
+    "brows": {"x": 0.5, "y": 0.34},
+    "nose": {"x": 0.5, "y": 0.54},
+    "mouth": {"x": 0.5, "y": 0.67},
+    "hair": {"x": 0.5, "y": 0.28}
+  },
+  "layers": {
+    "face": {
+      "label": "Лицо",
+      "default": "oval_1",
+      "filter": "sepia(1) saturate({saturation}%) hue-rotate({hue}deg) brightness({brightness}%) contrast({contrast}%)",
+      "items": [
+        {"id": "oval_1", "name": "Овальное", "file": "face/skin_neutral_oval_1.png"},
+        {"id": "round_2", "name": "Круглое", "file": "face/skin_neutral_round_2.png"},
+        {"id": "long_3", "name": "Вытянутое", "file": "face/skin_neutral_long_3.png"},
+        {"id": "square_4", "name": "Квадратное", "file": "face/skin_neutral_square_4.png"},
+        {"id": "heart_5", "name": "Сердцевидное", "file": "face/skin_neutral_heart_5.png"}
+      ]
+    },
+    "ears": {
+      "label": "Уши",
+      "default": "none",
+      "optional": true,
+      "items": []
+    },
+    "eyes": {
+      "label": "Глаза",
+      "default": "eyes_1",
+      "anchor": {"x": 0.5, "y": 0.42},
+      "filter": "",
+      "items": [
+        {"id": "eyes_1", "name": "Большие", "file": "eyes/eyes_1.png"},
+        {"id": "eyes_2", "name": "Улыбчивые", "file": "eyes/eyes_2.png"},
+        {"id": "eyes_3", "name": "Спокойные", "file": "eyes/eyes_3.png"},
+        {"id": "eyes_4", "name": "Удивлённые", "file": "eyes/eyes_4.png"},
+        {"id": "eyes_5", "name": "Узкие", "file": "eyes/eyes_5.png"}
+      ]
+    },
+    "brows": {
+      "label": "Брови",
+      "default": "none",
+      "optional": true,
+      "items": []
+    },
+    "nose": {
+      "label": "Нос",
+      "default": "nose_1",
+      "anchor": {"x": 0.5, "y": 0.54},
+      "filter": "",
+      "items": [
+        {"id": "nose_1", "name": "Маленький", "file": "nose/nose_1.png"},
+        {"id": "nose_2", "name": "Круглый", "file": "nose/nose_2.png"},
+        {"id": "nose_3", "name": "Заячий", "file": "nose/nose_3.png"}
+      ]
+    },
+    "mouth": {
+      "label": "Рот",
+      "default": "mouth_1",
+      "anchor": {"x": 0.5, "y": 0.67},
+      "filter": "",
+      "items": [
+        {"id": "mouth_1", "name": "Улыбка", "file": "mouth/mouth_1.png"},
+        {"id": "mouth_2", "name": "Широкая улыбка", "file": "mouth/mouth_2.png"},
+        {"id": "mouth_3", "name": "Спокойный", "file": "mouth/mouth_3.png"},
+        {"id": "mouth_4", "name": "Удивлён", "file": "mouth/mouth_4.png"},
+        {"id": "mouth_5", "name": "Язычок", "file": "mouth/mouth_5.png"}
+      ]
+    },
+    "hair": {
+      "label": "Причёска",
+      "default": "hair_1",
+      "anchor": {"x": 0.5, "y": 0.28},
+      "filter": "",
+      "items": [
+        {"id": "hair_1", "name": "Короткая", "file": "hair/hair_1_v2.png"},
+        {"id": "hair_2", "name": "Длинная", "file": "hair/hair_2_v2.png"},
+        {"id": "hair_3", "name": "Чёлка", "file": "hair/hair_3_v2.png"},
+        {"id": "hair_4", "name": "Хвостик", "file": "hair/hair_4_v2.png"},
+        {"id": "hair_5", "name": "Косички", "file": "hair/hair_5_v2.png"}
+      ]
+    },
+    "accessory": {
+      "label": "Аксессуар",
+      "default": "none",
+      "optional": true,
+      "items": []
+    },
+    "feature": {
+      "label": "Особенность",
+      "default": "none",
+      "optional": true,
+      "items": []
+    }
+  }
+}

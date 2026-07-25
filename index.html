@@ -2236,9 +2236,10 @@ const AVATAR_LAYERS = [
 ];
 const AVATAR_RENDER_ORDER = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair'];
 const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
-const DEFAULT_AVATAR = { face: '1', ears: '1', eyes: '1', brows: '1', nose: '1', mouth: '1', hair: '1' };
+const DEFAULT_AVATAR = { face: 'oval_1', ears: null, eyes: 'eyes_1', brows: null, nose: 'nose_1', mouth: 'mouth_1', hair: 'hair_1', skinTone: { hue: -10, saturation: 120, brightness: 90, contrast: 105 } };
 const DEFAULT_AVATAR_EMOJI = '☕';
 let avatarConfig = null;
+let avatarManifest = null;
 let cementCounter = 0;
 function nextCement() {
     const img = CEMENT_IMAGES[cementCounter % CEMENT_IMAGES.length];
@@ -2872,16 +2873,39 @@ function renderAvatar(avatar, size = 32) {
         return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${emoji}</span>`;
     }
     const order = AVATAR_RENDER_ORDER;
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
     const parts = order.map(layer => {
-        const id = avatar[layer];
+        let id = avatar[layer];
+        if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) {
+            id = DEFAULT_AVATAR[layer];
+        }
         if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) return '';
-        return `<img class="avatar-layer" src="img/avatar/${layer}/${id}.png" alt="" onerror="this.style.display='none'">`;
+        let src = `img/avatar/${layer}/${id}.png`;
+        let filter = isDark ? 'invert(1)' : 'none';
+        if (avatarManifest && avatarManifest.layers && avatarManifest.layers[layer]) {
+            const layerData = avatarManifest.layers[layer];
+            const item = (layerData.items || []).find(i => i.id === id);
+            if (item && item.file) src = `img/avatar/${item.file}`;
+            let rawFilter = '';
+            if (item && item.filter !== undefined) rawFilter = item.filter;
+            else if (layerData.filter !== undefined) rawFilter = layerData.filter;
+            if (rawFilter.includes('{') && avatarManifest.skinTone && layer === avatarManifest.skinTone.layer) {
+                const skin = avatar.skinTone || avatarManifest.skinTone.default;
+                rawFilter = rawFilter
+                    .replace(/\{hue\}/g, skin.hue)
+                    .replace(/\{saturation\}/g, skin.saturation)
+                    .replace(/\{brightness\}/g, skin.brightness)
+                    .replace(/\{contrast\}/g, skin.contrast);
+            }
+            filter = rawFilter || 'none';
+        }
+        return `<img class="avatar-layer" src="${src}" alt="" style="filter:${filter}" onerror="this.style.display='none'">`;
     }).join('');
     return `<div class="avatar-stack" style="width:${size}px;height:${size}px">${parts}</div>`;
 }
 
 function cloneAvatar(avatar) {
-    return { ...DEFAULT_AVATAR, ...(avatar || {}) };
+    return { ...DEFAULT_AVATAR, skinTone: DEFAULT_AVATAR.skinTone, ...(avatar || {}) };
 }
 
 function migrateProfileAvatar(profile) {
@@ -3066,13 +3090,27 @@ function renderHome() {
 }
 
 function loadAvatarConfig() {
-    if (avatarConfig) return Promise.resolve(avatarConfig);
-    return fetch('img/avatar/config.json')
+    if (avatarConfig && avatarManifest) return Promise.resolve(avatarConfig);
+    return fetch('img/avatar/manifest.json')
         .then(r => r.ok ? r.json() : null)
         .catch(() => null)
-        .then(cfg => {
-            avatarConfig = cfg || {};
-            return avatarConfig;
+        .then(manifest => {
+            if (manifest && manifest.layers) {
+                avatarManifest = manifest;
+                avatarConfig = {};
+                Object.keys(manifest.layers).forEach(k => {
+                    const items = manifest.layers[k].items || [];
+                    avatarConfig[k] = items.map(i => i.id).filter(Boolean);
+                });
+                return avatarConfig;
+            }
+            return fetch('img/avatar/config.json')
+                .then(r => r.ok ? r.json() : null)
+                .catch(() => null)
+                .then(cfg => {
+                    avatarConfig = cfg || {};
+                    return avatarConfig;
+                });
         });
 }
 
