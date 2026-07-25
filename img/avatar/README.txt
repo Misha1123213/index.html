@@ -16,7 +16,7 @@ Files
 - `manifest.json` — shared canvas size, anchors, skin-tone filter template,
   and the list of available items per layer.
 - `config.json` — fallback flat list of ids per layer.
-- `face/` — 5 neutral-grey face bases (`skin_neutral_*`).
+- `face/` — 5 skin-toned face bases (`skin_*`).
 - `eyes/` — 5 eye layers.
 - `nose/` — 3 nose layers.
 - `mouth/` — 5 mouth layers.
@@ -24,9 +24,8 @@ Files
 
 Skin tone
 ---------
-Face sprites are intentionally neutral grey. The app applies a CSS filter
-from `manifest.json`/`skinTone.filterTemplate` to tint the face into the
-selected skin tone. The default tone is warm sepia-brown.
+Face sprites use a uniform skin tone (#f5d0a9) and are stacked directly
+as PNG layers.
 
 Adding new parts
 ----------------

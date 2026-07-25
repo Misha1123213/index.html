@@ -31,13 +31,12 @@
     "face": {
       "label": "Лицо",
       "default": "oval_1",
-      "filter": "sepia(1) saturate({saturation}%) hue-rotate({hue}deg) brightness({brightness}%) contrast({contrast}%)",
       "items": [
-        {"id": "oval_1", "name": "Овальное", "file": "face/skin_neutral_oval_1.png"},
-        {"id": "round_2", "name": "Круглое", "file": "face/skin_neutral_round_2.png"},
-        {"id": "long_3", "name": "Вытянутое", "file": "face/skin_neutral_long_3.png"},
-        {"id": "square_4", "name": "Квадратное", "file": "face/skin_neutral_square_4.png"},
-        {"id": "heart_5", "name": "Сердцевидное", "file": "face/skin_neutral_heart_5.png"}
+        {"id": "oval_1", "name": "Овальное", "file": "face/skin_oval_1.png"},
+        {"id": "round_2", "name": "Круглое", "file": "face/skin_round_2.png"},
+        {"id": "long_3", "name": "Вытянутое", "file": "face/skin_long_3.png"},
+        {"id": "square_4", "name": "Квадратное", "file": "face/skin_square_4.png"},
+        {"id": "diamond_5", "name": "Ромбовидное", "file": "face/skin_diamond_5.png"}
       ]
     },
     "ears": {
