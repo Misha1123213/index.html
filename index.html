@@ -3525,8 +3525,20 @@ function renderAvatarEditorContent(mode) {
     }).join('');
     const optionsHTML = part.options.map(opt => {
         const selected = config[tab] === opt.id;
-        const previewCfg = { ...config, [tab]: opt.id };
-        const preview = `<div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">${renderAvatar({ parts: previewCfg }, 48)}</div>`;
+        const faceOpt = AVATAR_PARTS.face.options.find(o => o.id === config.face) || AVATAR_PARTS.face.options[0];
+        const eyeOpt = AVATAR_PARTS.eyes.options.find(o => o.id === config.eyes) || AVATAR_PARTS.eyes.options[0];
+        const skin = faceOpt.skin || '#f5d0a9';
+        let preview = '';
+        if (tab === 'face') {
+            preview = `<svg viewBox="0 0 120 120" width="56" height="56">${getAvatarFaceSvg(opt.id, opt.skin || skin)}</svg>`;
+        } else if (tab === 'eyes') {
+            preview = `<svg viewBox="0 0 120 120" width="56" height="56">${getAvatarFaceSvg(faceOpt.id, skin)}${getAvatarEyesSvg(opt.id, opt.color || '#3b82f6')}</svg>`;
+        } else if (tab === 'expression') {
+            preview = `<svg viewBox="0 0 120 120" width="56" height="56">${getAvatarFaceSvg(faceOpt.id, skin)}${getAvatarEyesSvg(eyeOpt.id, eyeOpt.color || '#3b82f6')}${getMouthPath(opt.id)}</svg>`;
+        } else {
+            const previewCfg = { ...config, [tab]: opt.id };
+            preview = `<div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;">${renderAvatar({ parts: previewCfg }, 56)}</div>`;
+        }
         return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${preview}<span>${opt.name}</span></button>`;
     }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
