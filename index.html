@@ -2345,15 +2345,7 @@ window.state = state;
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
 const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 const DEFAULT_AVATAR = 'A';
-const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'eyes_1', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
-const FACE_SHAPE_FILTER = 'sepia(1) saturate(120%) hue-rotate(-10deg) brightness(90%) contrast(105%)';
-const FACE_PNG_TRANSFORMS = {
-    oval_1: 'translate(1.39,1.39) scale(0.11458)',
-    round_2: 'translate(-1.16,-1.1) scale(0.11957)',
-    long_3: 'translate(1.39,1.39) scale(0.11458)',
-    square_4: 'translate(-6.98,-6.98) scale(0.13095)',
-    heart_5: 'translate(-12.13,-17.07) scale(0.14103)',
-};
+const DEFAULT_AVATAR_CONFIG = { skin: '#f5d0a9', eyes: 'eyes_1', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
 const EYE_PNG_TRANSFORMS = {
     eyes_1: 'translate(18.53,12.45) scale(0.08115)',
     eyes_2: 'translate(17.03,12.38) scale(0.08409)',
@@ -2362,13 +2354,6 @@ const EYE_PNG_TRANSFORMS = {
     eyes_5: 'translate(16.71,10.24) scale(0.08464)',
 };
 const AVATAR_PARTS = {
-    face: { label: 'Лицо', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z', options: [
-        { id: 'oval_1', name: 'Овальное', file: 'face/skin_neutral_oval_1.png' },
-        { id: 'round_2', name: 'Круглое', file: 'face/skin_neutral_round_2.png' },
-        { id: 'long_3', name: 'Вытянутое', file: 'face/skin_neutral_long_3.png' },
-        { id: 'square_4', name: 'Квадратное', file: 'face/skin_neutral_square_4.png' },
-        { id: 'heart_5', name: 'Сердцевидное', file: 'face/skin_neutral_heart_5.png' },
-    ]},
     eyes: { label: 'Глаза', icon: 'M12 4.5c-4.5 0-8.2 3.3-9 7.5.8 4.2 4.5 7.5 9 7.5s8.2-3.3 9-7.5c-.8-4.2-4.5-7.5-9-7.5zm0 12c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z', options: [
         { id: 'eyes_1', name: 'Большие', file: 'eyes/eyes_1.png' },
         { id: 'eyes_2', name: 'Улыбчивые', file: 'eyes/eyes_2.png' },
@@ -3195,22 +3180,24 @@ function renderAvatar(avatar, size = 32) {
     const color = avatarColor(letter);
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px;background:${color}!important;border-color:${color}!important;color:#fff!important">${letter}</span>`;
 }
+function getAvatarFaceSvg(skin) {
+    return `<ellipse cx="60" cy="60" rx="36" ry="44" fill="${skin}" stroke="rgba(0,0,0,0.08)" stroke-width="1"/>`;
+}
 function renderConstructedAvatar(parts, size) {
     const cfg = { ...DEFAULT_AVATAR_CONFIG, ...(parts || {}) };
-    const face = (AVATAR_PARTS.face.options.find(o => o.id === cfg.face) || AVATAR_PARTS.face.options[0]);
     const eyes = (AVATAR_PARTS.eyes.options.find(o => o.id === cfg.eyes) || AVATAR_PARTS.eyes.options[0]);
     const hair = (AVATAR_PARTS.hair.options.find(o => o.id === cfg.hair) || AVATAR_PARTS.hair.options[0]);
     const beard = (AVATAR_PARTS.beard.options.find(o => o.id === cfg.beard) || AVATAR_PARTS.beard.options[0]);
     const glasses = (AVATAR_PARTS.glasses.options.find(o => o.id === cfg.glasses) || AVATAR_PARTS.glasses.options[0]);
+    const skin = cfg.skin || '#f5d0a9';
     const mouth = getMouthPath(cfg.expression);
     const hairColor = hair.color || '#2c1a0e';
     const beardColor = beard.color || '#2c1a0e';
-    const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, '#f5d0a9');
+    const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, skin);
     const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beardColor) : '';
     const glassesSvg = cfg.glasses !== 'none' ? getAvatarGlassesSvg(cfg.glasses) : '';
-    const faceTransform = FACE_PNG_TRANSFORMS[cfg.face] || FACE_PNG_TRANSFORMS.oval_1;
     const eyeTransform = EYE_PNG_TRANSFORMS[cfg.eyes] || EYE_PNG_TRANSFORMS.eyes_1;
-    const faceSvg = `<image href="img/avatar/${face.file}" width="1024" height="1024" transform="${faceTransform}" style="filter:${FACE_SHAPE_FILTER}" />`;
+    const faceSvg = getAvatarFaceSvg(skin);
     const eyeSvg = `<image href="img/avatar/${eyes.file}" width="1024" height="1024" transform="${eyeTransform}" />`;
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;background:transparent!important;border:none!important;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 120 120" width="${size}" height="${size}">
         ${hairSvg}
@@ -3221,55 +3208,7 @@ function renderConstructedAvatar(parts, size) {
         ${glassesSvg}
     </svg></span>`;
 }
-function getAvatarFaceSvg(shape, skin) {
-    const stroke = 'stroke="rgba(0,0,0,0.08)" stroke-width="1"';
-    if (shape === 'round_2') return `<circle cx="60" cy="60" r="40" fill="${skin}" ${stroke}/>`;
-    if (shape === 'long_3') return `<ellipse cx="60" cy="60" rx="32" ry="46" fill="${skin}" ${stroke}/>`;
-    if (shape === 'square_4') return `<rect x="22" y="18" width="76" height="84" rx="26" ry="26" fill="${skin}" ${stroke}/>`;
-    if (shape === 'heart_5') return `<path d="M60 28 C40 8 16 28 16 52 C16 76 60 100 60 100 C60 100 104 76 104 52 C104 28 80 8 60 28 Z" fill="${skin}" ${stroke}/>`;
-    return `<ellipse cx="60" cy="60" rx="36" ry="44" fill="${skin}" ${stroke}/>`;
-}
-function getAvatarEyesSvg(shape, color) {
-    if (shape === 'eyes_2') {
-        // happy / smiling arcs
-        return `<g>
-            <path d="M42 56 Q46 50 50 56" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round"/>
-            <path d="M70 56 Q74 50 78 56" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round"/>
-        </g>`;
-    }
-    if (shape === 'eyes_3') {
-        // calm / relaxed with small pupils
-        return `<g>
-            <path d="M40 56 Q46 50 52 56" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <path d="M68 56 Q74 50 80 56" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <circle cx="46" cy="58" r="2" fill="${color}"/>
-            <circle cx="74" cy="58" r="2" fill="${color}"/>
-        </g>`;
-    }
-    if (shape === 'eyes_4') {
-        // surprised large circles
-        return `<g>
-            <circle cx="46" cy="54" r="6.5" fill="#fff"/><circle cx="46" cy="54" r="3" fill="${color}"/><circle cx="46" cy="54" r="1.5" fill="#000"/>
-            <circle cx="74" cy="54" r="6.5" fill="#fff"/><circle cx="74" cy="54" r="3" fill="${color}"/><circle cx="74" cy="54" r="1.5" fill="#000"/>
-            <circle cx="48" cy="51.5" r="1" fill="#fff"/><circle cx="76" cy="51.5" r="1" fill="#fff"/>
-        </g>`;
-    }
-    if (shape === 'eyes_5') {
-        // narrow / slanted
-        return `<g>
-            <ellipse cx="46" cy="54" rx="7" ry="3.5" transform="rotate(-8 46 54)" fill="#fff" stroke="${color}" stroke-width="1.5"/>
-            <ellipse cx="74" cy="54" rx="7" ry="3.5" transform="rotate(8 74 54)" fill="#fff" stroke="${color}" stroke-width="1.5"/>
-            <circle cx="46" cy="54" r="2" fill="${color}"/>
-            <circle cx="74" cy="54" r="2" fill="${color}"/>
-        </g>`;
-    }
-    // default: big round
-    return `<g>
-        <circle cx="46" cy="54" r="6" fill="#fff"/><circle cx="46" cy="54" r="2.8" fill="${color}"/><circle cx="46" cy="54" r="1.2" fill="#000"/>
-        <circle cx="74" cy="54" r="6" fill="#fff"/><circle cx="74" cy="54" r="2.8" fill="${color}"/><circle cx="74" cy="54" r="1.2" fill="#000"/>
-        <circle cx="48" cy="51.5" r="0.9" fill="#fff"/><circle cx="76" cy="51.5" r="0.9" fill="#fff"/>
-    </g>`;
-}
+
 function adjustColor(hex, amount) {
     const num = parseInt(hex.replace('#', ''), 16);
     let r = (num >> 16) + amount; if (r > 255) r = 255; if (r < 0) r = 0;
@@ -3529,7 +3468,7 @@ function renderAvatarEditorContent(mode) {
     const editor = state.avatarEditor;
     if (!editor) return '';
     const config = editor.config || DEFAULT_AVATAR_CONFIG;
-    const tab = editor.tab || 'face';
+    const tab = editor.tab || 'eyes';
     const part = AVATAR_PARTS[tab];
     const tabsHTML = Object.keys(AVATAR_PARTS).map(key => {
         const p = AVATAR_PARTS[key];
@@ -3542,10 +3481,7 @@ function renderAvatarEditorContent(mode) {
     const optionsHTML = part.options.map(opt => {
         const selected = config[tab] === opt.id;
         let preview = '';
-        if (tab === 'face') {
-            const faceTransform = FACE_PNG_TRANSFORMS[opt.id] || FACE_PNG_TRANSFORMS.oval_1;
-            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${faceTransform}" style="filter:${FACE_SHAPE_FILTER}" /></svg>`;
-        } else if (tab === 'eyes') {
+        if (tab === 'eyes') {
             const eyeTransform = EYE_PNG_TRANSFORMS[opt.id] || EYE_PNG_TRANSFORMS.eyes_1;
             preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${eyeTransform}" /></svg>`;
         } else {
@@ -3583,7 +3519,7 @@ function renderOnboarding() {
     }
 
     if (!state.avatarEditor) {
-        state.avatarEditor = { config: cloneAvatarConfig(state.onboardingAvatar), mode: 'onboarding', tab: 'face' };
+        state.avatarEditor = { config: cloneAvatarConfig(state.onboardingAvatar), mode: 'onboarding', tab: 'eyes' };
     }
 
     app.innerHTML = `
@@ -3607,7 +3543,7 @@ function setOnboardingNickname(value) {
 function goToAvatar() {
     if (!state.onboardingNickname.trim()) return;
     state.onboardingAvatar = { parts: DEFAULT_AVATAR_CONFIG };
-    state.avatarEditor = { config: { ...DEFAULT_AVATAR_CONFIG }, mode: 'onboarding', tab: 'face' };
+    state.avatarEditor = { config: { ...DEFAULT_AVATAR_CONFIG }, mode: 'onboarding', tab: 'eyes' };
     state.onboardingStep = 'avatar';
     render();
 }
@@ -3661,7 +3597,7 @@ function finishOnboarding() {
 }
 
 function openAvatarEditor() {
-    state.avatarEditor = { config: cloneAvatarConfig(state.profile && state.profile.avatar), mode: 'edit', tab: 'face' };
+    state.avatarEditor = { config: cloneAvatarConfig(state.profile && state.profile.avatar), mode: 'edit', tab: 'eyes' };
     goToScreen('avatarEditor');
     render();
 }
