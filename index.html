@@ -2345,7 +2345,7 @@ window.state = state;
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
 const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 const DEFAULT_AVATAR = 'A';
-const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'blue', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
+const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'eyes_1', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
 const FACE_SHAPE_FILTER = 'sepia(1) saturate(120%) hue-rotate(-10deg) brightness(90%) contrast(105%)';
 const AVATAR_PARTS = {
     face: { label: 'Лицо', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z', options: [
@@ -2356,10 +2356,11 @@ const AVATAR_PARTS = {
         { id: 'heart_5', name: 'Сердцевидное', file: 'face/skin_neutral_heart_5.png' },
     ]},
     eyes: { label: 'Глаза', icon: 'M12 4.5c-4.5 0-8.2 3.3-9 7.5.8 4.2 4.5 7.5 9 7.5s8.2-3.3 9-7.5c-.8-4.2-4.5-7.5-9-7.5zm0 12c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z', options: [
-        { id: 'blue', name: 'Голубые', color: '#3b82f6' },
-        { id: 'brown', name: 'Карие', color: '#5d4037' },
-        { id: 'green', name: 'Зелёные', color: '#16a34a' },
-        { id: 'gray', name: 'Серые', color: '#6b7280' },
+        { id: 'eyes_1', name: 'Большие', file: 'eyes/eyes_1.png' },
+        { id: 'eyes_2', name: 'Улыбчивые', file: 'eyes/eyes_2.png' },
+        { id: 'eyes_3', name: 'Спокойные', file: 'eyes/eyes_3.png' },
+        { id: 'eyes_4', name: 'Удивлённые', file: 'eyes/eyes_4.png' },
+        { id: 'eyes_5', name: 'Узкие', file: 'eyes/eyes_5.png' },
     ]},
     expression: { label: 'Выражение', icon: 'M7 10h2v2H7zm8 0h2v2h-2zm-6 5.5c1.5 1.5 4.5 1.5 6 0', options: [
         { id: 'smile', name: 'Улыбка' },
@@ -3188,7 +3189,6 @@ function renderConstructedAvatar(parts, size) {
     const beard = (AVATAR_PARTS.beard.options.find(o => o.id === cfg.beard) || AVATAR_PARTS.beard.options[0]);
     const glasses = (AVATAR_PARTS.glasses.options.find(o => o.id === cfg.glasses) || AVATAR_PARTS.glasses.options[0]);
     const mouth = getMouthPath(cfg.expression);
-    const eyeColor = eyes.color || '#3b82f6';
     const hairColor = hair.color || '#2c1a0e';
     const beardColor = beard.color || '#2c1a0e';
     const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, '#f5d0a9');
@@ -3197,11 +3197,13 @@ function renderConstructedAvatar(parts, size) {
     const faceSvg = face.file
         ? `<image href="img/avatar/${face.file}" x="0" y="0" width="120" height="120" style="filter:${FACE_SHAPE_FILTER}" />`
         : `<circle cx="60" cy="60" r="42" fill="#f5d0a9" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>`;
+    const eyeSvg = eyes.file
+        ? `<image href="img/avatar/${eyes.file}" x="0" y="0" width="120" height="120" />`
+        : `<g><circle cx="46" cy="54" r="5" fill="#fff"/><circle cx="46" cy="54" r="2.5" fill="#3b82f6"/><circle cx="74" cy="54" r="5" fill="#fff"/><circle cx="74" cy="54" r="2.5" fill="#3b82f6"/></g>`;
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;background:transparent!important;border:none!important;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 120 120" width="${size}" height="${size}">
         ${hairSvg}
         ${faceSvg}
-        <circle cx="46" cy="54" r="5" fill="#fff"/><circle cx="46" cy="54" r="2.5" fill="${eyeColor}"/>
-        <circle cx="74" cy="54" r="5" fill="#fff"/><circle cx="74" cy="54" r="2.5" fill="${eyeColor}"/>
+        ${eyeSvg}
         ${mouth}
         ${beardSvg}
         ${glassesSvg}
@@ -3479,8 +3481,9 @@ function renderAvatarEditorContent(mode) {
     const optionsHTML = part.options.map(opt => {
         const selected = config[tab] === opt.id;
         let preview = '';
-        if (tab === 'face' && opt.file) {
-            preview = `<img src="img/avatar/${opt.file}" alt="" style="width:36px;height:36px;object-fit:contain;filter:${FACE_SHAPE_FILTER}" onerror="this.style.display='none'">`;
+        if ((tab === 'face' || tab === 'eyes') && opt.file) {
+            const extra = tab === 'face' ? `filter:${FACE_SHAPE_FILTER};` : '';
+            preview = `<img src="img/avatar/${opt.file}" alt="" style="width:36px;height:36px;object-fit:contain;${extra}" onerror="this.style.display='none'">`;
         } else if ((tab === 'hair' || tab === 'beard') && opt.color) {
             preview = `<span class="avatar-swatch" style="background:${opt.color}"></span>`;
         } else if (opt.skin) {
