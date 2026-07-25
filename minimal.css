@@ -980,7 +980,7 @@ body::before { display: none !important; }
 .avatar-editor-option:hover { border-color: var(--border-light) !important; transform: translateY(-2px) !important; }
 .avatar-editor-option:active { transform: translateY(1px) !important; }
 .avatar-editor-option.selected { border-color: var(--gold) !important; box-shadow: 0 0 0 3px rgba(212,175,55,0.20) !important; }
-.avatar-editor-preview .profile-avatar { width: 120px !important; height: 120px !important; font-size: 60px !important; }
+
 
 /* Result screen */
 .result-screen { text-align: center !important; padding: 20px !important; animation: slideUp 0.4s ease-out !important; }
