@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Справочник Cognitio</title>
+  <link rel="manifest" href="manifest-reference.json">
+  <meta name="theme-color" content="#0f0f12">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <style>
+    body { margin: 0; background: #0f0f12; color: #fff; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
+    .wrap { max-width: 340px; }
+    img { width: 120px; height: 120px; border-radius: 24px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    p { color: #9ca3af; margin: 0 0 24px; line-height: 1.4; }
+    button { background: #d4af37; color: #0f0f12; border: none; border-radius: 14px; padding: 14px 22px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 10px; }
+    button.secondary { background: rgba(255,255,255,0.08); color: #fff; }
+    .hint { margin-top: 16px; font-size: 13px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="img/icon-192.png" alt="">
+    <h1>Справочник Cognitio</h1>
+    <p>Ярлык для быстрого доступа к актуальному составу блюд.</p>
+    <button id="open">Открыть справочник</button>
+    <button id="install" class="secondary" style="display:none">Установить на главный экран</button>
+    <div class="hint" id="hint">Откройте меню браузера → «Добавить на главный экран», чтобы создать ярлык.</div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    function go() { location.replace('index.html?screen=reference&standalone=1'); }
+    document.getElementById('open').addEventListener('click', go);
+    if (params.get('open') !== '0') go();
+    let deferredPrompt;
+    const installBtn = document.getElementById('install');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+      document.getElementById('hint').textContent = 'Нажмите «Установить», чтобы добавить ярлык на рабочий стол.';
+    });
+    installBtn.addEventListener('click', () => { if (deferredPrompt) { deferredPrompt.prompt(); } });
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

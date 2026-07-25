@@ -482,6 +482,10 @@ function initPlatform() {
     state.screen = 'authOptions';
   }
 
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.get('screen') === 'reference' && state.venue) state.screen = 'reference';
+  if (urlParams.get('standalone') === '1') state.standalone = true;
+
   initHistory();
   applyTheme(getSettings().theme);
   applyAnimationPref();
@@ -538,6 +542,10 @@ function selectRole(role) {
 }
 
 function goToScreen(screen, draftPatch) {
+  if (state.screen === 'reference' && screen !== 'reference' && state.referenceRefreshInterval) {
+    clearInterval(state.referenceRefreshInterval);
+    state.referenceRefreshInterval = null;
+  }
   if (state.screen === screen) {
     if (draftPatch === true) state.platformDraft = {};
     else if (draftPatch && typeof draftPatch === 'object') state.platformDraft = { ...(state.platformDraft || {}), ...draftPatch };
@@ -2035,6 +2043,7 @@ function renderPlatformHome() {
       <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">Рейтинг</button>
       ${!isOwner ? `<button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">Достижения ${renderAchievementBadge()}</button>
       <button class="stats-btn" style="${cementStyle()}" onclick="showStaffStats()">Моя статистика</button>
+      <button class="stats-btn" style="${cementStyle()}" onclick="openReference()">Справочник</button>
       ${weakCount > 0 ? `<button class="stats-btn" style="${cementStyle()}" onclick="startWeakPractice()">Тренировка слабых мест (${weakCount})</button>` : ''}` : ''}
       ${!isOwner ? (hasSections ? sections.map(s => `
         <button class="section-card" style="${cementStyle()}" onclick="startVenueCourse('${s.id}')">
@@ -2068,6 +2077,141 @@ function getSectionEmoji(name) {
 
 function getVenueEmoji(style) {
   return '?';
+}
+
+// ====================== REFERENCE ======================
+
+function openReference() {
+  state.referenceFilter = '';
+  if (!state.referenceRefreshInterval) {
+    state.referenceRefreshInterval = setInterval(() => {
+      if (state.screen !== 'reference' || !state.venue || !state.venue.code || !state.auth || state.auth.role !== 'staff') {
+        clearInterval(state.referenceRefreshInterval);
+        state.referenceRefreshInterval = null;
+        return;
+      }
+      refreshReferenceFromCloud();
+    }, 30000);
+  }
+  if (state.venue && state.venue.code && state.auth && state.auth.role === 'staff') {
+    refreshReferenceFromCloud().then(() => {
+      goToScreen('reference');
+    });
+  } else {
+    goToScreen('reference');
+  }
+}
+
+function closeReference() {
+  if (state.referenceRefreshInterval) {
+    clearInterval(state.referenceRefreshInterval);
+    state.referenceRefreshInterval = null;
+  }
+  goBack();
+}
+
+function filterReference(value) {
+  state.referenceFilter = value;
+  render();
+}
+
+function toggleReferenceItem(btn) {
+  const item = btn.closest('.browse-item');
+  if (item) item.classList.toggle('open');
+}
+
+function openReferenceShortcut() {
+  try {
+    window.open('reference.html?open=0', '_blank');
+  } catch (e) {
+    location.href = 'reference.html?open=0';
+  }
+}
+
+async function refreshReferenceFromCloud() {
+  if (!supabaseClient || !state.venue || !state.venue.code) return;
+  const remote = await fetchRemoteVenue(state.venue.code);
+  if (remote) {
+    state.venue = normalizeVenue(remote);
+    saveProgress({ venue: state.venue });
+    if (state.screen === 'reference') render();
+  }
+}
+
+function renderReference() {
+  const venue = state.venue || {};
+  const settings = getVenueSettings();
+  const query = (state.referenceFilter || '').trim().toLowerCase();
+  const sections = getVenueSections();
+
+  let sectionsHTML = '';
+  let totalItems = 0;
+
+  sections.forEach(section => {
+    const items = (section.items || []).map(normalizeItem).filter(it => {
+      if (!query) return true;
+      const nameMatch = (it.name || '').toLowerCase().includes(query);
+      const ingMatch = (it._ingredients || []).some(i => i.toLowerCase().includes(query));
+      return nameMatch || ingMatch;
+    });
+    if (!items.length) return;
+    totalItems += items.length;
+
+    const itemsHTML = items.map(item => {
+      const ingredientsHTML = item._ingredients.map(ing => {
+        const showGrams = item._hasGrams && settings.showGrams !== false;
+        const hasGram = Number(item._grams[ing]) > 0;
+        const unit = (item._gramUnit && item._gramUnit[ing]) || 'г';
+        const grams = showGrams && hasGram ? `<span class="browse-grams">&nbsp;${item._grams[ing]} ${unit}</span>` : '';
+        return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
+      }).join('');
+      const mastery = getDishMastery(item.name);
+      const crowns = mastery.level > 0 ? '<span class="mastery-crowns" style="margin-left:6px">' + '★'.repeat(mastery.level) + '</span>' : '';
+      const masteryLabel = mastery.level > 0 ? `<span class="mastery-label" style="margin-left:6px">${getMasteryLabel(mastery.level)}</span>` : '';
+      return `
+        <div class="browse-item">
+          <button class="browse-item-header" style="${cementStyle()}" onclick="toggleReferenceItem(this)">
+            ${item._image ? getDishPhotoHTML(item, 'browse-item-photo') : ''}
+            <div class="browse-item-title">
+              <span class="browse-item-name">${item.name}</span>
+              ${crowns}
+              ${masteryLabel}
+            </div>
+            <span class="browse-arrow">▼</span>
+          </button>
+          <div class="browse-item-body">
+            ${ingredientsHTML}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    sectionsHTML += `
+      <div class="reference-section">
+        <div class="reference-section-title">${escapeHtml(section.name)} <small>${items.length} позиций</small></div>
+        ${itemsHTML}
+      </div>
+    `;
+  });
+
+  const emptyHTML = !sections.length
+    ? '<div class="section-empty">В заведении пока нет разделов</div>'
+    : (totalItems === 0 ? '<div class="section-empty">Ничего не найдено</div>' : '');
+
+  app.innerHTML = `
+    <div class="top-bar">
+      <button class="close-btn" onclick="closeReference()" style="position:static;margin:0">← Назад</button>
+      <div style="flex:1"></div>
+      <button class="settings-btn" onclick="openReferenceShortcut()" aria-label="Добавить ярлык">+</button>
+    </div>
+    <div class="browse-screen">
+      <div class="path-title">${escapeHtml(venue.name || 'Справочник')}</div>
+      <input type="search" class="platform-input" style="margin:12px 0;" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.referenceFilter || '')}" oninput="filterReference(this.value)">
+      ${sectionsHTML}
+      ${emptyHTML}
+      <button class="stats-btn" style="${cementStyle()};margin-top:16px" onclick="openReferenceShortcut()">Добавить ярлык на рабочий стол</button>
+    </div>
+  `;
 }
 
 // ====================== COURSE EDITOR ======================
