@@ -2345,13 +2345,15 @@ window.state = state;
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
 const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 const DEFAULT_AVATAR = 'A';
-const DEFAULT_AVATAR_CONFIG = { face: 'default', eyes: 'blue', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
+const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'blue', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
+const FACE_SHAPE_FILTER = 'sepia(1) saturate(120%) hue-rotate(-10deg) brightness(90%) contrast(105%)';
 const AVATAR_PARTS = {
     face: { label: 'Лицо', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z', options: [
-        { id: 'default', name: 'Стандарт', skin: '#f5d0a9' },
-        { id: 'dark', name: 'Тёмный', skin: '#8d5524' },
-        { id: 'olive', name: 'Оливковый', skin: '#c68642' },
-        { id: 'pale', name: 'Светлый', skin: '#ffdfc4' },
+        { id: 'oval_1', name: 'Овальное', file: 'face/skin_neutral_oval_1.png' },
+        { id: 'round_2', name: 'Круглое', file: 'face/skin_neutral_round_2.png' },
+        { id: 'long_3', name: 'Вытянутое', file: 'face/skin_neutral_long_3.png' },
+        { id: 'square_4', name: 'Квадратное', file: 'face/skin_neutral_square_4.png' },
+        { id: 'heart_5', name: 'Сердцевидное', file: 'face/skin_neutral_heart_5.png' },
     ]},
     eyes: { label: 'Глаза', icon: 'M12 4.5c-4.5 0-8.2 3.3-9 7.5.8 4.2 4.5 7.5 9 7.5s8.2-3.3 9-7.5c-.8-4.2-4.5-7.5-9-7.5zm0 12c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z', options: [
         { id: 'blue', name: 'Голубые', color: '#3b82f6' },
@@ -3185,15 +3187,19 @@ function renderConstructedAvatar(parts, size) {
     const hair = (AVATAR_PARTS.hair.options.find(o => o.id === cfg.hair) || AVATAR_PARTS.hair.options[0]);
     const beard = (AVATAR_PARTS.beard.options.find(o => o.id === cfg.beard) || AVATAR_PARTS.beard.options[0]);
     const glasses = (AVATAR_PARTS.glasses.options.find(o => o.id === cfg.glasses) || AVATAR_PARTS.glasses.options[0]);
-    const skin = face.skin || '#f5d0a9';
     const mouth = getMouthPath(cfg.expression);
     const eyeColor = eyes.color || '#3b82f6';
-    const hairSvg = getAvatarHairSvg(cfg.hair, hair.color || '#2c1a0e', skin);
-    const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beard.color || '#2c1a0e') : '';
+    const hairColor = hair.color || '#2c1a0e';
+    const beardColor = beard.color || '#2c1a0e';
+    const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, '#f5d0a9');
+    const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beardColor) : '';
     const glassesSvg = cfg.glasses !== 'none' ? getAvatarGlassesSvg(cfg.glasses) : '';
+    const faceSvg = face.file
+        ? `<image href="img/avatar/${face.file}" x="0" y="0" width="120" height="120" style="filter:${FACE_SHAPE_FILTER}" />`
+        : `<circle cx="60" cy="60" r="42" fill="#f5d0a9" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>`;
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;background:transparent!important;border:none!important;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 120 120" width="${size}" height="${size}">
         ${hairSvg}
-        <circle cx="60" cy="60" r="42" fill="${skin}" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+        ${faceSvg}
         <circle cx="46" cy="54" r="5" fill="#fff"/><circle cx="46" cy="54" r="2.5" fill="${eyeColor}"/>
         <circle cx="74" cy="54" r="5" fill="#fff"/><circle cx="74" cy="54" r="2.5" fill="${eyeColor}"/>
         ${mouth}
@@ -3472,8 +3478,15 @@ function renderAvatarEditorContent(mode) {
     }).join('');
     const optionsHTML = part.options.map(opt => {
         const selected = config[tab] === opt.id;
-        const swatch = (tab === 'face' || tab === 'hair' || tab === 'beard') && (opt.skin || opt.color) ? `<span class="avatar-swatch" style="background:${opt.skin || opt.color}"></span>` : '';
-        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${swatch}<span>${opt.name}</span></button>`;
+        let preview = '';
+        if (tab === 'face' && opt.file) {
+            preview = `<img src="img/avatar/${opt.file}" alt="" style="width:36px;height:36px;object-fit:contain;filter:${FACE_SHAPE_FILTER}" onerror="this.style.display='none'">`;
+        } else if ((tab === 'hair' || tab === 'beard') && opt.color) {
+            preview = `<span class="avatar-swatch" style="background:${opt.color}"></span>`;
+        } else if (opt.skin) {
+            preview = `<span class="avatar-swatch" style="background:${opt.skin}"></span>`;
+        }
+        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${preview}<span>${opt.name}</span></button>`;
     }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
     return `
