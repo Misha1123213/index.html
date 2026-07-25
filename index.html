@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MET Академия ☕</title>
+    <title>Cognitio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --green: #4CAF50;
@@ -41,7 +41,7 @@
         body {
             background: var(--bg-dark);
             color: var(--text-primary);
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Inter', sans-serif;
             min-height: 100dvh;
             overflow-x: hidden;
             background-image: url('img/bg-cafe.jpg');
@@ -298,15 +298,6 @@
             text-align: center;
             padding: 30px 0 20px;
         }
-        .mascot {
-            font-size: 80px;
-            display: block;
-            animation: mascotBounce 2s ease-in-out infinite;
-        }
-        @keyframes mascotBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
         .app-title {
             font-size: 28px;
             font-weight: 900;
@@ -546,7 +537,10 @@
             flex-shrink: 0;
             background: var(--concrete-dark);
         }
-        .browse-item-name { flex: 1; }
+        .browse-item-title { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .browse-item-name { font-size: 16px; font-weight: 700; }
+        .mastery-crowns { color: #f0c040; font-size: 12px; letter-spacing: 1px; }
+        .mastery-label { font-size: 11px; color: var(--text-secondary); }
 
         /* Dish photo in questions */
         .dish-photo {
@@ -735,6 +729,21 @@
             border-radius: 3px;
             transition: width 0.5s ease;
         }
+        .timer-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(181,176,168,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--green);
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+        .timer-fill.low { background: var(--red); }
 
         .hearts-display {
             display: flex;
@@ -1062,7 +1071,6 @@
             padding: 40px 20px;
             text-align: center;
         }
-        .result-mascot { font-size: 64px; margin-bottom: 16px; }
         .result-title {
             font-size: 26px;
             font-weight: 900;
@@ -1502,6 +1510,28 @@
             60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
         }
+        .gem-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--blue);
+            text-shadow: 0 4px 20px rgba(96,165,250,0.5);
+            animation: gemPop 1.2s ease forwards;
+            z-index: 9998;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        @keyframes gemPop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(0.8); opacity: 0; }
+        }
 
         /* Shake animation */
         @keyframes shake {
@@ -1562,10 +1592,6 @@
             background: var(--bg-dark);
             color: var(--text-primary);
             text-align: center;
-        }
-        .onboarding-mascot {
-            font-size: 80px;
-            margin-bottom: 16px;
         }
         .onboarding-title {
             font-size: 28px;
@@ -1818,12 +1844,46 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 24px;
+            padding: 40px 24px;
+            min-height: 280px;
         }
-        .avatar-editor-preview .avatar-stack {
-            width: 140px !important;
-            height: 140px !important;
-            background: var(--bg-light);
+        .avatar-editor-preview svg {
+            width: 240px !important;
+            height: 240px !important;
+            filter: drop-shadow(0 10px 24px rgba(0,0,0,0.35));
+        }
+        .avatar-editor-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .avatar-editor-tab {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .avatar-editor-tab.active {
+            background: var(--green);
+            border-color: var(--green);
+            color: #fff;
+        }
+        .avatar-editor-section {
+            padding: 0 16px 8px;
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-primary);
         }
         .avatar-editor-categories {
             display: flex;
@@ -1849,29 +1909,37 @@
         }
         .avatar-editor-options {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             padding: 0 16px 16px;
             overflow-y: auto;
         }
         .avatar-editor-option {
-            aspect-ratio: 1;
-            border-radius: 16px;
+            min-height: 80px;
+            border-radius: 14px;
             border: 3px solid transparent;
             background: var(--bg-light);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 6px;
+            padding: 8px;
             cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
             overflow: hidden;
         }
         .avatar-editor-option.selected {
             border-color: var(--green);
         }
-        .avatar-editor-option .avatar-stack {
-            width: 100% !important;
-            height: 100% !important;
-            background: transparent;
+        .avatar-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
         }
         .avatar-editor-option-none {
             font-size: 13px;
@@ -1920,12 +1988,6 @@
             display: flex;
             align-items: center;
             margin-bottom: 20px;
-        }
-        .platform-mascot {
-            font-size: 72px;
-            text-align: center;
-            margin: 40px 0 12px;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
         .platform-title {
             font-size: 24px;
@@ -2151,6 +2213,30 @@
             font-size: 18px;
         }
         .editor-item label { margin-top: 8px; }
+        .editor-components { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+        .editor-component-row { display: flex; gap: 8px; align-items: stretch; }
+        .editor-comp-name { flex: 1; min-width: 0; }
+        .editor-comp-grams { width: 72px; text-align: center; }
+        .editor-comp-remove {
+            width: 36px; height: 36px;
+            background: rgba(255, 75, 75, 0.12);
+            border: 1px solid rgba(255, 75, 75, 0.25);
+            color: #ff4b4b;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .editor-add-btn {
+            width: 100%;
+            margin-top: 6px;
+            padding: 10px;
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
         .section-management { margin: 16px 0; }
         .section-row {
             display: flex;
@@ -2176,11 +2262,45 @@
         .card-img-placeholder img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
         .home-screen { position: relative; z-index: 1; }
         #venue-bg { transition: opacity 0.5s; }
+
+        /* Strict UI overrides */
+        :root {
+            --green: #10b981;
+            --green-dark: #059669;
+            --green-light: #34d399;
+            --bg-dark: #0f0f12;
+            --bg-card: #18181b;
+            --bg-card-hover: #27272a;
+            --bg-modal: #1c1c21;
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-dim: #71717a;
+            --border: rgba(255,255,255,0.08);
+            --border-light: rgba(255,255,255,0.14);
+            --shadow: rgba(0,0,0,0.35);
+            --concrete: #e4e4e7;
+            --concrete-light: #f4f4f5;
+            --concrete-dark: #d4d4d8;
+            --concrete-text: #18181b;
+            --concrete-border: rgba(0,0,0,0.08);
+        }
+        body { font-family: 'Inter', 'Nunito', sans-serif; }
+        .ach-icon, .achievement-toast-icon, .settings-row-icon, .upload-icon, .role-icon { display: inline-flex !important; }
+        .mascot-area { padding: 16px 0 8px !important; }
+        .top-bar .streak-count::before { content:''; }
+        .top-bar .hearts-count::before { content:''; }
+        .section-card .card-info small, .section-card .card-arrow, .daily-stat-card .stat-label, .lesson-node.locked, .question-type-label { color: var(--text-dim) !important; }
+        .section-row-action { width: auto !important; padding: 4px 10px !important; font-size: 11px !important; border-radius: 6px !important; border: 1px solid var(--border) !important; background: var(--bg-card-hover) !important; }
+        .card-img-placeholder { font-weight: 800 !important; }
+        #hearts-display::before { content:''; }
     </style>
+    <link rel="stylesheet" href="minimal.css?v=31">
 </head>
 <body>
 <div id="app"></div>
-<script src="platform.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<script src="supabase_config.js?v=6"></script>
+<script src="platform.js?v=43"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';
@@ -2223,23 +2343,54 @@ window.state = state;
 
 // Cement texture images for variety
 const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg','img/cement-4.jpg','img/cement-5.jpg'];
-const AVATAR_EMOJIS = ['🦉','🐻','🦊','🐼','🐯','🐰','🐧','🐸','🐶','🐱','🦁','🐨'];
-// Editable categories shown in the avatar editor. Ears are still rendered
-// (see AVATAR_RENDER_ORDER) but are not user-editable.
-const AVATAR_LAYERS = [
-    { key: 'face', label: 'Лицо' },
-    { key: 'eyes', label: 'Глаза' },
-    { key: 'brows', label: 'Брови' },
-    { key: 'nose', label: 'Нос' },
-    { key: 'mouth', label: 'Рот' },
-    { key: 'hair', label: 'Причёска' }
-];
-const AVATAR_RENDER_ORDER = ['face', 'ears', 'eyes', 'brows', 'nose', 'mouth', 'hair'];
-const OPTIONAL_LAYERS = AVATAR_LAYERS.filter(l => l.optional).map(l => l.key);
-const DEFAULT_AVATAR = { face: 'oval_1', ears: null, eyes: 'eyes_1', brows: null, nose: 'nose_1', mouth: 'mouth_1', hair: 'hair_1', skinTone: { hue: -10, saturation: 120, brightness: 90, contrast: 105 } };
-const DEFAULT_AVATAR_EMOJI = '☕';
+const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+const DEFAULT_AVATAR = 'A';
+const DEFAULT_AVATAR_CONFIG = { face: 'default', eyes: 'blue', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
+const AVATAR_PARTS = {
+    face: { label: 'Лицо', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z', options: [
+        { id: 'default', name: 'Стандарт', skin: '#f5d0a9' },
+        { id: 'dark', name: 'Тёмный', skin: '#8d5524' },
+        { id: 'olive', name: 'Оливковый', skin: '#c68642' },
+        { id: 'pale', name: 'Светлый', skin: '#ffdfc4' },
+    ]},
+    eyes: { label: 'Глаза', icon: 'M12 4.5c-4.5 0-8.2 3.3-9 7.5.8 4.2 4.5 7.5 9 7.5s8.2-3.3 9-7.5c-.8-4.2-4.5-7.5-9-7.5zm0 12c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z', options: [
+        { id: 'blue', name: 'Голубые', color: '#3b82f6' },
+        { id: 'brown', name: 'Карие', color: '#5d4037' },
+        { id: 'green', name: 'Зелёные', color: '#16a34a' },
+        { id: 'gray', name: 'Серые', color: '#6b7280' },
+    ]},
+    expression: { label: 'Выражение', icon: 'M7 10h2v2H7zm8 0h2v2h-2zm-6 5.5c1.5 1.5 4.5 1.5 6 0', options: [
+        { id: 'smile', name: 'Улыбка' },
+        { id: 'neutral', name: 'Спокойное' },
+        { id: 'surprised', name: 'Удивление' },
+        { id: 'happy', name: 'Радость' },
+    ]},
+    hair: { label: 'Волосы', icon: 'M7 8c0-3 2.5-5 5-5s5 2 5 5c0 2-1 4-2 5', options: [
+        { id: 'none', name: 'Нет' },
+        { id: 'short', name: 'Короткие', color: '#2c1a0e' },
+        { id: 'medium', name: 'Средние', color: '#4a3428' },
+        { id: 'blond', name: 'Блонд', color: '#e8c65c' },
+    ]},
+    beard: { label: 'Борода', icon: 'M8 14c0 3 2 6 4 6s4-3 4-6', options: [
+        { id: 'none', name: 'Нет' },
+        { id: 'stubble', name: 'Щетина', color: '#2c1a0e' },
+        { id: 'beard', name: 'Борода', color: '#2c1a0e' },
+        { id: 'mustache', name: 'Усы', color: '#2c1a0e' },
+    ]},
+    glasses: { label: 'Очки', icon: 'M4 10h16M8 10c0-2 1-3 3-3s3 1 3 3 1 3 3 3', options: [
+        { id: 'none', name: 'Нет' },
+        { id: 'round', name: 'Круглые' },
+        { id: 'square', name: 'Прямоугольные' },
+        { id: 'sunglasses', name: 'Солнцезащитные' },
+    ]},
+};
+function avatarColor(str) {
+    if (!str) return 'var(--text-dim)';
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h * 31) + str.charCodeAt(i)) % 360;
+    return `hsl(${h}, 45%, 35%)`;
+}
 let avatarConfig = null;
-let avatarManifest = null;
 let cementCounter = 0;
 function nextCement() {
     const img = CEMENT_IMAGES[cementCounter % CEMENT_IMAGES.length];
@@ -2247,8 +2398,9 @@ function nextCement() {
     return img;
 }
 function cementStyle() {
-    return `background-image:url('${nextCement()}');background-size:400px 400px;`;
+    return '';
 }
+const GENERIC_DISTRACTORS = ['Вода','Соль','Сахар','Мука','Молоко','Яйцо','Масло сливочное','Перец чёрный','Лук репчатый','Чеснок','Укроп','Петрушка','Сыр','Хлеб','Лимон','Мёд','Соевый соус','Оливковое масло','Картофель','Морковь','Сметана','Сливки','Томат','Огурец','Базилик','Кинза','Рис','Макароны','Гречка','Овсянка'];
 
 // ====================== PERSISTENCE ======================
 function loadProgress() {
@@ -2274,10 +2426,85 @@ function saveLessonComplete(section, lessonIdx, score, total) {
     const key = `lesson_${lessonIdx}`;
     const prev = p[section][key] || { completed: false, crowns: 0, bestScore: 0 };
     prev.completed = true;
-    prev.crowns = Math.min(5, prev.crowns + 1);
     prev.bestScore = Math.max(prev.bestScore, score);
     p[section][key] = prev;
     saveProgress(p);
+}
+function getDishMastery(itemName) {
+    const p = getProgress();
+    const dm = p.dishMastery || {};
+    return dm[itemName] || { level: 0, perfectCount: 0, lastSeen: 0 };
+}
+function setDishMastery(itemName, data) {
+    const p = getProgress();
+    if (!p.dishMastery) p.dishMastery = {};
+    const prev = p.dishMastery[itemName] || { level: 0, perfectCount: 0, lastSeen: 0 };
+    p.dishMastery[itemName] = { ...prev, ...data };
+    saveProgress(p);
+}
+function getCrownMultiplier(level) {
+    if (level >= 5) return 2.0;
+    if (level === 4) return 1.8;
+    if (level === 3) return 1.5;
+    if (level === 2) return 1.2;
+    return 1.0;
+}
+function getMasteryLabel(level) {
+    if (level >= 5) return 'Мастер';
+    if (level === 4) return 'Эксперт';
+    if (level === 3) return 'Специалист';
+    if (level === 2) return 'Ученик';
+    if (level === 1) return 'Новичок';
+    return '';
+}
+function getTotalCrowns() {
+    const p = getProgress();
+    const dm = p.dishMastery || {};
+    return Object.values(dm).reduce((sum, m) => sum + (m.level || 0), 0);
+}
+function getSessionDishNames() {
+    return [...(state._sessionDishNames || new Set())];
+}
+function getSessionAverageMultiplier() {
+    const names = getSessionDishNames();
+    if (!names.length) return 1;
+    let sum = 0;
+    names.forEach(name => {
+        sum += getCrownMultiplier(getDishMastery(name).level);
+    });
+    return sum / names.length;
+}
+function updateDishMasteryFromSession(perfect) {
+    if (state.isPractice) return 0;
+    const names = getSessionDishNames();
+    if (!names.length) return 0;
+    const p = getProgress();
+    if (!p.dishMastery) p.dishMastery = {};
+    let newCrowns = 0;
+    let crownGems = 0;
+    names.forEach(name => {
+        const m = p.dishMastery[name] || { level: 0, perfectCount: 0, lastSeen: 0 };
+        if (perfect && m.level < 5) {
+            m.level = m.level + 1;
+            m.perfectCount = (m.perfectCount || 0) + 1;
+            newCrowns++;
+            crownGems += 10 * m.level;
+        }
+        m.lastSeen = Date.now();
+        p.dishMastery[name] = m;
+    });
+    saveProgress(p);
+    if (crownGems) {
+        addGems(crownGems);
+        state._gemsEarned = (state._gemsEarned || 0) + crownGems;
+    }
+    return newCrowns;
+}
+function getAverageMasteryLevel(names) {
+    if (!names || !names.length) return 0;
+    let sum = 0;
+    names.forEach(name => sum += getDishMastery(name).level);
+    return Math.round(sum / names.length);
 }
 function getGlobalStats() {
     const p = getProgress();
@@ -2286,17 +2513,81 @@ function getGlobalStats() {
         streak: p.streak || 0,
         lastDate: p.lastDate || null,
         totalLessons: p.totalLessons || 0,
+        totalCrowns: getTotalCrowns(),
     };
 }
-function addXP(amount) {
+function getGems() { return (getProgress().gems || 0); }
+function addGems(amount) {
+    const p = getProgress();
+    p.gems = (p.gems || 0) + amount;
+    saveProgress(p);
+    return p.gems;
+}
+function spendGems(amount) {
+    const p = getProgress();
+    if ((p.gems || 0) < amount) return false;
+    p.gems -= amount;
+    saveProgress(p);
+    return true;
+}
+function getInventory() { return getProgress().inventory || {}; }
+function addInventoryItem(key, count = 1) {
+    const p = getProgress();
+    if (!p.inventory) p.inventory = {};
+    p.inventory[key] = (p.inventory[key] || 0) + count;
+    saveProgress(p);
+}
+function useInventoryItem(key) {
+    const p = getProgress();
+    if (!p.inventory || !(p.inventory[key] > 0)) return false;
+    p.inventory[key]--;
+    if (p.inventory[key] <= 0) delete p.inventory[key];
+    saveProgress(p);
+    return true;
+}
+function getActiveBoosts() { return getProgress().activeBoosts || {}; }
+function hasActiveBoost(type) { return (getProgress().activeBoosts || {})[type] > 0; }
+function activateBoost(type) {
+    const p = getProgress();
+    if (!p.activeBoosts) p.activeBoosts = {};
+    p.activeBoosts[type] = (p.activeBoosts[type] || 0) + 1;
+    saveProgress(p);
+}
+function consumeBoost(type) {
+    const p = getProgress();
+    if (!p.activeBoosts || !(p.activeBoosts[type] > 0)) return false;
+    p.activeBoosts[type]--;
+    if (p.activeBoosts[type] <= 0) delete p.activeBoosts[type];
+    saveProgress(p);
+    return true;
+}
+function getOwnedSkins() { return getProgress().ownedSkins || ['default']; }
+function addSkin(skinId) {
+    const p = getProgress();
+    if (!p.ownedSkins) p.ownedSkins = ['default'];
+    if (!p.ownedSkins.includes(skinId)) { p.ownedSkins.push(skinId); saveProgress(p); return true; }
+    return false;
+}
+function getActiveSkin() { return getProgress().activeSkin || 'default'; }
+function setActiveSkin(skinId) {
+    const p = getProgress();
+    if ((p.ownedSkins || ['default']).includes(skinId)) { p.activeSkin = skinId; saveProgress(p); render(); }
+}
+function addXP(amount, countLesson = true) {
     const p = getProgress();
     p.totalXP = (p.totalXP || 0) + amount;
     const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
     if (p.lastDate !== today) {
-        if (p.lastDate === new Date(Date.now() - 86400000).toDateString()) {
+        if (p.lastDate === yesterday) {
             p.streak = (p.streak || 0) + 1;
-        } else if (p.lastDate !== today) {
-            p.streak = 1;
+        } else {
+            if (consumeBoost('streakFreeze')) {
+                p.streak = (p.streak || 0);
+                if (typeof showPlatformToast === 'function') showPlatformToast('Зелье сохранения серии сработало');
+            } else {
+                p.streak = 1;
+            }
         }
         p.lastDate = today;
     }
@@ -2311,7 +2602,7 @@ function addXP(amount) {
     const goal = getSettings().dailyGoal;
     const justMetGoal = !p.dailyGoalMet && p.dailyXP >= goal && before < goal;
     if (justMetGoal) p.dailyGoalMet = true;
-    p.totalLessons = (p.totalLessons || 0) + 1;
+    if (countLesson) p.totalLessons = (p.totalLessons || 0) + 1;
     saveProgress(p);
     return { justMetGoal };
 }
@@ -2327,19 +2618,19 @@ function getDailyProgress() {
 
 // ====================== ACHIEVEMENTS ======================
 const ACHIEVEMENTS = [
-    { id: 'first_lesson', icon: '🎓', title: 'Первый шаг', desc: 'Пройди первый урок', check: s => s.totalLessons >= 1 },
-    { id: 'lessons_10', icon: '📚', title: 'Прилежный', desc: 'Пройди 10 уроков', check: s => s.totalLessons >= 10 },
-    { id: 'lessons_50', icon: '🏫', title: 'Ветеран', desc: 'Пройди 50 уроков', check: s => s.totalLessons >= 50 },
-    { id: 'streak_3', icon: '🔥', title: 'В огне', desc: '3 дня подряд', check: s => s.streak >= 3 },
-    { id: 'streak_7', icon: '🔥', title: 'Неделя без пропусков', desc: '7 дней подряд', check: s => s.streak >= 7 },
-    { id: 'streak_30', icon: '🌋', title: 'Железная воля', desc: '30 дней подряд', check: s => s.streak >= 30 },
-    { id: 'xp_100', icon: '⚡', title: 'Сотня', desc: 'Набери 100 XP', check: s => s.totalXP >= 100 },
-    { id: 'xp_500', icon: '💫', title: 'Знаток', desc: 'Набери 500 XP', check: s => s.totalXP >= 500 },
-    { id: 'xp_1000', icon: '👑', title: 'Мастер', desc: 'Набери 1000 XP', check: s => s.totalXP >= 1000 },
-    { id: 'correct_100', icon: '🎯', title: 'Меткий', desc: '100 верных ответов', check: s => s.totalCorrect >= 100 },
-    { id: 'perfect_1', icon: '🌟', title: 'Идеально!', desc: 'Пройди урок без ошибок', check: s => s.perfectLessons >= 1 },
-    { id: 'perfect_10', icon: '🏆', title: 'Перфекционист', desc: '10 идеальных уроков', check: s => s.perfectLessons >= 10 },
-    { id: 'goal_met', icon: '✅', title: 'Цель дня', desc: 'Выполни дневную цель', check: s => s.dailyGoalMet },
+    { id: 'first_lesson', icon: '', title: 'Первый шаг', desc: 'Пройди первый урок', check: s => s.totalLessons >= 1 },
+    { id: 'lessons_10', icon: '', title: 'Прилежный', desc: 'Пройди 10 уроков', check: s => s.totalLessons >= 10 },
+    { id: 'lessons_50', icon: '', title: 'Ветеран', desc: 'Пройди 50 уроков', check: s => s.totalLessons >= 50 },
+    { id: 'streak_3', icon: '', title: 'В огне', desc: '3 дня подряд', check: s => s.streak >= 3 },
+    { id: 'streak_7', icon: '', title: 'Неделя без пропусков', desc: '7 дней подряд', check: s => s.streak >= 7 },
+    { id: 'streak_30', icon: '', title: 'Железная воля', desc: '30 дней подряд', check: s => s.streak >= 30 },
+    { id: 'xp_100', icon: '', title: 'Сотня', desc: 'Набери 100 XP', check: s => s.totalXP >= 100 },
+    { id: 'xp_500', icon: '', title: 'Знаток', desc: 'Набери 500 XP', check: s => s.totalXP >= 500 },
+    { id: 'xp_1000', icon: '', title: 'Мастер', desc: 'Набери 1000 XP', check: s => s.totalXP >= 1000 },
+    { id: 'correct_100', icon: '', title: 'Меткий', desc: '100 верных ответов', check: s => s.totalCorrect >= 100 },
+    { id: 'perfect_1', icon: '', title: 'Идеально!', desc: 'Пройди урок без ошибок', check: s => s.perfectLessons >= 1 },
+    { id: 'perfect_10', icon: '', title: 'Перфекционист', desc: '10 идеальных уроков', check: s => s.perfectLessons >= 10 },
+    { id: 'goal_met', icon: '', title: 'Цель дня', desc: 'Выполни дневную цель', check: s => s.dailyGoalMet },
 ];
 function getAchievementStats() {
     const p = getProgress();
@@ -2517,8 +2808,16 @@ function getWeakItems(section) {
 }
 
 // ====================== ADAPTIVE ENGINE ======================
-const FORMATS = ['logical', 'color_coded', 'spatial'];
-const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill'];
+const FORMATS = ['logical', 'missing', 'color_coded', 'spatial', 'photo'];
+const QUESTION_TYPES = ['select', 'missing', 'truefalse', 'color_fill', 'photo'];
+
+function getEnabledQuestionFormats() {
+    const all = ['logical', 'missing', 'color_coded', 'spatial', 'photo'];
+    const settings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : {});
+    const formats = settings.formats || {};
+    const enabled = all.filter(f => formats[f] !== false);
+    return enabled.length ? enabled : all;
+}
 const EMA_ALPHA = 0.25; // higher = faster reaction to recent answers
 
 function getAdaptiveData() {
@@ -2638,14 +2937,15 @@ function getWeakBuckets(obj, minAttempts = 3) {
 }
 
 function pickFormat() {
-    const scores = FORMATS.map(f => ({ format: f, score: getExplorationScore(f) }));
+    const enabled = getEnabledQuestionFormats();
+    const scores = enabled.map(f => ({ format: f, score: getExplorationScore(f) }));
     scores.sort((a, b) => b.score - a.score);
     const dominant = scores[0].format;
     const weakest = scores[scores.length - 1].format;
     const r = Math.random();
     if (r < 0.6) return dominant;          // play to strength
     if (r < 0.8) return weakest;            // deliberate training of weak format
-    return FORMATS[Math.floor(Math.random() * FORMATS.length)];
+    return enabled[Math.floor(Math.random() * enabled.length)];
 }
 
 function getDominantFormat() {
@@ -2657,8 +2957,10 @@ function getDominantFormat() {
 function getFormatLabel(f) {
     const labels = {
         logical: 'Логический',
+        missing: 'С пропусками',
         color_coded: 'Визуальный',
-        spatial: 'Пространственный'
+        spatial: 'Пространственный',
+        photo: 'По фото'
     };
     return labels[f] || f;
 }
@@ -2666,8 +2968,10 @@ function getFormatLabel(f) {
 function getFormatDescription(f) {
     const desc = {
         logical: 'Текстовые списки ингредиентов',
+        missing: 'Найти недостающий ингредиент',
         color_coded: 'Цветовая группировка по категориям',
-        spatial: 'Визуальное расположение компонентов'
+        spatial: 'Визуальное расположение компонентов',
+        photo: 'Угадать состав по фотографии блюда'
     };
     return desc[f] || '';
 }
@@ -2691,18 +2995,18 @@ function getSectionCategory(section) {
 // ====================== CHAPTER PROGRESS ======================
 function getChapterTotals() {
     const chapters = {
-        kitchen: { file: 'dishes.json', label: '🍳 Кухня' },
-        desserts: { file: 'desserts.json', label: '🍰 Десерты' },
-        drinks: { file: 'drinks.json', label: '🍹 Напитки' },
-        drink_pf: { file: 'drink_pf.json', label: '🧪 ПФ Напитков' },
-        kitchen_pf: { file: 'kitchen_pf.json', label: '🧪 ПФ Кухни' }
+        kitchen: { file: 'dishes.json', label: 'Кухня' },
+        desserts: { file: 'desserts.json', label: 'Десерты' },
+        drinks: { file: 'drinks.json', label: 'Напитки' },
+        drink_pf: { file: 'drink_pf.json', label: 'ПФ Напитков' },
+        kitchen_pf: { file: 'kitchen_pf.json', label: 'ПФ Кухни' }
     };
     if (state.venue && state.venue.sections) {
         for (const section of state.venue.sections) {
-            chapters['venue_' + section.id] = { file: null, label: `🏪 ${section.name || 'Раздел'}` };
+            chapters['venue_' + section.id] = { file: null, label: `${section.name || 'Раздел'}` };
         }
     } else if (state.venue) {
-        chapters.venue_progress = { file: null, label: `🏪 ${state.venue.name || 'Заведение'}` };
+        chapters.venue_progress = { file: null, label: `${state.venue.name || 'Заведение'}` };
     }
     return chapters;
 }
@@ -2760,6 +3064,13 @@ function showXPPopup(amount) {
     document.body.appendChild(popup);
     setTimeout(() => popup.remove(), 1600);
 }
+function showGemPopup(amount) {
+    const popup = document.createElement('div');
+    popup.className = 'gem-popup';
+    popup.innerHTML = `${getGemIcon(18)} +${amount}`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1200);
+}
 
 // ====================== THEME ======================
 function applyTheme(theme) {
@@ -2808,13 +3119,15 @@ function normalizeItem(item) {
         if (item.correct && item.correct.length > 0 && typeof item.correct[0] === 'object') {
             item._ingredients = item.correct.map(c => c.ingredient);
             item._grams = {};
-            item.correct.forEach(c => { item._grams[c.ingredient] = c.grams; });
+            item._gramUnit = {};
+            item.correct.forEach(c => { item._grams[c.ingredient] = c.grams; item._gramUnit[c.ingredient] = c.isCount ? 'шт' : 'г'; });
             item._pool = [...item._ingredients, ...(item.wrong || [])];
             item._wrongPool = item.wrong || [];
-            item._hasGrams = true;
+            item._hasGrams = item.correct.some(c => (c.grams !== '' && c.grams !== undefined && c.grams !== null && Number(c.grams) > 0) || c.isCount);
         } else {
             item._ingredients = item.correct || [];
             item._grams = {};
+            item._gramUnit = {};
             item._pool = item.pool || [...(item.correct || []), ...(item.wrong || [])];
             item._wrongPool = (item.pool || []).filter(p => !(item.correct || []).includes(p));
             if (item.wrong) item._wrongPool = item.wrong;
@@ -2849,71 +3162,94 @@ function renderPhotoFallback(item, cls = 'dish-photo') {
 }
 
 function renderPhotoFallbackString(name, cls) {
-    const cat = state.section === 'kitchen'
-        ? (name ? getDishCategory(name) : null)
-        : (state.section ? getSectionCategory(state.section) : (name ? getDishCategory(name) : null));
-    const label = cat ? cat.label : 'Блюдо';
-    const emoji = cat ? (cat.cls === 'breakfast' ? '🍳' : cat.cls === 'lunch' ? '🥗' : cat.cls === 'sandwich' ? '🥪' : cat.cls === 'dessert' ? '🍰' : cat.cls === 'drink' ? '☕' : cat.cls === 'drink_pf' ? '🧪' : cat.cls === 'kitchen_pf' ? '🧪' : '🍽️') : '🍽️';
-    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-emoji">${emoji}</span><span class="dish-fallback-label">${label}</span></div>`;
+    return `<div class="${cls} dish-photo-fallback"><span class="dish-fallback-name">${escapeHtml(name || 'Блюдо')}</span></div>`;
 }
 
 // ====================== RENDERING ======================
 const app = document.getElementById('app');
 
 function renderAvatar(avatar, size = 32) {
-    if (!avatar) {
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${DEFAULT_AVATAR_EMOJI}</span>`;
+    if (avatar && typeof avatar === 'object' && avatar.parts) {
+        return renderConstructedAvatar(avatar.parts, size);
     }
-    if (typeof avatar === 'string') {
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${avatar}</span>`;
-    }
-    // if assets are not generated yet, show the migrated emoji or default
-    if (!avatarConfig || Object.keys(avatarConfig).length === 0) {
-        const emoji = avatar.avatarEmoji || DEFAULT_AVATAR_EMOJI;
-        return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.6)}px">${emoji}</span>`;
-    }
-    const order = AVATAR_RENDER_ORDER;
-    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-    const parts = order.map(layer => {
-        let id = avatar[layer];
-        if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) {
-            id = DEFAULT_AVATAR[layer];
-        }
-        if (!id || !avatarConfig[layer] || !avatarConfig[layer].includes(id)) return '';
-        let src = `img/avatar/${layer}/${id}.png`;
-        let filter = isDark ? 'invert(1)' : 'none';
-        if (avatarManifest && avatarManifest.layers && avatarManifest.layers[layer]) {
-            const layerData = avatarManifest.layers[layer];
-            const item = (layerData.items || []).find(i => i.id === id);
-            if (item && item.file) src = `img/avatar/${item.file}`;
-            let rawFilter = '';
-            if (item && item.filter !== undefined) rawFilter = item.filter;
-            else if (layerData.filter !== undefined) rawFilter = layerData.filter;
-            if (rawFilter.includes('{') && avatarManifest.skinTone && layer === avatarManifest.skinTone.layer) {
-                const skin = avatar.skinTone || avatarManifest.skinTone.default;
-                rawFilter = rawFilter
-                    .replace(/\{hue\}/g, skin.hue)
-                    .replace(/\{saturation\}/g, skin.saturation)
-                    .replace(/\{brightness\}/g, skin.brightness)
-                    .replace(/\{contrast\}/g, skin.contrast);
-            }
-            filter = rawFilter || 'none';
-        }
-        return `<img class="avatar-layer" src="${src}" alt="" style="filter:${filter}" onerror="this.style.display='none'">`;
-    }).join('');
-    return `<div class="avatar-stack" style="width:${size}px;height:${size}px">${parts}</div>`;
+    let letter = DEFAULT_AVATAR;
+    if (typeof avatar === 'string' && avatar) letter = avatar;
+    else if (avatar && typeof avatar === 'object' && avatar.emoji) letter = avatar.emoji;
+    const color = avatarColor(letter);
+    return `<span class="profile-avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.55)}px;background:${color}!important;border-color:${color}!important;color:#fff!important">${letter}</span>`;
+}
+function renderConstructedAvatar(parts, size) {
+    const cfg = { ...DEFAULT_AVATAR_CONFIG, ...(parts || {}) };
+    const face = (AVATAR_PARTS.face.options.find(o => o.id === cfg.face) || AVATAR_PARTS.face.options[0]);
+    const eyes = (AVATAR_PARTS.eyes.options.find(o => o.id === cfg.eyes) || AVATAR_PARTS.eyes.options[0]);
+    const hair = (AVATAR_PARTS.hair.options.find(o => o.id === cfg.hair) || AVATAR_PARTS.hair.options[0]);
+    const beard = (AVATAR_PARTS.beard.options.find(o => o.id === cfg.beard) || AVATAR_PARTS.beard.options[0]);
+    const glasses = (AVATAR_PARTS.glasses.options.find(o => o.id === cfg.glasses) || AVATAR_PARTS.glasses.options[0]);
+    const skin = face.skin || '#f5d0a9';
+    const mouth = getMouthPath(cfg.expression);
+    const eyeColor = eyes.color || '#3b82f6';
+    const hairSvg = getAvatarHairSvg(cfg.hair, hair.color || '#2c1a0e', skin);
+    const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beard.color || '#2c1a0e') : '';
+    const glassesSvg = cfg.glasses !== 'none' ? getAvatarGlassesSvg(cfg.glasses) : '';
+    return `<span class="profile-avatar" style="width:${size}px;height:${size}px;background:transparent!important;border:none!important;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 120 120" width="${size}" height="${size}">
+        ${hairSvg}
+        <circle cx="60" cy="60" r="42" fill="${skin}" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+        <circle cx="46" cy="54" r="5" fill="#fff"/><circle cx="46" cy="54" r="2.5" fill="${eyeColor}"/>
+        <circle cx="74" cy="54" r="5" fill="#fff"/><circle cx="74" cy="54" r="2.5" fill="${eyeColor}"/>
+        ${mouth}
+        ${beardSvg}
+        ${glassesSvg}
+    </svg></span>`;
+}
+function adjustColor(hex, amount) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    let r = (num >> 16) + amount; if (r > 255) r = 255; if (r < 0) r = 0;
+    let g = ((num >> 8) & 0x00FF) + amount; if (g > 255) g = 255; if (g < 0) g = 0;
+    let b = (num & 0x0000FF) + amount; if (b > 255) b = 255; if (b < 0) b = 0;
+    return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+}
+function getMouthPath(expression) {
+    if (expression === 'neutral') return '<path d="M48 78 H72" stroke="#8b5e4b" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if (expression === 'surprised') return '<circle cx="60" cy="78" r="4" fill="#8b5e4b"/>';
+    if (expression === 'happy') return '<path d="M46 76 Q60 92 74 76" stroke="#8b5e4b" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    return '<path d="M46 76 Q60 88 74 76" stroke="#8b5e4b" stroke-width="3" fill="none" stroke-linecap="round"/>';
+}
+function getAvatarHairSvg(type, color, skin) {
+    if (type === 'none') return '';
+    if (type === 'short') return `<path d="M22 60 C22 22 98 22 98 60 C98 45 86 32 60 32 C34 32 22 45 22 60 Z" fill="${color}"/>`;
+    if (type === 'medium') return `<path d="M20 65 C16 18 104 18 100 65 C100 42 90 26 60 26 C30 26 20 42 20 65 Z" fill="${color}"/><path d="M20 65 C20 88 26 102 34 106 L38 96 C32 86 30 74 30 65 Z" fill="${color}"/><path d="M100 65 C100 88 94 102 86 106 L82 96 C88 86 90 74 90 65 Z" fill="${color}"/>`;
+    if (type === 'blond') return `<path d="M20 65 C16 18 104 18 100 65 C100 42 90 26 60 26 C30 26 20 42 20 65 Z" fill="${color}"/>`;
+    return '';
+}
+function getAvatarBeardSvg(type, color) {
+    if (type === 'stubble') return `<path d="M36 75 Q60 100 84 75 L84 70 Q60 95 36 70 Z" fill="${color}" opacity="0.35"/>`;
+    if (type === 'beard') return `<path d="M32 70 Q60 108 88 70 L88 65 Q60 100 32 65 Z" fill="${color}"/><path d="M40 68 Q60 85 80 68" stroke="${color}" stroke-width="2" fill="none"/>`;
+    if (type === 'mustache') return `<path d="M45 68 Q55 63 60 68 Q65 63 75 68" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    return '';
+}
+function getAvatarGlassesSvg(type) {
+    if (type === 'round') return `<circle cx="46" cy="54" r="9" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><circle cx="74" cy="54" r="9" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><path d="M55 54 H65" stroke="#1f2937" stroke-width="2.5"/>`;
+    if (type === 'square') return `<rect x="36" y="45" width="18" height="18" rx="3" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><rect x="66" y="45" width="18" height="18" rx="3" stroke="#1f2937" stroke-width="2.5" fill="rgba(0,0,0,0.08)"/><path d="M54 54 H66" stroke="#1f2937" stroke-width="2.5"/>`;
+    if (type === 'sunglasses') return `<rect x="36" y="46" width="18" height="16" rx="2" fill="#111827"/><rect x="66" y="46" width="18" height="16" rx="2" fill="#111827"/><path d="M54 52 H66" stroke="#111827" stroke-width="3"/>`;
+    return '';
 }
 
 function cloneAvatar(avatar) {
-    return { ...DEFAULT_AVATAR, skinTone: DEFAULT_AVATAR.skinTone, ...(avatar || {}) };
+    if (avatar && typeof avatar === 'object' && avatar.parts) return { ...avatar };
+    if (typeof avatar === 'string' && avatar) return avatar;
+    if (avatar && typeof avatar === 'object' && avatar.emoji) return avatar.emoji;
+    return DEFAULT_AVATAR;
 }
 
 function migrateProfileAvatar(profile) {
-    if (!profile || !profile.avatar) return profile;
-    if (typeof profile.avatar === 'string') {
-        return { ...profile, avatar: cloneAvatar(), avatarEmoji: profile.avatar };
+    if (!profile) return profile;
+    if (typeof profile.avatar === 'string') return { ...profile, avatar: profile.avatar };
+    if (profile && typeof profile.avatar === 'object' && profile.avatar) {
+        if (profile.avatar.parts) return { ...profile, avatar: profile.avatar };
+        if (profile.avatar.emoji) return { ...profile, avatar: profile.avatar.emoji };
     }
-    return { ...profile, avatar: cloneAvatar(profile.avatar) };
+    if (profile && typeof profile.avatarEmoji === 'string' && profile.avatarEmoji) return { ...profile, avatar: profile.avatarEmoji };
+    return { ...profile, avatar: DEFAULT_AVATAR };
 }
 
 let _lastRenderedScreen = null;
@@ -2923,11 +3259,22 @@ function render() {
     _lastRenderedScreen = state.screen;
     switch (state.screen) {
         case 'onboarding': renderOnboarding(); break;
+        case 'authOptions': renderAuthOptions(); break;
+        case 'login': renderLogin(); break;
+        case 'register': renderRegister(); break;
+        case 'forgotPassword': renderForgotPassword(); break;
+        case 'resetPassword': renderResetPassword(); break;
         case 'roleSelect': renderRoleSelect(); break;
+        case 'ownerOptions': renderOwnerOptions(); break;
+        case 'ownerLogin': renderOwnerLogin(); break;
         case 'ownerRegister': renderOwnerRegister(); break;
         case 'ownerSetup': renderOwnerSetup(); break;
         case 'courseEditor': renderCourseEditor(); break;
         case 'ownerDashboard': renderOwnerDashboard(); break;
+        case 'ownerSettings': renderOwnerSettings(); break;
+        case 'venueImages': renderVenueImages(); break;
+        case 'ownerStats': renderOwnerStats(); break;
+        case 'staffStats': renderStaffStats(); break;
         case 'sectionPicker': renderSectionPicker(); break;
         case 'staffRegister': renderStaffRegister(); break;
         case 'staffJoin': renderStaffJoin(); break;
@@ -2937,6 +3284,7 @@ function render() {
         case 'browse': renderBrowse(); break;
         case 'leaderboard': renderLeaderboard(); break;
         case 'avatarEditor': renderAvatarEditor(); break;
+        case 'shop': renderShop(); break;
         case 'lesson': renderLesson(); break;
         case 'result': renderResult(); break;
     }
@@ -2959,11 +3307,11 @@ function renderDailyGoalCard() {
                         stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
                         transform="rotate(-90 40 40)" class="goal-ring-fill"/>
                 </svg>
-                <div class="goal-ring-center">${d.met ? '✅' : `${d.pct}%`}</div>
+                <div class="goal-ring-center">${d.pct}%</div>
             </div>
             <div class="goal-info">
                 <div class="goal-title">Цель дня</div>
-                <div class="goal-sub">${d.met ? 'Цель выполнена! 🎉' : `${d.xp} / ${d.goal} XP`}</div>
+                <div class="goal-sub">${d.met ? 'Цель выполнена' : `${d.xp} / ${d.goal} XP`}</div>
             </div>
         </button>
     `;
@@ -2979,7 +3327,7 @@ function showAchievements() {
         const on = !!unlocked[a.id];
         return `
             <div class="ach-card ${on ? 'unlocked' : 'locked'}">
-                <div class="ach-icon">${on ? a.icon : '🔒'}</div>
+                <div class="ach-icon">${on ? a.icon : ''}</div>
                 <div class="ach-title">${a.title}</div>
                 <div class="ach-desc">${a.desc}</div>
             </div>
@@ -2992,7 +3340,7 @@ function showAchievements() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">🏅 Достижения</div>
+                <div class="stats-modal-title">Достижения</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <p class="settings-hint" style="margin:0 0 16px">Открыто ${got} из ${ACHIEVEMENTS.length}</p>
@@ -3004,7 +3352,8 @@ function showAchievements() {
 
 function renderHome() {
     const stats = getGlobalStats();
-    const profile = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const profile = state.profile || { nickname: 'Ты', avatar: null };
+    const gemIcon = `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
     app.innerHTML = `
         <div class="top-bar">
             <button class="profile-chip" onclick="openAvatarEditor()">
@@ -3013,49 +3362,52 @@ function renderHome() {
             </button>
             <div style="flex:1"></div>
             <div class="top-bar-stat">
-                <span class="icon">🔥</span>
+                <span class="icon"></span>
                 <span class="streak-count">${stats.streak}</span>
             </div>
             <div class="top-bar-stat">
-                <span class="icon">⚡</span>
+                <span class="icon"></span>
                 <span class="xp-count">${stats.totalXP} XP</span>
             </div>
-            <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">⚙️</button>
+            <div class="top-bar-stat gem-balance" onclick="goToScreen('shop')">
+                ${gemIcon}
+                <span class="gem-count">${getGems()}</span>
+            </div>
+            <button class="settings-btn" onclick="showSettings()" aria-label="Настройки">≡</button>
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot">☕</span>
-                <div class="app-title">MET Академия</div>
+                <div class="app-title">Cognitio</div>
                 <div class="app-subtitle">Изучай составы блюд</div>
             </div>
             ${renderDailyGoalCard()}
             <div class="daily-stats">
                 <div class="daily-stat-card" style="${cementStyle()}">
-                    <div class="stat-value streak-count">🔥 ${stats.streak}</div>
+                    <div class="stat-value streak-count">${stats.streak}</div>
                     <div class="stat-label">Серия дней</div>
                 </div>
                 <div class="daily-stat-card" style="${cementStyle()}">
-                    <div class="stat-value xp-count">⚡ ${stats.totalXP}</div>
+                    <div class="stat-value xp-count">${stats.totalXP}</div>
                     <div class="stat-label">Всего XP</div>
                 </div>
                 <div class="daily-stat-card" style="${cementStyle()}">
-                    <div class="stat-value" style="color:var(--green)">📚 ${stats.totalLessons}</div>
+                    <div class="stat-value" style="color:var(--green)">${stats.totalLessons}</div>
                     <div class="stat-label">Уроков</div>
                 </div>
             </div>
             <button class="stats-btn" style="${cementStyle()}" onclick="showLearningStats()">
-                📊 Характеристика обучения
+                Прогресс
             </button>
             <button class="stats-btn" style="${cementStyle()}" onclick="goLeaderboard()">
-                🏆 Рейтинг
+                Рейтинг
             </button>
             <button class="stats-btn" style="${cementStyle()}" onclick="showAchievements()">
-                🏅 Достижения ${renderAchievementBadge()}
+                Достижения ${renderAchievementBadge()}
             </button>
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('kitchen')">
                 <div class="card-img-wrap">
                     <img class="card-img" src="img/shakshuka.jpg" alt="Кухня" onerror="this.parentNode.classList.add('no-img')">
-                    <span class="card-img-placeholder">🍳</span>
+                    <span class="card-img-placeholder">К</span>
                 </div>
                 <div class="card-info">
                     Кухня
@@ -3066,7 +3418,7 @@ function renderHome() {
             <button class="section-card" style="${cementStyle()}" onclick="selectSection('desserts')">
                 <div class="card-img-wrap">
                     <img class="card-img" src="img/tart.jpg" alt="Десерты" onerror="this.parentNode.classList.add('no-img')">
-                    <span class="card-img-placeholder">🍰</span>
+                    <span class="card-img-placeholder">Д</span>
                 </div>
                 <div class="card-info">
                     Десерты
@@ -3077,7 +3429,7 @@ function renderHome() {
             <button class="section-card" style="${cementStyle()}" onclick="showBranchSelection('drinks')">
                 <div class="card-img-wrap">
                     <img class="card-img" src="img/cappuccino.jpg" alt="Напитки" onerror="this.parentNode.classList.add('no-img')">
-                    <span class="card-img-placeholder">☕</span>
+                    <span class="card-img-placeholder">Н</span>
                 </div>
                 <div class="card-info">
                     Напитки
@@ -3090,55 +3442,45 @@ function renderHome() {
 }
 
 function loadAvatarConfig() {
-    if (avatarConfig && avatarManifest) return Promise.resolve(avatarConfig);
-    return fetch('img/avatar/manifest.json')
+    if (avatarConfig) return Promise.resolve(avatarConfig);
+    return fetch('img/avatar/config.json')
         .then(r => r.ok ? r.json() : null)
         .catch(() => null)
-        .then(manifest => {
-            if (manifest && manifest.layers) {
-                avatarManifest = manifest;
-                avatarConfig = {};
-                Object.keys(manifest.layers).forEach(k => {
-                    const items = manifest.layers[k].items || [];
-                    avatarConfig[k] = items.map(i => i.id).filter(Boolean);
-                });
-                return avatarConfig;
-            }
-            return fetch('img/avatar/config.json')
-                .then(r => r.ok ? r.json() : null)
-                .catch(() => null)
-                .then(cfg => {
-                    avatarConfig = cfg || {};
-                    return avatarConfig;
-                });
+        .then(cfg => {
+            avatarConfig = cfg || {};
+            return avatarConfig;
         });
 }
 
+function cloneAvatarConfig(avatar) {
+    if (avatar && typeof avatar === 'object' && avatar.parts) return { ...DEFAULT_AVATAR_CONFIG, ...avatar.parts };
+    return { ...DEFAULT_AVATAR_CONFIG };
+}
 function renderAvatarEditorContent(mode) {
     const editor = state.avatarEditor;
     if (!editor) return '';
-    const cfg = avatarConfig || {};
-    const category = editor.category;
-    const options = cfg[category] || [];
-    const catsHTML = AVATAR_LAYERS.map(l => `
-        <button class="avatar-editor-cat ${category === l.key ? 'active' : ''}" onclick="selectAvatarCategory('${l.key}')">${l.label}</button>
-    `).join('');
-    const isOptional = OPTIONAL_LAYERS.includes(category);
-    const noneHTML = isOptional
-        ? `<div class="avatar-editor-option avatar-editor-option-none ${!editor.avatar[category] ? 'selected' : ''}" onclick="clearAvatarOption('${category}')">Нет</div>`
-        : '';
-    const optionsHTML = options.length === 0 && !isOptional
-        ? '<div class="avatar-editor-empty" style="padding:24px 0;text-align:center;color:var(--text-dim);font-size:13px">Нет вариантов для этой категории</div>'
-        : noneHTML + options.map(id => {
-            const selected = editor.avatar[category] === id;
-            const previewAvatar = { ...editor.avatar, [category]: id };
-            return `<div class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="selectAvatarOption('${category}', '${id}')">${renderAvatar(previewAvatar, 48)}</div>`;
-        }).join('');
+    const config = editor.config || DEFAULT_AVATAR_CONFIG;
+    const tab = editor.tab || 'face';
+    const part = AVATAR_PARTS[tab];
+    const tabsHTML = Object.keys(AVATAR_PARTS).map(key => {
+        const p = AVATAR_PARTS[key];
+        const active = key === tab;
+        return `<button class="avatar-editor-tab ${active ? 'active' : ''}" onclick="setAvatarTab('${key}')">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${p.icon}"/></svg>
+            <span>${p.label}</span>
+        </button>`;
+    }).join('');
+    const optionsHTML = part.options.map(opt => {
+        const selected = config[tab] === opt.id;
+        const swatch = (tab === 'face' || tab === 'hair' || tab === 'beard') && (opt.skin || opt.color) ? `<span class="avatar-swatch" style="background:${opt.skin || opt.color}"></span>` : '';
+        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${swatch}<span>${opt.name}</span></button>`;
+    }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
     return `
-        <div class="avatar-editor-preview">${renderAvatar(editor.avatar, 140)}</div>
-        <div class="avatar-editor-categories">${catsHTML}</div>
-        <div class="avatar-editor-options">${optionsHTML}</div>
+        <div class="avatar-editor-preview">${renderAvatar({ parts: config }, 220)}</div>
+        <div class="avatar-editor-tabs">${tabsHTML}</div>
+        <div class="avatar-editor-section">${part.label}</div>
+        <div class="avatar-editor-options" style="grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;">${optionsHTML}</div>
         <div class="avatar-editor-actions">
             <button class="avatar-editor-btn secondary" onclick="backAvatarEditor()">Назад</button>
             <button class="avatar-editor-btn primary" onclick="${mode === 'onboarding' ? 'finishOnboarding()' : 'saveAvatarEditor()'}">${doneLabel}</button>
@@ -3150,9 +3492,8 @@ function renderOnboarding() {
     if (state.onboardingStep === 'nickname') {
         app.innerHTML = `
             <div class="onboarding-screen">
-                <div class="onboarding-mascot">☕</div>
                 <div class="onboarding-title">Как тебя зовут?</div>
-                <div class="onboarding-subtitle">Создай персонажа, как в Duolingo</div>
+                <div class="onboarding-subtitle">Создай персонажа</div>
                 <input class="nickname-input" type="text" placeholder="Введи никнейм" maxlength="20" value="${state.onboardingNickname}" oninput="setOnboardingNickname(this.value)">
                 <button class="onboarding-btn ${state.onboardingNickname.trim() ? '' : 'disabled'}" onclick="goToAvatar()">
                     Продолжить
@@ -3163,23 +3504,13 @@ function renderOnboarding() {
     }
 
     if (!state.avatarEditor) {
-        state.avatarEditor = { avatar: cloneAvatar(state.onboardingAvatar), category: 'face', mode: 'onboarding' };
-    }
-
-    if (avatarConfig === null) {
-        app.innerHTML = `
-            <div class="onboarding-screen">
-                <div class="onboarding-title">Загружаю варианты...</div>
-                <div class="onboarding-subtitle">Секундочку</div>
-            </div>
-        `;
-        return;
+        state.avatarEditor = { config: cloneAvatarConfig(state.onboardingAvatar), mode: 'onboarding', tab: 'face' };
     }
 
     app.innerHTML = `
         <div class="avatar-editor-screen">
             <div class="avatar-editor-header">
-                <div class="avatar-editor-title">Собери персонажа</div>
+                <div class="avatar-editor-title">Выбери аватар</div>
             </div>
             ${renderAvatarEditorContent('onboarding')}
         </div>
@@ -3196,29 +3527,21 @@ function setOnboardingNickname(value) {
 
 function goToAvatar() {
     if (!state.onboardingNickname.trim()) return;
-    state.onboardingAvatar = cloneAvatar();
-    state.avatarEditor = { avatar: cloneAvatar(), category: 'face', mode: 'onboarding' };
+    state.onboardingAvatar = { parts: DEFAULT_AVATAR_CONFIG };
+    state.avatarEditor = { config: { ...DEFAULT_AVATAR_CONFIG }, mode: 'onboarding', tab: 'face' };
     state.onboardingStep = 'avatar';
-    loadAvatarConfig().then(render);
     render();
 }
 
-function selectAvatarCategory(key) {
+function setAvatarTab(tab) {
     if (!state.avatarEditor) return;
-    state.avatarEditor.category = key;
+    state.avatarEditor.tab = tab;
     render();
 }
 
-function selectAvatarOption(category, id) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: id };
-    tapFeedback();
-    render();
-}
-
-function clearAvatarOption(category) {
-    if (!state.avatarEditor) return;
-    state.avatarEditor.avatar = { ...state.avatarEditor.avatar, [category]: null };
+function setAvatarPart(part, id) {
+    if (!state.avatarEditor || !state.avatarEditor.config) return;
+    state.avatarEditor.config[part] = id;
     tapFeedback();
     render();
 }
@@ -3229,68 +3552,296 @@ function backAvatarEditor() {
         state.avatarEditor = null;
         state.onboardingStep = 'nickname';
         state.onboardingAvatar = null;
+        render();
     } else {
         state.avatarEditor = null;
-        state.screen = 'home';
+        goBack();
     }
-    render();
 }
 
 function saveAvatarEditor() {
     if (!state.avatarEditor || state.avatarEditor.mode !== 'edit') return;
-    state.profile = { ...state.profile, avatar: state.avatarEditor.avatar };
+    const config = state.avatarEditor.config || DEFAULT_AVATAR_CONFIG;
+    state.profile = { ...state.profile, avatar: { parts: config } };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
-    state.screen = 'home';
-    render();
+    goBack();
 }
 
 function finishOnboarding() {
     if (!state.onboardingNickname.trim()) return;
-    const avatar = state.avatarEditor ? state.avatarEditor.avatar : (state.onboardingAvatar || cloneAvatar());
+    const config = state.avatarEditor ? (state.avatarEditor.config || DEFAULT_AVATAR_CONFIG) : (state.onboardingAvatar && state.onboardingAvatar.parts ? state.onboardingAvatar.parts : DEFAULT_AVATAR_CONFIG);
     state.profile = {
         nickname: state.onboardingNickname.trim(),
-        avatar: avatar,
+        avatar: { parts: config },
     };
     saveProgress({ profile: state.profile });
-    state.screen = 'home';
     state.avatarEditor = null;
     state.onboardingStep = 'nickname';
-    render();
+    replaceScreen('home');
 }
 
 function openAvatarEditor() {
-    state.avatarEditor = { avatar: cloneAvatar(state.profile && state.profile.avatar), category: 'face', mode: 'edit' };
-    state.screen = 'avatarEditor';
-    loadAvatarConfig().then(render);
+    state.avatarEditor = { config: cloneAvatarConfig(state.profile && state.profile.avatar), mode: 'edit', tab: 'face' };
+    goToScreen('avatarEditor');
     render();
 }
 
 function renderAvatarEditor() {
     if (!state.avatarEditor) {
-        state.screen = 'home';
-        render();
+        replaceScreen('home');
         return;
     }
     app.innerHTML = `
         <div class="avatar-editor-screen">
             <div class="avatar-editor-header">
                 <button class="close-btn" onclick="backAvatarEditor()" style="position:static;margin:0">← Назад</button>
-                <div class="avatar-editor-title">Редактор аватара</div>
+                <div class="avatar-editor-title">Аватар</div>
                 <div style="width:44px"></div>
             </div>
-            ${avatarConfig === null ? '<div class="onboarding-screen"><div class="onboarding-title">Загружаю варианты...</div></div>' : renderAvatarEditorContent('edit')}
+            ${renderAvatarEditorContent('edit')}
         </div>
     `;
 }
 
+const LOOTBOXES = [
+    { id: 'copper', name: 'Медный', cost: 30, color: '#b87333', dropBias: [40, 30, 15, 10, 5] },
+    { id: 'iron', name: 'Железный', cost: 70, color: '#6d7a86', dropBias: [25, 35, 20, 12, 8] },
+    { id: 'gold', name: 'Золотой', cost: 150, color: '#d4a017', dropBias: [15, 30, 25, 18, 12] },
+    { id: 'diamond', name: 'Алмазный', cost: 300, color: '#4ec4e6', dropBias: [5, 20, 30, 25, 20] },
+    { id: 'crystal', name: 'Хрустальный', cost: 500, color: '#c084fc', dropBias: [2, 10, 25, 30, 33] }
+];
+const SHOP_POTIONS = [
+    { id: 'streakFreeze', name: 'Зелье сохранения серии', desc: 'Сохраняет серию дней, если пропустил занятие', price: 50, icon: 'fire' },
+    { id: 'doubleXP', name: 'Зелье двойного XP', desc: 'Удваивает XP следующего урока', price: 80, icon: 'xp' }
+];
+const COSMETIC_NAMES = {
+    skin: { default: 'Классическая', gold: 'Золотая', dark: 'Тёмная', neon: 'Неоновая', crystal: 'Хрустальная' },
+    avatar: { hat_crown: 'Корона', hat_wizard: 'Шляпа волшебника', glasses_cool: 'Крутые очки', beard_royal: 'Королевская борода', aura_gold: 'Золотая аура' }
+};
+
+function getGemIcon(size) {
+    return `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor" style="width:${size}px;height:${size}px"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
+}
+function weightedPick(list) {
+    const total = list.reduce((s, w) => s + w, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < list.length; i++) { r -= list[i]; if (r <= 0) return i; }
+    return list.length - 1;
+}
+function generateLootDrops(box) {
+    const drops = [];
+    const count = 1 + Math.floor(Math.random() * (box.id === 'crystal' ? 4 : box.id === 'diamond' ? 3 : 2));
+    for (let i = 0; i < count; i++) {
+        const tier = weightedPick(box.dropBias);
+        const typeRoll = Math.random();
+        let reward = { tier };
+        if (typeRoll < 0.42) {
+            const amount = [10, 30, 60, 120, 250][tier] + Math.floor(Math.random() * ([15, 20, 40, 80, 150][tier]));
+            reward = { type: 'gems', amount, tier };
+        } else if (typeRoll < 0.72) {
+            const amount = [15, 40, 80, 170, 350][tier] + Math.floor(Math.random() * ([15, 20, 40, 80, 150][tier]));
+            reward = { type: 'xp', amount, tier };
+        } else if (typeRoll < 0.88) {
+            const variants = ['streakFreeze', 'doubleXP'];
+            const variant = variants[Math.floor(Math.random() * variants.length)];
+            const amount = 1 + Math.floor(tier / 3);
+            reward = { type: 'potion', variant, amount, tier };
+        } else if (typeRoll < 0.95) {
+            const variants = ['hat_crown', 'hat_wizard', 'glasses_cool', 'beard_royal', 'aura_gold'];
+            const variant = variants[tier] || variants[0];
+            reward = { type: 'avatar', variant, tier };
+        } else {
+            const variants = ['gold', 'dark', 'neon', 'crystal'];
+            const variant = variants[tier - 1] || variants[0];
+            reward = { type: 'skin', variant, tier };
+        }
+        drops.push(reward);
+    }
+    return drops;
+}
+function applyLootDrops(drops) {
+    let gems = 0, xp = 0, inventory = {};
+    drops.forEach(d => {
+        if (d.type === 'gems') gems += d.amount;
+        if (d.type === 'xp') xp += d.amount;
+        if (d.type === 'potion') { addInventoryItem(d.variant, d.amount); inventory[d.variant] = (inventory[d.variant] || 0) + d.amount; }
+        if (d.type === 'avatar') {
+            if (!addSkin('avatar_' + d.variant)) gems += 20 * (d.tier + 1);
+            else inventory['avatar_' + d.variant] = 1;
+        }
+        if (d.type === 'skin') {
+            if (!addSkin(d.variant)) gems += 30 * (d.tier + 1);
+            else inventory['skin_' + d.variant] = 1;
+        }
+    });
+    if (gems) addGems(gems);
+    if (xp) addXP(xp, false);
+    return { gems, xp, inventory };
+}
+function openLootBox(boxId) {
+    const box = LOOTBOXES.find(b => b.id === boxId);
+    if (!box) return;
+    if (!spendGems(box.cost)) { showPlatformToast('Недостаточно кристаллов'); return; }
+    const drops = generateLootDrops(box);
+    showLootboxAnimation(box, drops);
+}
+function showLootboxAnimation(box, drops) {
+    const overlay = document.createElement('div');
+    overlay.className = 'lootbox-overlay';
+    overlay.innerHTML = `
+        <div class="lootbox-stage">
+            <div class="lootbox-chest-large" id="lootbox-chest" style="--chest-color:${box.color}">${getChestSVG(box)}</div>
+            <div class="lootbox-status">Открываем ${box.name.toLowerCase()} сундук...</div>
+            <div class="lootbox-rewards" id="lootbox-rewards" style="display:none"></div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    const chest = document.getElementById('lootbox-chest');
+    setTimeout(() => chest.classList.add('shake'), 50);
+    setTimeout(() => { chest.classList.remove('shake'); chest.classList.add('glow'); }, 700);
+    setTimeout(() => {
+        const res = applyLootDrops(drops);
+        const rewardsEl = document.getElementById('lootbox-rewards');
+        rewardsEl.style.display = 'flex';
+        rewardsEl.innerHTML = drops.map(d => `
+            <div class="loot-reward ${d.type}">
+                <div class="reward-icon">${getRewardIcon(d)}</div>
+                <div class="reward-name">${getRewardName(d)}</div>
+                ${d.type === 'gems' ? `<div class="reward-amount">+${d.amount}</div>` : ''}
+                ${d.type === 'xp' ? `<div class="reward-amount">+${d.amount} XP</div>` : ''}
+                ${d.type === 'potion' ? `<div class="reward-amount">x${d.amount}</div>` : ''}
+            </div>
+        `).join('') + `
+            <button class="check-btn" style="margin-top:16px" onclick="this.closest('.lootbox-overlay').remove(); goToScreen('shop')">Забрать</button>
+        `;
+        document.querySelector('.lootbox-status').textContent = 'Награды!';
+    }, 1600);
+}
+function getChestSVG(box) {
+    return `<svg viewBox="0 0 64 64" width="80" height="80"><rect x="8" y="20" width="48" height="36" rx="4" fill="${box.color}"/><rect x="8" y="12" width="48" height="14" rx="3" fill="${box.color}" style="filter:brightness(1.3)"/><circle cx="32" cy="38" r="5" fill="#1a1a1a"/></svg>`;
+}
+function getRewardIcon(d) {
+    if (d.type === 'gems') return getGemIcon(24);
+    if (d.type === 'xp') return '☆';
+    if (d.type === 'potion') return d.variant === 'streakFreeze' ? 'F' : 'XP';
+    if (d.type === 'avatar') return 'A';
+    if (d.type === 'skin') return 'S';
+    return '?';
+}
+function getRewardName(d) {
+    if (d.type === 'gems') return 'Кристаллы';
+    if (d.type === 'xp') return 'Опыт';
+    if (d.type === 'potion') return (SHOP_POTIONS.find(p => p.id === d.variant) || {}).name || d.variant;
+    if (d.type === 'avatar') return (COSMETIC_NAMES.avatar[d.variant] || d.variant);
+    if (d.type === 'skin') return (COSMETIC_NAMES.skin[d.variant] || d.variant);
+    return 'Приз';
+}
+
+function renderShop() {
+    const tab = state.shopTab || 'loot';
+    const gems = getGems();
+    const activeBoosts = getActiveBoosts();
+    const inventory = getInventory();
+    const ownedSkins = getOwnedSkins();
+    const activeSkin = getActiveSkin();
+
+    let content = '';
+    if (tab === 'potions') {
+        content = `<div class="shop-section"><div class="shop-section-title">Зелья</div><div class="shop-grid">
+            ${SHOP_POTIONS.map(p => `
+                <div class="shop-card" style="${cementStyle()}">
+                    <div class="shop-card-icon">${p.id === 'streakFreeze' ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20" style="color:#f59e0b"/></svg>' : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" style="color:#a78bfa"/></svg>'}</div>
+                    <div class="shop-card-title">${p.name}</div>
+                    <div class="shop-card-desc">${p.desc}</div>
+                    <div class="shop-card-footer">
+                        <div class="shop-price">${getGemIcon(14)} ${p.price}</div>
+                        <button class="shop-buy-btn" onclick="buyPotion('${p.id}', ${p.price})">Купить</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div></div>`;
+    } else if (tab === 'loot') {
+        content = `<div class="shop-section"><div class="shop-section-title">Лутбоксы</div><div class="shop-grid">
+            ${LOOTBOXES.map(box => `
+                <div class="shop-card lootbox-card" style="${cementStyle()};border-color:${box.color}">
+                    <div class="lootbox-chest" style="--chest-color:${box.color}">${getChestSVG(box)}</div>
+                    <div class="shop-card-title" style="color:${box.color}">${box.name}</div>
+                    <div class="shop-card-desc">${['обычные', 'базовые', 'редкие', 'очень редкие', 'премиальные'][LOOTBOXES.indexOf(box)]} призы</div>
+                    <div class="shop-card-footer">
+                        <div class="shop-price">${getGemIcon(14)} ${box.cost}</div>
+                        <button class="shop-buy-btn" onclick="openLootBox('${box.id}')">Открыть</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div></div>`;
+    } else if (tab === 'skins') {
+        const skins = Object.keys(COSMETIC_NAMES.skin);
+        content = `<div class="shop-section"><div class="shop-section-title">Скины</div><div class="shop-grid">
+            ${skins.map(skin => {
+                const owned = ownedSkins.includes(skin);
+                const active = activeSkin === skin;
+                return `<div class="shop-card" style="${cementStyle()}${owned ? '' : ';opacity:0.6'}">
+                    <div class="shop-card-title">${COSMETIC_NAMES.skin[skin]}</div>
+                    <div class="shop-card-desc">${owned ? 'в коллекции' : 'выпадает из лутбоксов'}</div>
+                    ${owned ? `<button class="shop-buy-btn ${active ? 'active' : ''}" onclick="setActiveSkin('${skin}')">${active ? 'Выбрано' : 'Экипировать'}</button>` : '<div class="shop-card-desc">Не открыт</div>'}
+                </div>`;
+            }).join('')}
+        </div></div>`;
+    } else if (tab === 'inventory') {
+        const inv = Object.entries(inventory).map(([k, v]) => ({ id: k, count: v }));
+        const boostKeys = Object.keys(activeBoosts);
+        content = `<div class="shop-section"><div class="shop-section-title">Инвентарь</div>
+            ${inv.length ? `<div class="shop-grid">${inv.map(item => {
+                const potion = SHOP_POTIONS.find(p => p.id === item.id);
+                return `<div class="shop-card" style="${cementStyle()}">
+                    <div class="shop-card-title">${potion ? potion.name : item.id}</div>
+                    <div class="shop-card-desc">В наличии: ${item.count}</div>
+                    ${potion ? `<button class="shop-buy-btn" onclick="activatePotion('${item.id}')">Активировать</button>` : ''}
+                </div>`;
+            }).join('')}</div>` : '<div class="shop-empty">Инвентарь пуст</div>'}
+            ${boostKeys.length ? `<div class="shop-boosts"><div class="shop-section-title">Активные бусты</div>${boostKeys.map(k => `<div class="shop-boost">${k}: ${activeBoosts[k]}</div>`).join('')}</div>` : ''}
+        </div>`;
+    }
+
+    app.innerHTML = `
+        <div class="shop-screen">
+            <div class="shop-header">
+                <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
+                <div class="shop-title">Магазин</div>
+                <div class="shop-balance">${getGemIcon(18)} <span>${gems}</span></div>
+            </div>
+            <div class="shop-tabs">
+                <button class="shop-tab ${tab === 'loot' ? 'active' : ''}" onclick="setShopTab('loot')">Лутбоксы</button>
+                <button class="shop-tab ${tab === 'potions' ? 'active' : ''}" onclick="setShopTab('potions')">Зелья</button>
+                <button class="shop-tab ${tab === 'skins' ? 'active' : ''}" onclick="setShopTab('skins')">Скины</button>
+                <button class="shop-tab ${tab === 'inventory' ? 'active' : ''}" onclick="setShopTab('inventory')">Инвентарь</button>
+            </div>
+            <div class="shop-content">${content}</div>
+        </div>
+    `;
+}
+function setShopTab(tab) { state.shopTab = tab; render(); }
+function buyPotion(id, price) {
+    if (!spendGems(price)) { showPlatformToast('Недостаточно кристаллов'); return; }
+    addInventoryItem(id, 1);
+    showPlatformToast('Зелье куплено');
+    render();
+}
+function activatePotion(id) {
+    if (!useInventoryItem(id)) { showPlatformToast('Нет в инвентаре'); return; }
+    activateBoost(id);
+    showPlatformToast(SHOP_POTIONS.find(p => p.id === id).name + ' активировано');
+    render();
+}
+
 function getLeaderboard() {
-    const user = state.profile || { nickname: 'Ты', avatar: '☕' };
+    const user = state.profile || { nickname: 'Ты', avatar: null };
     const userXP = getGlobalStats().totalXP;
     const names = ['Алекс', 'Миша', 'Катя', 'Саша', 'Дима', 'Лена', 'Ваня', 'Оля', 'Ира', 'Паша', 'Тима', 'Ника', 'Глеб', 'Юля', 'Вера', 'Макс', 'Аня', 'Лёша', 'Зоя', 'Рома', 'Соня', 'Артём', 'Настя', 'Петя'];
     const users = names.map((n, i) => ({
         name: n,
-        avatar: AVATAR_EMOJIS[i % AVATAR_EMOJIS.length],
+        avatar: n[0].toUpperCase(),
         xp: Math.max(0, userXP + Math.floor((Math.random() - 0.5) * 1200)),
         isUser: false,
     }));
@@ -3340,7 +3891,7 @@ function renderLeaderboard() {
             <div class="leaderboard-header">
                 <button class="close-btn" onclick="goHome()" style="position:static;margin:0">← Назад</button>
             </div>
-            <div class="leaderboard-title">🏆 Рейтинг</div>
+            <div class="leaderboard-title">Рейтинг</div>
             ${podiumHTML}
             ${listHTML}
         </div>
@@ -3348,14 +3899,12 @@ function renderLeaderboard() {
 }
 
 function goLeaderboard() {
-    state.screen = 'leaderboard';
-    render();
+    goToScreen('leaderboard');
 }
 
 function showBranchSelection(section) {
     state.branchSection = section;
-    state.screen = 'branch';
-    render();
+    goToScreen('branch');
 }
 
 function renderBranchSelection() {
@@ -3375,7 +3924,7 @@ function renderBranchSelection() {
         <button class="section-card" style="${cementStyle()}" onclick="selectSection('${b.id}')">
             <div class="card-img-wrap">
                 <img class="card-img" src="${b.img}" alt="${b.label}" onerror="this.parentNode.classList.add('no-img')">
-                <span class="card-img-placeholder">${isKitchen ? '🍳' : '☕'}</span>
+                <span class="card-img-placeholder">${isKitchen ? 'К' : 'Н'}</span>
             </div>
             <div class="card-info">
                 ${b.label}
@@ -3391,7 +3940,6 @@ function renderBranchSelection() {
         </div>
         <div class="home-screen">
             <div class="mascot-area">
-                <span class="mascot">☕</span>
                 <div class="app-title">${title}</div>
                 <div class="app-subtitle">${subtitle}</div>
             </div>
@@ -3403,22 +3951,23 @@ function renderBranchSelection() {
 // ====================== LEARNING STATS DASHBOARD ======================
 function getCategoryLabel(cat) {
     const labels = {
-        berry: '🫐 Ягоды',
-        fruit: '🍎 Фрукты',
-        vegetable: '🥬 Овощи / зелень',
-        bulk: '🌾 Сыпучее',
-        liquid: '💧 Жидкости',
-        other: '🥩 Прочее'
+        berry: 'Ягоды',
+        fruit: 'Фрукты',
+        vegetable: 'Овощи / зелень',
+        bulk: 'Сыпучее',
+        liquid: 'Жидкости',
+        other: 'Прочее'
     };
     return labels[cat] || cat;
 }
 
 function getTypeLabel(type) {
     const labels = {
-        select: '☑️ Выбор',
-        missing: '❓ Пропуск',
-        truefalse: '✅ Верно/неверно',
-        color_fill: '🎨 Цветовые группы'
+        select: 'Выбор',
+        missing: 'Пропуск',
+        truefalse: 'Верно/неверно',
+        color_fill: 'Цветовые группы',
+        photo: 'По фото'
     };
     return labels[type] || type;
 }
@@ -3524,8 +4073,13 @@ function showLearningStats() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">📊 Характеристика обучения</div>
+                <div class="stats-modal-title">Прогресс</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="strength-card">
+                <div class="strength-label">Короны</div>
+                <div class="strength-value" style="color:var(--gold)">${getTotalCrowns()} корон</div>
+                <div class="strength-desc">Сумма уровней мастерства по всем блюдам</div>
             </div>
             <div class="strength-card">
                 <div class="strength-label">Сильная сторона</div>
@@ -3564,11 +4118,11 @@ function showLearningStats() {
 
 // ====================== SETTINGS MODAL ======================
 const SETTINGS_UI = [
-    { key: 'sound', icon: '🔊', label: 'Звук', desc: 'Звуковые эффекты при ответах и нажатиях' },
-    { key: 'vibration', icon: '📳', label: 'Вибрация', desc: 'Тактильная отдача (на телефонах)' },
-    { key: 'tapFeedback', icon: '👆', label: 'Отклик при нажатии', desc: 'Лёгкий звук и вибро при выборе варианта' },
-    { key: 'confetti', icon: '🎉', label: 'Конфетти', desc: 'Празднование за идеальный урок' },
-    { key: 'animations', icon: '✨', label: 'Анимации', desc: 'Плавные переходы и «живые» кнопки' },
+    { key: 'sound', icon: '', label: 'Звук', desc: 'Звуковые эффекты при ответах и нажатиях' },
+    { key: 'vibration', icon: '', label: 'Вибрация', desc: 'Тактильная отдача (на телефонах)' },
+    { key: 'tapFeedback', icon: '', label: 'Отклик при нажатии', desc: 'Лёгкий звук и вибро при выборе варианта' },
+    { key: 'confetti', icon: '', label: 'Конфетти', desc: 'Празднование за идеальный урок' },
+    { key: 'animations', icon: '', label: 'Анимации', desc: 'Плавные переходы и «живые» кнопки' },
 ];
 function renderToggleRow(s, item) {
     return `
@@ -3589,20 +4143,20 @@ function showSettings() {
     const rowsHTML = SETTINGS_UI.map(item => renderToggleRow(s, item)).join('');
     const themeHTML = `
         <div class="settings-row">
-            <div class="settings-row-icon">🎨</div>
+            <div class="settings-row-icon"></div>
             <div class="settings-row-text">
                 <div class="settings-row-label">Тема</div>
                 <div class="settings-row-desc">Тёмная или светлая</div>
             </div>
             <div class="seg-control">
-                <button class="seg-btn ${s.theme !== 'light' ? 'active' : ''}" onclick="changeTheme('dark', this)">🌙 Тёмная</button>
-                <button class="seg-btn ${s.theme === 'light' ? 'active' : ''}" onclick="changeTheme('light', this)">☀️ Светлая</button>
+                <button class="seg-btn ${s.theme !== 'light' ? 'active' : ''}" onclick="changeTheme('dark', this)">Тёмная</button>
+                <button class="seg-btn ${s.theme === 'light' ? 'active' : ''}" onclick="changeTheme('light', this)">Светлая</button>
             </div>
         </div>
     `;
     const goalHTML = `
         <div class="settings-row">
-            <div class="settings-row-icon">🎯</div>
+            <div class="settings-row-icon"></div>
             <div class="settings-row-text">
                 <div class="settings-row-label">Дневная цель</div>
                 <div class="settings-row-desc">Сколько XP набирать в день</div>
@@ -3619,7 +4173,7 @@ function showSettings() {
     overlay.innerHTML = `
         <div class="stats-modal">
             <div class="stats-modal-header">
-                <div class="stats-modal-title">⚙️ Настройки</div>
+                <div class="stats-modal-title">Настройки</div>
                 <button class="stats-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
             </div>
             <div class="settings-list">${rowsHTML}${themeHTML}${goalHTML}</div>
@@ -3659,11 +4213,11 @@ function changeDailyGoal(goal, btn) {
 async function selectSection(section) {
     state.section = section;
     const labels = {
-        kitchen: '🍳 Кухня',
-        desserts: '🍰 Десерты',
-        drinks: '🍹 Напитки',
-        drink_pf: '🧪 ПФ Напитков',
-        kitchen_pf: '🧪 ПФ Кухни'
+        kitchen: 'Кухня',
+        desserts: 'Десерты',
+        drinks: 'Напитки',
+        drink_pf: 'ПФ Напитков',
+        kitchen_pf: 'ПФ Кухни'
     };
     state.sectionLabel = labels[section] || section;
     state.isDrinksChapter = (section === 'drinks' || section === 'drink_pf');
@@ -3684,12 +4238,11 @@ async function selectSection(section) {
         const data = await response.json();
         state.allData = data.map(normalizeItem);
         buildLessons();
-        state.screen = 'path';
-        render();
+        goToScreen('path');
     } catch (e) {
         app.innerHTML = `
             <div class="loading-screen">
-                <span style="font-size:60px">😔</span>
+                <span style="font-size:60px">—</span>
                 <p>Файл ${fileName} не найден</p>
                 <button class="result-btn secondary" style="margin-top:20px;max-width:280px" onclick="goHome()">Назад</button>
             </div>
@@ -3717,71 +4270,28 @@ function buildLessons() {
 
 function renderPath() {
     const stats = getGlobalStats();
-    const sp = getSectionProgress(state.section);
     const weakItems = getWeakItems(state.section);
+    const skillTreeHTML = typeof renderSkillTree === 'function'
+        ? renderSkillTree(buildLessonSkillNodes(weakItems))
+        : '';
 
-    let firstIncomplete = state.lessons.length;
-    for (let i = 0; i < state.lessons.length; i++) {
-        const ld = sp[`lesson_${i}`];
-        if (!ld || !ld.completed) {
-            firstIncomplete = i;
-            break;
-        }
-    }
-
-    let nodesHTML = '';
-    const offsets = [0, 40, 60, 40, 0, -40, -60, -40];
-
-    for (let i = 0; i < state.lessons.length; i++) {
-        const ld = sp[`lesson_${i}`] || {};
-        let nodeClass = 'locked';
-        let clickHandler = '';
-
-        if (i < firstIncomplete) {
-            nodeClass = 'completed';
-            clickHandler = `onclick="startLesson(${i})"`;
-        } else if (i === firstIncomplete) {
-            nodeClass = 'available';
-            clickHandler = `onclick="startLesson(${i})"`;
-        }
-
-        const offset = offsets[i % offsets.length];
-        const crownHTML = ld.crowns > 0 ? `<span class="crown-badge">👑${ld.crowns > 1 ? ld.crowns : ''}</span>` : '';
-        const connectorClass = i < firstIncomplete ? 'completed' : '';
-
-        if (i > 0) {
-            nodesHTML += `<div class="path-connector ${connectorClass}"></div>`;
-        }
-
-        nodesHTML += `
-            <div class="path-row">
-                <button class="lesson-node ${nodeClass}" ${clickHandler} style="margin-left:${offset}px">
-                    ${crownHTML}
-                    ${i + 1}
-                    <span class="node-sub">${state.lessons[i].length} карт</span>
-                </button>
-            </div>
-        `;
-    }
-
-    const practiceHTML = weakItems.length > 0 ? `
-        <button class="practice-btn" style="${cementStyle()}" onclick="startPractice()">
-            🏋️ Тренировка слабых мест (${weakItems.length})
-        </button>
-    ` : '';
-
+    const gemIcon = `<svg class="gem-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8 8-8 12-8-12 8-8z"/></svg>`;
     app.innerHTML = `
         <div class="top-bar">
             <div class="top-bar-stat">
-                <span class="icon">🔥</span>
+                <span class="icon"></span>
                 <span class="streak-count">${stats.streak}</span>
             </div>
             <div class="top-bar-stat">
-                <span class="icon">⚡</span>
+                <span class="icon"></span>
                 <span class="xp-count">${stats.totalXP} XP</span>
             </div>
+            <div class="top-bar-stat gem-balance">
+                ${gemIcon}
+                <span class="gem-count">${getGems()}</span>
+            </div>
             <div class="top-bar-stat">
-                <span class="icon">❤️</span>
+                <span class="icon"></span>
                 <span class="hearts-count">5</span>
             </div>
         </div>
@@ -3789,29 +4299,27 @@ function renderPath() {
             <div class="path-header">
                 <button class="back-btn" style="${cementStyle()}" onclick="goHome()">←</button>
                 <div class="path-title">${state.sectionLabel}</div>
-                <button class="browse-btn" style="${cementStyle()}" onclick="openBrowse()" aria-label="Справочник">📕</button>
+                <div style="width:40px"></div>
             </div>
-            ${practiceHTML}
-            <div class="path-container">
-                ${nodesHTML}
-            </div>
+            ${skillTreeHTML}
         </div>
     `;
 }
 
 function goHome() {
-    state.screen = 'home';
-    state.section = null;
-    render();
+    goBack();
 }
 
 function openBrowse() {
-    state.screen = 'browse';
-    render();
+    goToScreen('browse');
 }
 
 function closeBrowse() {
-    state.screen = 'path';
+    goBack();
+}
+
+function filterBrowse(value) {
+    state.browseFilter = value;
     render();
 }
 
@@ -3821,16 +4329,35 @@ function toggleBrowseItem(btn) {
 }
 
 function renderBrowse() {
-    const itemsHTML = state.allData.map(item => {
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { showGrams: true });
+    const query = (state.browseFilter || '').trim().toLowerCase();
+    const filtered = query
+        ? state.allData.filter(item => {
+            const nameMatch = (item.name || '').toLowerCase().includes(query);
+            const ingMatch = (item._ingredients || []).some(i => i.toLowerCase().includes(query));
+            return nameMatch || ingMatch;
+        })
+        : state.allData;
+    const itemsHTML = filtered.map(item => {
         const ingredientsHTML = item._ingredients.map(ing => {
-            const grams = item._hasGrams && item._grams[ing] !== undefined ? `<span class="browse-grams">${item._grams[ing]} г</span>` : '';
+            const showGrams = item._hasGrams && venueSettings.showGrams !== false;
+            const hasGram = Number(item._grams[ing]) > 0;
+            const unit = (item._gramUnit && item._gramUnit[ing]) || 'г';
+            const grams = showGrams && hasGram ? `<span class="browse-grams">&nbsp;${item._grams[ing]} ${unit}</span>` : '';
             return `<div class="browse-ingredient"><span>${ing}</span>${grams}</div>`;
         }).join('');
+        const mastery = getDishMastery(item.name);
+        const crowns = mastery.level > 0 ? '<span class="mastery-crowns">' + '★'.repeat(mastery.level) + '</span>' : '';
+        const masteryLabel = mastery.level > 0 ? `<span class="mastery-label">${getMasteryLabel(mastery.level)}</span>` : '';
         return `
             <div class="browse-item">
                 <button class="browse-item-header" style="${cementStyle()}" onclick="toggleBrowseItem(this)">
-                    ${getDishPhotoHTML(item, 'browse-item-photo')}
-                    <span class="browse-item-name">${item.name}</span>
+                    ${item._image ? getDishPhotoHTML(item, 'browse-item-photo') : ''}
+                    <div class="browse-item-title">
+                        <span class="browse-item-name">${item.name}</span>
+                        ${crowns}
+                        ${masteryLabel}
+                    </div>
                     <span class="browse-arrow">▼</span>
                 </button>
                 <div class="browse-item-body">
@@ -3845,9 +4372,10 @@ function renderBrowse() {
             <button class="close-btn" onclick="closeBrowse()" style="position:static;margin:0">← Назад</button>
         </div>
         <div class="browse-screen">
-            <div class="path-title">📕 Справочник — ${state.sectionLabel}</div>
+            <div class="path-title">Справочник — ${state.sectionLabel}</div>
+            <input type="text" class="platform-input" style="margin:12px 0;" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.browseFilter || '')}" oninput="filterBrowse(this.value)">
             <div class="browse-container">
-                ${itemsHTML}
+                ${itemsHTML || '<div class="section-empty">Ничего не найдено</div>'}
             </div>
         </div>
     `;
@@ -3862,7 +4390,9 @@ function startLesson(idx) {
     const allIngredients = getAllIngredients();
     state.questions = shuffle(lessonData).map(item => {
         const nd = normalizeItem(item);
-        return buildBasicSelect(nd, buildWrongPool(nd, allIngredients));
+        const wrongPool = buildWrongPool(nd, allIngredients);
+        const format = pickFormat();
+        return buildQuestionByFormat(format, nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
     });
     state._phaseTotal = state.questions.length;
     state.currentQIdx = 0;
@@ -3870,15 +4400,17 @@ function startLesson(idx) {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
     state.basicMistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    replaceScreen('lesson');
 }
 
 function startPractice() {
@@ -3894,14 +4426,64 @@ function startPractice() {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    goToScreen('lesson');
+}
+
+function getGlobalWeakCount() {
+    const p = getProgress();
+    if (!p || !p.itemStrength) return 0;
+    const names = new Set();
+    const sections = (state.venue && state.venue.sections) || [];
+    for (const s of sections) {
+        for (const it of (s.items || [])) names.add(it.name);
+    }
+    let count = 0;
+    for (const [name, st] of Object.entries(p.itemStrength)) {
+        if (names.has(name) && st.strength < 3) count++;
+    }
+    return count;
+}
+
+function startWeakPractice() {
+    const sections = (state.venue && state.venue.sections) || [];
+    const allItems = sections.flatMap(s => s.items || []);
+    if (!allItems.length) return;
+    state.allData = allItems.map(normalizeItem);
+    buildLessons();
+    state.lessons = [];
+    const weakItems = getWeakItems('__weak__');
+    if (!weakItems.length) { goHome(); return; }
+    state.section = '__weak__';
+    state.sectionLabel = 'Слабые позиции';
+    state.isPractice = true;
+    state.currentLessonIdx = -1;
+    state.questions = generateQuestions(weakItems.slice(0, 15));
+    state._phaseTotal = state.questions.length;
+    state.currentQIdx = 0;
+    state.hearts = 5;
+    state.sessionXP = 0;
+    state.sessionCorrect = 0;
+    state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
+    state.mistakeIds = [];
+    state.basicMistakeIds = [];
+    state._sessionDishNames = new Set();
+    state.feedbackShown = false;
+    state.selectedOptions = new Set();
+    state.selectedChoice = null;
+    state.gramInputs = {};
+    state._lastSpeedBonus = 0;
+    state._questionStartTime = Date.now();
+    goToScreen('lesson');
 }
 
 // ====================== QUESTION GENERATION ======================
@@ -3923,7 +4505,19 @@ function buildWrongPool(nd, allIngredients) {
         const extra = allIngredients.filter(i => !correctSet.has(i) && !wrongPool.includes(i));
         wrongPool = wrongPool.concat(shuffle(extra).slice(0, 5 - wrongPool.length));
     }
+    if (wrongPool.length < 4) {
+        const generic = GENERIC_DISTRACTORS.filter(i => !correctSet.has(i) && !wrongPool.includes(i));
+        wrongPool = wrongPool.concat(shuffle(generic).slice(0, 6 - wrongPool.length));
+    }
     return wrongPool;
+}
+
+function gramSettingsFor(nd) {
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { showGrams: false, requireGrams: false });
+    const fallback = !state.venue && state.isDrinksChapter;
+    const showGrams = nd._hasGrams && (venueSettings.showGrams !== false || fallback);
+    const requireGrams = showGrams && (venueSettings.requireGrams !== false || fallback);
+    return { showGrams, requireGrams };
 }
 
 function buildBasicSelect(nd, wrongPool) {
@@ -3937,26 +4531,31 @@ function buildBasicSelect(nd, wrongPool) {
         const extra = shuffle(wrongPool).filter(i => !used.has(i)).slice(0, remaining);
         pool.push(...extra);
     }
+    const { showGrams, requireGrams } = gramSettingsFor(nd);
     return {
         type: 'select',
         item: nd,
         pool: shuffle(pool),
         format: 'logical',
-        showGrams: state.isDrinksChapter && nd._hasGrams,
+        showGrams,
+        requireGrams,
     };
 }
 
 function buildRemediationSet(item, allIngredients) {
     const nd = normalizeItem(item);
     const wrongPool = buildWrongPool(nd, allIngredients);
-    const order = shuffle(['missing', 'color_fill', 'spatial']);
+    const enabled = getEnabledQuestionFormats();
+    const typeMap = { missing: 'missing', color_fill: 'color_coded', spatial: 'spatial' };
+    let order = shuffle(['missing', 'color_fill', 'spatial']).filter(t => enabled.includes(typeMap[t]));
+    if (!order.length) order = ['missing', 'color_fill', 'spatial'];
     const questions = [];
     for (const type of order) {
         let q = null;
-        if (type === 'missing') q = buildMissingQuestion(nd, wrongPool, 'logical');
-        else if (type === 'color_fill') q = buildColorFillQuestion(nd, wrongPool, allIngredients);
-        else if (type === 'spatial') q = buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial');
-        if (!q) q = buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        if (type === 'missing') q = buildQuestionByFormat('missing', nd, wrongPool, allIngredients);
+        else if (type === 'color_fill') q = buildQuestionByFormat('color_coded', nd, wrongPool, allIngredients);
+        else if (type === 'spatial') q = buildQuestionByFormat('spatial', nd, wrongPool, allIngredients);
+        if (!q) q = buildQuestionByFormat('logical', nd, wrongPool, allIngredients);
         if (q) questions.push(q);
     }
     return questions;
@@ -3970,19 +4569,14 @@ function generateQuestions(items) {
         const nd = normalizeItem(item);
         const wrongPool = buildWrongPool(nd, allIngredients);
 
-        const format = pickFormat();
-        let q = null;
-
-        if (format === 'color_coded') {
-            q = buildColorFillQuestion(nd, wrongPool, allIngredients);
-            if (!q) q = buildMissingQuestion(nd, wrongPool, 'logical') || buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
-        } else if (format === 'spatial') {
-            q = buildSpatialSelect(nd, wrongPool, allIngredients, format);
-            if (!q) q = buildMissingQuestion(nd, wrongPool, 'logical') || buildColorFillQuestion(nd, wrongPool, allIngredients) || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
-        } else { // logical
-            q = buildMissingQuestion(nd, wrongPool, format);
-            if (!q) q = buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildColorFillQuestion(nd, wrongPool, allIngredients) || buildTrueFalseQuestion(nd, wrongPool, 'logical') || buildSimpleSelect(nd, wrongPool, 'logical');
+        let q = buildQuestionByFormat(pickFormat(), nd, wrongPool, allIngredients);
+        if (!q) {
+            for (const f of getEnabledQuestionFormats()) {
+                q = buildQuestionByFormat(f, nd, wrongPool, allIngredients);
+                if (q) break;
+            }
         }
+        if (!q) q = buildQuestionByFormat('logical', nd, wrongPool, allIngredients);
 
         if (q) questions.push(q);
     }
@@ -4027,9 +4621,13 @@ function buildColorFillQuestion(nd, wrongPool, allIngredients) {
         const candidates = allIngredients.filter(i => !used.has(i) && getColorCategory(i) === cat);
         distractors.push(...shuffle(candidates).slice(0, 2));
     }
-    if (distractors.length < 2) {
-        const extra = shuffle(wrongPool).filter(i => !used.has(i) && !distractors.includes(i)).slice(0, 2 - distractors.length);
+    if (distractors.length < 3) {
+        const extra = shuffle(wrongPool).filter(i => !used.has(i) && !distractors.includes(i) && missingCats.includes(getColorCategory(i))).slice(0, 4 - distractors.length);
         distractors.push(...extra);
+    }
+    if (distractors.length < 3) {
+        const generic = GENERIC_DISTRACTORS.filter(i => !used.has(i) && !distractors.includes(i) && missingCats.includes(getColorCategory(i)));
+        distractors.push(...shuffle(generic).slice(0, 5 - distractors.length));
     }
     if (distractors.length === 0) return null;
 
@@ -4086,12 +4684,14 @@ function buildSpatialSelect(nd, wrongPool, allIngredients, format) {
     }
 
     const displayPool = shuffle(pool);
+    const { showGrams, requireGrams } = gramSettingsFor(nd);
     return {
         type: 'select',
         item: nd,
         pool: displayPool,
         format: format,
-        showGrams: state.isDrinksChapter && nd._hasGrams,
+        showGrams,
+        requireGrams,
     };
 }
 
@@ -4160,13 +4760,63 @@ function buildTrueFalseQuestion(nd, wrongPool, format) {
 }
 
 function buildSimpleSelect(nd, wrongPool, format) {
+    const { showGrams, requireGrams } = gramSettingsFor(nd);
     return {
         type: 'select',
         item: nd,
         pool: shuffle(nd._pool),
         format: format,
-        showGrams: state.isDrinksChapter && nd._hasGrams,
+        showGrams,
+        requireGrams,
     };
+}
+
+function buildPhotoQuestion(nd, wrongPool, allIngredients) {
+    if (!nd._image) return null;
+    const correctCount = nd._ingredients.length;
+    const minDistractors = Math.max(3, Math.ceil(correctCount * 0.5));
+    const correctSet = new Set(nd._ingredients);
+    const used = new Set(nd._ingredients);
+    let pool = [...nd._ingredients];
+
+    // Prefer real wrong options from the menu
+    let extras = [...wrongPool].filter(i => !correctSet.has(i) && !used.has(i));
+    extras = shuffle(extras).slice(0, minDistractors);
+    for (const e of extras) {
+        pool.push(e);
+        used.add(e);
+    }
+
+    // Pad with generic distractors if still not enough
+    if (pool.length - correctCount < 3) {
+        const generic = GENERIC_DISTRACTORS.filter(i => !correctSet.has(i) && !used.has(i));
+        const needed = 4 - (pool.length - correctCount);
+        for (const g of shuffle(generic).slice(0, needed)) {
+            pool.push(g);
+            used.add(g);
+        }
+    }
+
+    return {
+        type: 'photo',
+        item: nd,
+        pool: shuffle(pool),
+        format: 'photo',
+        showGrams: false,
+        requireGrams: false,
+    };
+}
+
+function buildQuestionByFormat(format, nd, wrongPool, allIngredients) {
+    if (format === 'photo') return buildPhotoQuestion(nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
+    if (format === 'color_coded') return buildColorFillQuestion(nd, wrongPool, allIngredients) || buildBasicSelect(nd, wrongPool);
+    if (format === 'spatial') return buildSpatialSelect(nd, wrongPool, allIngredients, 'spatial') || buildBasicSelect(nd, wrongPool);
+    if (format === 'missing') return buildMissingQuestion(nd, wrongPool, 'missing') || buildBasicSelect(nd, wrongPool);
+    // logical
+    let q = buildBasicSelect(nd, wrongPool);
+    if (!q) q = buildTrueFalseQuestion(nd, wrongPool, 'logical');
+    if (!q) q = buildSimpleSelect(nd, wrongPool, 'logical');
+    return q;
 }
 
 // ====================== FORMAT RENDERERS ======================
@@ -4244,16 +4894,16 @@ function renderLogical(pool, isClickable, q) {
             else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
             else if (wasSelected) cls = 'wrong-selected';
             else { cls = 'wrong-reveal'; }
-            if (q.showGrams && isCorrectIng) {
+            if (q.showGrams && isCorrectIng && Number(q.item._grams[ing]) > 0) {
                 const correctGram = q.item._grams[ing];
                 const userGram = state.gramInputs[idx];
                 const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}${q.item._gramUnit[ing] || 'г'}</span></div>`;
             }
         } else {
             cls = state.selectedOptions.has(idx) ? 'selected' : '';
-            if (q.showGrams && state.selectedOptions.has(idx)) {
-                gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+            if (q.requireGrams && Number(q.item._grams[ing]) > 0 && state.selectedOptions.has(idx)) {
+                gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="${q.item._gramUnit[ing] || 'г'}" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">${q.item._gramUnit[ing] || 'г'}</span></div>`;
             }
         }
         return `<button class="option-btn ${cls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
@@ -4290,16 +4940,16 @@ function renderColorCoded(pool, isClickable, q) {
                 if (isCorrectIng && wasSelected) btnCls = 'correct-reveal';
                 else if (isCorrectIng && !wasSelected) btnCls = 'correct-unselected';
                 else { btnCls = 'wrong-reveal'; }
-                if (q.showGrams && isCorrectIng) {
+                if (q.showGrams && isCorrectIng && Number(q.item._grams[ing]) > 0) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
                     const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             } else {
                 btnCls = state.selectedOptions.has(idx) ? 'selected' : '';
-                if (q.showGrams && state.selectedOptions.has(idx)) {
-                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+                if (q.requireGrams && Number(q.item._grams[ing]) > 0 && state.selectedOptions.has(idx)) {
+                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="${q.item._gramUnit[ing] || 'г'}" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             }
             html += `<button class="option-btn ${btnCls}" style="${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
@@ -4332,16 +4982,16 @@ function renderSpatial(pool, isClickable, q) {
                 if (isCorrectIng && wasSelected) cls = 'correct-reveal';
                 else if (isCorrectIng && !wasSelected) cls = 'correct-unselected';
                 else { cls = 'wrong-reveal'; }
-                if (q.showGrams && isCorrectIng) {
+                if (q.showGrams && isCorrectIng && Number(q.item._grams[ing]) > 0) {
                     const correctGram = q.item._grams[ing];
                     const userGram = state.gramInputs[idx];
                     const gramOk = userGram !== undefined && Math.abs(userGram - correctGram) <= 2;
-                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}г</span></div>`;
+                    gramHTML = `<div class="gram-selector"><input class="gram-input ${gramOk ? 'gram-correct' : (wasSelected ? 'gram-wrong' : '')}" value="${userGram !== undefined ? userGram : ''}" disabled><span class="gram-unit">→ ${correctGram}${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             } else {
                 cls = state.selectedOptions.has(idx) ? 'selected' : '';
-                if (q.showGrams && state.selectedOptions.has(idx)) {
-                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="г" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">г</span></div>`;
+                if (q.requireGrams && Number(q.item._grams[ing]) > 0 && state.selectedOptions.has(idx)) {
+                    gramHTML = `<div class="gram-selector"><input class="gram-input" type="number" placeholder="${q.item._gramUnit[ing] || 'г'}" value="${state.gramInputs[idx] !== undefined ? state.gramInputs[idx] : ''}" onclick="event.stopPropagation()" oninput="setGram(${idx}, this.value)"><span class="gram-unit">${q.item._gramUnit[ing] || 'г'}</span></div>`;
                 }
             }
             html += `<button class="option-btn ${cls}" style="width:100%;margin-bottom:4px;${cementStyle()}" onclick="${fb ? '' : `toggleOption(${idx})`}">${ing}${gramHTML}</button>`;
@@ -4363,8 +5013,31 @@ function renderLesson() {
     const fb = state.feedbackShown;
     const progressTotal = Math.max(state._phaseTotal || state.questions.length, state.currentQIdx + 1);
     const progress = ((state.currentQIdx + (fb ? 1 : 0)) / progressTotal) * 100;
-    const heartsStr = '❤️'.repeat(Math.max(0, state.hearts));
+    const heartsStr = String(state.hearts);
     const correctSet = new Set(q.item._ingredients);
+
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { speedMode: { enabled: false } });
+    const speedMode = venueSettings.speedMode || { enabled: false, timeLimit: 15 };
+    const speedEnabled = !fb && speedMode.enabled;
+
+    if (state._timerInterval) { clearInterval(state._timerInterval); state._timerInterval = null; }
+    let timerPct = 100;
+    if (speedEnabled) {
+        const limit = Math.max(5, Number(speedMode.timeLimit) || 15) * 1000;
+        const start = Date.now();
+        state._timerInterval = setInterval(() => {
+            if (state.screen !== 'lesson' || state.feedbackShown) { clearInterval(state._timerInterval); state._timerInterval = null; return; }
+            const elapsed = Date.now() - start;
+            const pct = Math.max(0, 100 - (elapsed / limit) * 100);
+            const fill = document.getElementById('timer-fill');
+            if (fill) { fill.style.width = pct + '%'; if (pct < 25) fill.classList.add('low'); }
+            if (elapsed >= limit) {
+                clearInterval(state._timerInterval);
+                state._timerInterval = null;
+                handleQuestionTimeout();
+            }
+        }, 100);
+    }
 
     let questionHTML = '';
     let resultStripHTML = '';
@@ -4372,22 +5045,25 @@ function renderLesson() {
     if (fb) {
         const ic = state._lastCorrect;
         let extraInfo = '';
-        if (!ic && q.showGrams) {
+        if (!ic && q.requireGrams) {
             extraInfo = ' (проверьте граммовки)';
         }
+        const speedBonusText = ic && (state._lastSpeedBonus || 0) > 0 ? ` +${state._lastSpeedBonus} XP` : '';
         resultStripHTML = `<div class="inline-result ${ic ? 'correct' : 'wrong'}">
-            <span class="result-icon">${ic ? '✓' : '✗'}</span>
-            ${ic ? 'Верно!' : 'Неверно' + extraInfo}
+            ${ic ? 'Верно!' + speedBonusText : 'Неверно' + extraInfo}
         </div>`;
     }
 
-    const catInfo = state.section === 'kitchen' ? getDishCategory(q.item.name) : getSectionCategory(state.section);
+    const catInfo = getSectionCategory(state.section) || getDishCategory(q.item.name);
     const categoryBadge = catInfo ? `<span class="category-badge ${catInfo.cls}">${catInfo.label}</span>` : '';
-    const dishPhotoHTML = getDishPhotoHTML(q.item);
+    const dishPhotoHTML = q.type === 'photo' && q.item._image
+        ? `<img class="dish-photo" src="${q.item._image}" alt="" style="max-height:220px;width:auto;object-fit:cover;border-radius:10px;margin:10px auto;display:block;" onerror="this.style.display='none'">`
+        : '';
 
-    if (q.type === 'select') {
+    if (q.type === 'select' || q.type === 'photo') {
         const dishName = q.item.name;
         const ingredientsHTML = renderIngredientsForFormat(q.pool, q.format, !fb, q);
+        const title = q.type === 'photo' ? `По фото собери состав:` : `Выбери состав:`;
 
         questionHTML = `
             <div class="question-area">
@@ -4395,8 +5071,8 @@ function renderLesson() {
                     ${categoryBadge}
                     ${dishPhotoHTML}
                     <div class="question-title">
-                        Выбери состав: <span class="question-dish-name">${dishName}</span>
-                        ${q.showGrams ? '<div style="font-size:12px;color:rgba(42,42,42,0.6);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
+                        ${title} <span class="question-dish-name">${dishName}</span>
+                        ${q.requireGrams ? '<div style="font-size:12px;color:rgba(24,24,27,0.55);margin-top:4px">Укажите граммовки для каждого ингредиента</div>' : ''}
                     </div>
                 </div>
                 ${resultStripHTML}
@@ -4422,7 +5098,7 @@ function renderLesson() {
             if (!byCat[cat]) return '';
             const items = byCat[cat].map(ing => `<span class="missing-item" style="${cementStyle()}">${ing}</span>`).join('');
             const missingSlot = missingCat === cat ? (fb
-                ? `<span class="missing-item" style="background:${state._lastCorrect ? '#a8d5a2' : '#e8a8a5'};color:${state._lastCorrect ? '#1b5e20' : '#b71c1c'}">${q.missing}</span>`
+                ? `<span class="missing-item ${state._lastCorrect ? 'correct-reveal' : 'wrong-reveal'}">${q.missing}</span>`
                 : `<span class="missing-slot">?</span>`) : '';
             return `<div class="sort-column" style="${cementStyle()}">
                 <div class="sort-column-label">${catLabels[cat]}</div>
@@ -4566,18 +5242,27 @@ function renderLesson() {
             </button>
            </div>`
         : (q.type === 'truefalse' ? '' : `<div class="bottom-area">
-            <button class="check-btn ${(q.type === 'color_fill' ? state.selectedOptions.size === q.totalSlots : (q.type === 'select' ? state.selectedOptions.size > 0 : state.selectedChoice !== null)) ? 'active' : 'disabled'}"
-                    onclick="${(q.type === 'color_fill' ? (state.selectedOptions.size === q.totalSlots ? 'checkColorFillAnswer()' : '') : (q.type === 'select' ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : '')))}">
+            <button class="check-btn ${(q.type === 'color_fill' ? state.selectedOptions.size === q.totalSlots : ((q.type === 'select' || q.type === 'photo') ? state.selectedOptions.size > 0 : state.selectedChoice !== null)) ? 'active' : 'disabled'}"
+                    onclick="${(q.type === 'color_fill' ? (state.selectedOptions.size === q.totalSlots ? 'checkColorFillAnswer()' : '') : ((q.type === 'select' || q.type === 'photo') ? (state.selectedOptions.size > 0 ? 'checkSelectAnswer()' : '') : (state.selectedChoice !== null ? 'checkMissingAnswer()' : '')))}">
                 Проверить
             </button>
            </div>`);
+
+    const timerBarHTML = speedMode.enabled ? `
+        <div class="timer-bar" id="timer-bar">
+            <div class="timer-fill" id="timer-fill" style="width:${timerPct}%"></div>
+        </div>
+    ` : '';
 
     app.innerHTML = `
         <div class="lesson-screen">
             <div class="lesson-header">
                 <button class="close-btn" onclick="confirmQuit()">✕</button>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-fill" style="width:${progress}%"></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width:${progress}%"></div>
+                    </div>
+                    ${timerBarHTML}
                 </div>
                 <div class="hearts-display" id="hearts-display">${heartsStr}</div>
             </div>
@@ -4653,12 +5338,15 @@ function checkSelectAnswer() {
 
     // Check grams if applicable
     let gramsCorrect = true;
-    if (q.showGrams && isCorrect) {
+    if (q.requireGrams && isCorrect) {
         for (const idx of state.selectedOptions) {
             const ing = q.pool[idx];
-            if (q.item._grams[ing] !== undefined) {
+            const correctGram = Number(q.item._grams[ing]);
+            if (correctGram > 0) {
                 const userGram = state.gramInputs[idx];
-                if (userGram === undefined || Math.abs(userGram - q.item._grams[ing]) > 2) {
+                const isCount = q.item._gramUnit[ing] === 'шт';
+                const tolerance = isCount ? 0 : 2;
+                if (userGram === undefined || userGram === '' || Math.abs(Number(userGram) - correctGram) > tolerance) {
                     gramsCorrect = false;
                     break;
                 }
@@ -4699,19 +5387,54 @@ function checkColorFillAnswer() {
     processAnswer(isCorrect, q.item, q.format, timeTaken);
 }
 
+function handleQuestionTimeout() {
+    if (state.feedbackShown) return;
+    const q = state.questions[state.currentQIdx];
+    if (!q) return;
+    const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { speedMode: { timeLimit: 15 } });
+    const timeLimit = Number((venueSettings.speedMode && venueSettings.speedMode.timeLimit) || 15);
+    processAnswer(false, q.item, q.format, timeLimit);
+}
+
 function processAnswer(isCorrect, item, format, timeTaken) {
     state.sessionTotal++;
+    if (!state._sessionDishNames) state._sessionDishNames = new Set();
+    state._sessionDishNames.add(item.name);
     recordAnswer(item.name, isCorrect);
     recordFormatAnswer(format, isCorrect, timeTaken);
+    saveTrainingResult(item.name, isCorrect, format, timeTaken);
 
+    state._lastSpeedBonus = 0;
     if (isCorrect) {
         state.sessionCorrect++;
+        state.sessionCorrectStreak = (state.sessionCorrectStreak || 0) + 1;
+        const streak = state.sessionCorrectStreak;
+        let streakMult = 1;
+        if (streak >= 10) streakMult = 2;
+        else if (streak >= 5) streakMult = 1.5;
+        const baseGems = 1 + Math.floor(Math.random() * 3);
+        const gemsEarned = Math.max(1, Math.round(baseGems * streakMult));
+        addGems(gemsEarned);
+        if (typeof showGemPopup === 'function') showGemPopup(gemsEarned);
         state.sessionXP += 10;
         state._lastCorrect = true;
+
+        const venueSettings = (typeof getSectionSettings === 'function') ? getSectionSettings(state.section) : (typeof getVenueSettings === 'function' ? getVenueSettings() : { speedMode: { enabled: false } });
+        const speedMode = venueSettings.speedMode || { enabled: false, timeLimit: 15 };
+        if (speedMode.enabled && typeof timeTaken === 'number' && timeTaken < Number(speedMode.timeLimit || 15)) {
+            const limit = Number(speedMode.timeLimit) || 15;
+            const bonus = Math.max(0, Math.round((1 - timeTaken / limit) * 10));
+            if (bonus > 0) {
+                state.sessionXP += bonus;
+                state._lastSpeedBonus = bonus;
+            }
+        }
+
         playSound('correct');
         haptic(40);
     } else {
         state.hearts--;
+        state.sessionCorrectStreak = 0;
         state._lastCorrect = false;
         playSound('wrong');
         haptic([60, 50, 90]);
@@ -4755,6 +5478,7 @@ function nextQuestion() {
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
 
     if (state.currentQIdx >= state.questions.length) {
@@ -4788,22 +5512,38 @@ function nextQuestion() {
 }
 
 function finishLesson() {
-    const xpEarned = state.sessionXP + (state.hearts > 0 ? 15 : 0);
     const perfect = state.sessionCorrect === state.sessionTotal && state.sessionTotal > 0;
+    const avgMultiplier = perfect ? getSessionAverageMultiplier() : 1;
+    const doubleXPMult = consumeBoost('doubleXP') ? 2 : 1;
+    const baseXP = state.sessionXP + (state.hearts > 0 ? 15 : 0);
+    const xpEarned = Math.round(baseXP * avgMultiplier * doubleXPMult);
+    state._gemsEarned = 0;
     if (perfect) {
         const p = getProgress();
         p.perfectLessons = (p.perfectLessons || 0) + 1;
         saveProgress(p);
+        const perfectGems = 10 + Math.floor(Math.random() * 41);
+        addGems(perfectGems);
+        state._gemsEarned += perfectGems;
     }
+    if (doubleXPMult > 1 && typeof showPlatformToast === 'function') showPlatformToast('Зелье двойного XP удвоило награду');
     const { justMetGoal } = addXP(xpEarned);
 
     if (!state.isPractice && state.currentLessonIdx >= 0 && state.hearts > 0) {
         saveLessonComplete(state.section, state.currentLessonIdx, state.sessionCorrect, state.sessionTotal);
     }
 
-    state.screen = 'result';
     state._finalXP = xpEarned;
-    render();
+    state._newCrowns = 0;
+    state._averageMasteryLevel = 0;
+    state._masteryLabel = '';
+    if (!state.isPractice) {
+        state._newCrowns = updateDishMasteryFromSession(perfect);
+        state._averageMasteryLevel = getAverageMasteryLevel(getSessionDishNames());
+        state._masteryLabel = getMasteryLabel(state._averageMasteryLevel);
+    }
+
+    replaceScreen('result');
 
     playSound('finish');
     haptic(perfect ? [40, 60, 40, 60, 120] : 60);
@@ -4824,16 +5564,24 @@ function renderResult() {
         : 0;
 
     const barColor = accuracy >= 80 ? 'var(--green)' : accuracy >= 50 ? 'var(--gold)' : 'var(--red)';
-    const resultEmoji = accuracy === 100 ? '🏆' : accuracy >= 80 ? '🌟' : accuracy >= 50 ? '👍' : '💪';
     const resultTitle = accuracy === 100 ? 'Идеально!' :
                         accuracy >= 80 ? 'Отличная работа!' :
                         accuracy >= 50 ? 'Неплохо!' : 'Нужно ещё потренироваться';
     const resultSub = state.hearts <= 0 ? 'Жизни закончились, но ты молодец!' :
-                      `Ты заработал ${state._finalXP} XP!`;
+                      `Ты заработал ${state._finalXP} XP${state._gemsEarned > 0 ? ' и ' + state._gemsEarned + ' кристаллов' : ''}!`;
+    const gemsHTML = state._gemsEarned > 0 ?
+        `<div class="result-stat">
+            <div class="result-stat-value" style="color:var(--blue)">${state._gemsEarned}</div>
+            <div class="result-stat-label">Кристаллов</div>
+        </div>` : '';
+    const crownsHTML = state._newCrowns > 0 ?
+        `<div class="result-stat" style="border:2px solid var(--gold);border-radius:12px;padding:10px 0">
+            <div class="result-stat-value" style="color:var(--gold)">${'★'.repeat(Math.min(5, state._averageMasteryLevel || 1))}</div>
+            <div class="result-stat-label">${state._masteryLabel || 'Новая крона'}</div>
+        </div>` : '';
 
     app.innerHTML = `
         <div class="result-screen">
-            <div class="result-mascot">${resultEmoji}</div>
             <div class="result-title">${resultTitle}</div>
             <div class="result-subtitle">${resultSub}</div>
             <div class="result-stats">
@@ -4849,13 +5597,15 @@ function renderResult() {
                     <div class="result-stat-value" style="color:var(--gold)">${state._finalXP}</div>
                     <div class="result-stat-label">XP</div>
                 </div>
+                ${gemsHTML}
+                ${crownsHTML}
             </div>
             <div class="result-accuracy-bar">
                 <div class="result-accuracy-fill" style="width:0%;background:${barColor}"></div>
             </div>
             <p style="color:var(--text-secondary);margin-bottom:24px;font-weight:700">${accuracy}% точность</p>
             <button class="result-btn primary" onclick="returnToPath()">Продолжить</button>
-            ${state.mistakeIds.length > 0 ? `<button class="result-btn secondary" onclick="retryMistakes()">🔄 Повторить ошибки (${state.mistakeIds.length})</button>` : ''}
+            ${state.mistakeIds.length > 0 ? `<button class="result-btn secondary" onclick="retryMistakes()">Повторить ошибки (${state.mistakeIds.length})</button>` : ''}
         </div>
     `;
 
@@ -4866,8 +5616,7 @@ function renderResult() {
 }
 
 function returnToPath() {
-    state.screen = 'path';
-    render();
+    goBack();
 }
 
 function retryMistakes() {
@@ -4883,14 +5632,16 @@ function retryMistakes() {
     state.sessionXP = 0;
     state.sessionCorrect = 0;
     state.sessionTotal = 0;
+    state._sessionCorrectStreak = 0;
     state.mistakeIds = [];
+    state._sessionDishNames = new Set();
     state.feedbackShown = false;
     state.selectedOptions = new Set();
     state.selectedChoice = null;
     state.gramInputs = {};
+    state._lastSpeedBonus = 0;
     state._questionStartTime = Date.now();
-    state.screen = 'lesson';
-    render();
+    replaceScreen('lesson');
 }
 
 // ====================== QUIT CONFIRMATION ======================
@@ -4910,8 +5661,7 @@ function confirmQuit() {
 
 function quitLesson() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
-    state.screen = 'path';
-    render();
+    goBack();
 }
 
 // ====================== INIT ======================

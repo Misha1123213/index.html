@@ -1,4 +1,4 @@
-# MET Академия — Café Menu
+# Cognitio — платформа обучения составам меню
 
 Static single-page café menu site (`index.html` + JSON data files for dishes, drinks, desserts). Originally deployed on Netlify (`netlify.toml`); on Replit it runs via a small static file server.
 
