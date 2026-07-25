@@ -2346,6 +2346,13 @@ const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg',
 const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 const DEFAULT_AVATAR = 'A';
 const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'eyes_1', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
+const AVATAR_PRESETS = [
+    { id: 'duo_avatar_1', name: 'Дружелюбный', file: 'img/avatar/presets/duo_avatar_1.png' },
+    { id: 'duo_avatar_2', name: 'Весёлая', file: 'img/avatar/presets/duo_avatar_2.png' },
+    { id: 'duo_avatar_3', name: 'Спокойный', file: 'img/avatar/presets/duo_avatar_3.png' },
+    { id: 'duo_avatar_4', name: 'Удивлённая', file: 'img/avatar/presets/duo_avatar_4.png' },
+    { id: 'duo_avatar_5', name: 'Игривый', file: 'img/avatar/presets/duo_avatar_5.png' },
+];
 const FACE_PNG_TRANSFORMS = {
     oval_1: 'translate(5.59,5.59) scale(0.10638)',
     round_2: 'translate(-0.89,-0.89) scale(0.11905)',
@@ -3185,6 +3192,10 @@ function renderPhotoFallbackString(name, cls) {
 const app = document.getElementById('app');
 
 function renderAvatar(avatar, size = 32) {
+    if (avatar && typeof avatar === 'object' && avatar.preset) {
+        const preset = AVATAR_PRESETS.find(p => p.id === avatar.preset) || AVATAR_PRESETS[0];
+        return `<img class="profile-avatar" src="${preset.file}" style="width:${size}px;height:${size}px;object-fit:contain;background:transparent!important;border-radius:12px!important;" alt="avatar" />`;
+    }
     if (avatar && typeof avatar === 'object' && avatar.parts) {
         return renderConstructedAvatar(avatar.parts, size);
     }
@@ -3473,44 +3484,31 @@ function loadAvatarConfig() {
 }
 
 function cloneAvatarConfig(avatar) {
+    if (avatar && typeof avatar === 'object' && avatar.preset) return { preset: avatar.preset };
     if (avatar && typeof avatar === 'object' && avatar.parts) return { ...DEFAULT_AVATAR_CONFIG, ...avatar.parts };
     return { ...DEFAULT_AVATAR_CONFIG };
+}
+function getCurrentPreset(avatar) {
+    if (avatar && typeof avatar === 'object' && avatar.preset) return avatar.preset;
+    return AVATAR_PRESETS[0].id;
 }
 function renderAvatarEditorContent(mode) {
     const editor = state.avatarEditor;
     if (!editor) return '';
-    const config = editor.config || DEFAULT_AVATAR_CONFIG;
-    const tab = editor.tab || 'face';
-    const part = AVATAR_PARTS[tab];
-    const tabsHTML = Object.keys(AVATAR_PARTS).map(key => {
-        const p = AVATAR_PARTS[key];
-        const active = key === tab;
-        return `<button class="avatar-editor-tab ${active ? 'active' : ''}" onclick="setAvatarTab('${key}')">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${p.icon}"/></svg>
-            <span>${p.label}</span>
+    const presetId = editor.config && editor.config.preset ? editor.config.preset : getCurrentPreset(state.profile && state.profile.avatar);
+    const preview = renderAvatar({ preset: presetId }, 220);
+    const optionsHTML = AVATAR_PRESETS.map(p => {
+        const selected = p.id === presetId;
+        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPreset('${p.id}')">
+            <img src="${p.file}" style="width:96px;height:96px;object-fit:contain;background:transparent;" alt="${p.name}">
+            <span>${p.name}</span>
         </button>`;
-    }).join('');
-    const optionsHTML = part.options.map(opt => {
-        const selected = config[tab] === opt.id;
-        let preview = '';
-        if (tab === 'face') {
-            const faceTransform = FACE_PNG_TRANSFORMS[opt.id] || FACE_PNG_TRANSFORMS.oval_1;
-            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${faceTransform}" /></svg>`;
-        } else if (tab === 'eyes') {
-            const eyeTransform = EYE_PNG_TRANSFORMS[opt.id] || EYE_PNG_TRANSFORMS.eyes_1;
-            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${eyeTransform}" /></svg>`;
-        } else {
-            const previewCfg = { ...config, [tab]: opt.id };
-            preview = `<div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;">${renderAvatar({ parts: previewCfg }, 64)}</div>`;
-        }
-        return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${preview}<span>${opt.name}</span></button>`;
     }).join('');
     const doneLabel = mode === 'onboarding' ? 'Начать' : 'Сохранить';
     return `
-        <div class="avatar-editor-preview">${renderAvatar({ parts: config }, 220)}</div>
-        <div class="avatar-editor-tabs">${tabsHTML}</div>
-        <div class="avatar-editor-section">${part.label}</div>
-        <div class="avatar-editor-options" style="grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;">${optionsHTML}</div>
+        <div class="avatar-editor-preview" style="min-height:260px;">${preview}</div>
+        <div class="avatar-editor-section">Выбери аватар</div>
+        <div class="avatar-editor-options" style="grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0;">${optionsHTML}</div>
         <div class="avatar-editor-actions">
             <button class="avatar-editor-btn secondary" onclick="backAvatarEditor()">Назад</button>
             <button class="avatar-editor-btn primary" onclick="${mode === 'onboarding' ? 'finishOnboarding()' : 'saveAvatarEditor()'}">${doneLabel}</button>
@@ -3534,7 +3532,7 @@ function renderOnboarding() {
     }
 
     if (!state.avatarEditor) {
-        state.avatarEditor = { config: cloneAvatarConfig(state.onboardingAvatar), mode: 'onboarding', tab: 'face' };
+        state.avatarEditor = { config: { preset: getCurrentPreset(state.onboardingAvatar) }, mode: 'onboarding' };
     }
 
     app.innerHTML = `
@@ -3557,21 +3555,15 @@ function setOnboardingNickname(value) {
 
 function goToAvatar() {
     if (!state.onboardingNickname.trim()) return;
-    state.onboardingAvatar = { parts: DEFAULT_AVATAR_CONFIG };
-    state.avatarEditor = { config: { ...DEFAULT_AVATAR_CONFIG }, mode: 'onboarding', tab: 'face' };
+    state.onboardingAvatar = { preset: AVATAR_PRESETS[0].id };
+    state.avatarEditor = { config: { preset: AVATAR_PRESETS[0].id }, mode: 'onboarding' };
     state.onboardingStep = 'avatar';
     render();
 }
 
-function setAvatarTab(tab) {
+function setAvatarPreset(id) {
     if (!state.avatarEditor) return;
-    state.avatarEditor.tab = tab;
-    render();
-}
-
-function setAvatarPart(part, id) {
-    if (!state.avatarEditor || !state.avatarEditor.config) return;
-    state.avatarEditor.config[part] = id;
+    state.avatarEditor.config = { preset: id };
     tapFeedback();
     render();
 }
@@ -3591,8 +3583,8 @@ function backAvatarEditor() {
 
 function saveAvatarEditor() {
     if (!state.avatarEditor || state.avatarEditor.mode !== 'edit') return;
-    const config = state.avatarEditor.config || DEFAULT_AVATAR_CONFIG;
-    state.profile = { ...state.profile, avatar: { parts: config } };
+    const config = state.avatarEditor.config || { preset: AVATAR_PRESETS[0].id };
+    state.profile = { ...state.profile, avatar: config };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
     goBack();
@@ -3600,10 +3592,10 @@ function saveAvatarEditor() {
 
 function finishOnboarding() {
     if (!state.onboardingNickname.trim()) return;
-    const config = state.avatarEditor ? (state.avatarEditor.config || DEFAULT_AVATAR_CONFIG) : (state.onboardingAvatar && state.onboardingAvatar.parts ? state.onboardingAvatar.parts : DEFAULT_AVATAR_CONFIG);
+    const config = state.avatarEditor && state.avatarEditor.config ? state.avatarEditor.config : { preset: AVATAR_PRESETS[0].id };
     state.profile = {
         nickname: state.onboardingNickname.trim(),
-        avatar: { parts: config },
+        avatar: config,
     };
     saveProgress({ profile: state.profile });
     state.avatarEditor = null;
@@ -3612,7 +3604,7 @@ function finishOnboarding() {
 }
 
 function openAvatarEditor() {
-    state.avatarEditor = { config: cloneAvatarConfig(state.profile && state.profile.avatar), mode: 'edit', tab: 'face' };
+    state.avatarEditor = { config: { preset: getCurrentPreset(state.profile && state.profile.avatar) }, mode: 'edit' };
     goToScreen('avatarEditor');
     render();
 }
