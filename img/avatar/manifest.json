@@ -36,7 +36,7 @@
         {"id": "round_2", "name": "Круглое", "file": "face/skin_round_2.png"},
         {"id": "long_3", "name": "Вытянутое", "file": "face/skin_long_3.png"},
         {"id": "square_4", "name": "Квадратное", "file": "face/skin_square_4.png"},
-        {"id": "heart_5", "name": "Сердцевидное", "file": "face/skin_heart_5.png"}
+        {"id": "diamond_5", "name": "Ромбовидное", "file": "face/skin_diamond_5.png"}
       ]
     },
     "ears": {
