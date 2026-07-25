@@ -2346,20 +2346,29 @@ const CEMENT_IMAGES = ['img/cement-1.jpg','img/cement-2.jpg','img/cement-3.jpg',
 const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 const DEFAULT_AVATAR = 'A';
 const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'eyes_1', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
+const FACE_SHAPE_FILTER = 'sepia(1) saturate(120%) hue-rotate(-10deg) brightness(90%) contrast(105%)';
+const FACE_PNG_TRANSFORM = 'translate(5.0,5.0) scale(0.1074)';
+const EYE_PNG_TRANSFORMS = {
+    eyes_1: 'translate(18.53,12.45) scale(0.08115)',
+    eyes_2: 'translate(17.03,12.38) scale(0.08409)',
+    eyes_3: 'translate(15.55,9.25) scale(0.08690)',
+    eyes_4: 'translate(21.29,15.59) scale(0.07568)',
+    eyes_5: 'translate(16.71,10.24) scale(0.08464)',
+};
 const AVATAR_PARTS = {
     face: { label: 'Лицо', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z', options: [
-        { id: 'oval_1', name: 'Овальное', skin: '#f5d0a9' },
-        { id: 'round_2', name: 'Круглое', skin: '#f5d0a9' },
-        { id: 'long_3', name: 'Вытянутое', skin: '#f5d0a9' },
-        { id: 'square_4', name: 'Квадратное', skin: '#f5d0a9' },
-        { id: 'heart_5', name: 'Сердцевидное', skin: '#f5d0a9' },
+        { id: 'oval_1', name: 'Овальное', file: 'face/skin_neutral_oval_1.png' },
+        { id: 'round_2', name: 'Круглое', file: 'face/skin_neutral_round_2.png' },
+        { id: 'long_3', name: 'Вытянутое', file: 'face/skin_neutral_long_3.png' },
+        { id: 'square_4', name: 'Квадратное', file: 'face/skin_neutral_square_4.png' },
+        { id: 'heart_5', name: 'Сердцевидное', file: 'face/skin_neutral_heart_5.png' },
     ]},
     eyes: { label: 'Глаза', icon: 'M12 4.5c-4.5 0-8.2 3.3-9 7.5.8 4.2 4.5 7.5 9 7.5s8.2-3.3 9-7.5c-.8-4.2-4.5-7.5-9-7.5zm0 12c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z', options: [
-        { id: 'eyes_1', name: 'Большие', color: '#3b82f6' },
-        { id: 'eyes_2', name: 'Улыбчивые', color: '#3b82f6' },
-        { id: 'eyes_3', name: 'Спокойные', color: '#5d4037' },
-        { id: 'eyes_4', name: 'Удивлённые', color: '#3b82f6' },
-        { id: 'eyes_5', name: 'Узкие', color: '#2c1a0e' },
+        { id: 'eyes_1', name: 'Большие', file: 'eyes/eyes_1.png' },
+        { id: 'eyes_2', name: 'Улыбчивые', file: 'eyes/eyes_2.png' },
+        { id: 'eyes_3', name: 'Спокойные', file: 'eyes/eyes_3.png' },
+        { id: 'eyes_4', name: 'Удивлённые', file: 'eyes/eyes_4.png' },
+        { id: 'eyes_5', name: 'Узкие', file: 'eyes/eyes_5.png' },
     ]},
     expression: { label: 'Выражение', icon: 'M7 10h2v2H7zm8 0h2v2h-2zm-6 5.5c1.5 1.5 4.5 1.5 6 0', options: [
         { id: 'smile', name: 'Улыбка' },
@@ -3187,15 +3196,16 @@ function renderConstructedAvatar(parts, size) {
     const hair = (AVATAR_PARTS.hair.options.find(o => o.id === cfg.hair) || AVATAR_PARTS.hair.options[0]);
     const beard = (AVATAR_PARTS.beard.options.find(o => o.id === cfg.beard) || AVATAR_PARTS.beard.options[0]);
     const glasses = (AVATAR_PARTS.glasses.options.find(o => o.id === cfg.glasses) || AVATAR_PARTS.glasses.options[0]);
-    const skin = face.skin || '#f5d0a9';
     const mouth = getMouthPath(cfg.expression);
     const hairColor = hair.color || '#2c1a0e';
     const beardColor = beard.color || '#2c1a0e';
-    const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, skin);
+    const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, '#f5d0a9');
     const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beardColor) : '';
     const glassesSvg = cfg.glasses !== 'none' ? getAvatarGlassesSvg(cfg.glasses) : '';
-    const faceSvg = getAvatarFaceSvg(cfg.face, skin);
-    const eyeSvg = getAvatarEyesSvg(cfg.eyes, eyes.color || '#3b82f6');
+    const faceTransform = FACE_PNG_TRANSFORM;
+    const eyeTransform = EYE_PNG_TRANSFORMS[cfg.eyes] || EYE_PNG_TRANSFORMS.eyes_1;
+    const faceSvg = `<image href="img/avatar/${face.file}" width="1024" height="1024" transform="${faceTransform}" style="filter:${FACE_SHAPE_FILTER}" />`;
+    const eyeSvg = `<image href="img/avatar/${eyes.file}" width="1024" height="1024" transform="${eyeTransform}" />`;
     return `<span class="profile-avatar" style="width:${size}px;height:${size}px;background:transparent!important;border:none!important;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 120 120" width="${size}" height="${size}">
         ${hairSvg}
         ${faceSvg}
@@ -3525,19 +3535,15 @@ function renderAvatarEditorContent(mode) {
     }).join('');
     const optionsHTML = part.options.map(opt => {
         const selected = config[tab] === opt.id;
-        const faceOpt = AVATAR_PARTS.face.options.find(o => o.id === config.face) || AVATAR_PARTS.face.options[0];
-        const eyeOpt = AVATAR_PARTS.eyes.options.find(o => o.id === config.eyes) || AVATAR_PARTS.eyes.options[0];
-        const skin = faceOpt.skin || '#f5d0a9';
         let preview = '';
         if (tab === 'face') {
-            preview = `<svg viewBox="0 0 120 120" width="56" height="56">${getAvatarFaceSvg(opt.id, opt.skin || skin)}</svg>`;
+            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${FACE_PNG_TRANSFORM}" style="filter:${FACE_SHAPE_FILTER}" /></svg>`;
         } else if (tab === 'eyes') {
-            preview = `<svg viewBox="0 0 120 120" width="56" height="56">${getAvatarFaceSvg(faceOpt.id, skin)}${getAvatarEyesSvg(opt.id, opt.color || '#3b82f6')}</svg>`;
-        } else if (tab === 'expression') {
-            preview = `<svg viewBox="0 0 120 120" width="56" height="56">${getAvatarFaceSvg(faceOpt.id, skin)}${getAvatarEyesSvg(eyeOpt.id, eyeOpt.color || '#3b82f6')}${getMouthPath(opt.id)}</svg>`;
+            const eyeTransform = EYE_PNG_TRANSFORMS[opt.id] || EYE_PNG_TRANSFORMS.eyes_1;
+            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${eyeTransform}" /></svg>`;
         } else {
             const previewCfg = { ...config, [tab]: opt.id };
-            preview = `<div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;">${renderAvatar({ parts: previewCfg }, 56)}</div>`;
+            preview = `<div style="width:64px;height:64px;display:flex;align-items:center;justify-content:center;">${renderAvatar({ parts: previewCfg }, 64)}</div>`;
         }
         return `<button class="avatar-editor-option ${selected ? 'selected' : ''}" onclick="setAvatarPart('${tab}','${opt.id}')">${preview}<span>${opt.name}</span></button>`;
     }).join('');
