@@ -2347,7 +2347,13 @@ const AVATAR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N',
 const DEFAULT_AVATAR = 'A';
 const DEFAULT_AVATAR_CONFIG = { face: 'oval_1', eyes: 'eyes_1', expression: 'smile', hair: 'none', beard: 'none', glasses: 'none' };
 const FACE_SHAPE_FILTER = 'sepia(1) saturate(120%) hue-rotate(-10deg) brightness(90%) contrast(105%)';
-const FACE_PNG_TRANSFORM = 'translate(5.0,5.0) scale(0.1074)';
+const FACE_PNG_TRANSFORMS = {
+    oval_1: 'translate(-4.66,-4.66) scale(0.12629)',
+    round_2: 'translate(-7.77,-7.77) scale(0.13237)',
+    long_3: 'translate(-4.66,-4.66) scale(0.12629)',
+    square_4: 'translate(-9.45,-9.45) scale(0.13564)',
+    heart_5: 'translate(-13.07,-17.0) scale(0.14286)',
+};
 const EYE_PNG_TRANSFORMS = {
     eyes_1: 'translate(18.53,12.45) scale(0.08115)',
     eyes_2: 'translate(17.03,12.38) scale(0.08409)',
@@ -3202,7 +3208,7 @@ function renderConstructedAvatar(parts, size) {
     const hairSvg = getAvatarHairSvg(cfg.hair, hairColor, '#f5d0a9');
     const beardSvg = cfg.beard !== 'none' ? getAvatarBeardSvg(cfg.beard, beardColor) : '';
     const glassesSvg = cfg.glasses !== 'none' ? getAvatarGlassesSvg(cfg.glasses) : '';
-    const faceTransform = FACE_PNG_TRANSFORM;
+    const faceTransform = FACE_PNG_TRANSFORMS[cfg.face] || FACE_PNG_TRANSFORMS.oval_1;
     const eyeTransform = EYE_PNG_TRANSFORMS[cfg.eyes] || EYE_PNG_TRANSFORMS.eyes_1;
     const faceSvg = `<image href="img/avatar/${face.file}" width="1024" height="1024" transform="${faceTransform}" style="filter:${FACE_SHAPE_FILTER}" />`;
     const eyeSvg = `<image href="img/avatar/${eyes.file}" width="1024" height="1024" transform="${eyeTransform}" />`;
@@ -3537,7 +3543,8 @@ function renderAvatarEditorContent(mode) {
         const selected = config[tab] === opt.id;
         let preview = '';
         if (tab === 'face') {
-            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${FACE_PNG_TRANSFORM}" style="filter:${FACE_SHAPE_FILTER}" /></svg>`;
+            const faceTransform = FACE_PNG_TRANSFORMS[opt.id] || FACE_PNG_TRANSFORMS.oval_1;
+            preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${faceTransform}" style="filter:${FACE_SHAPE_FILTER}" /></svg>`;
         } else if (tab === 'eyes') {
             const eyeTransform = EYE_PNG_TRANSFORMS[opt.id] || EYE_PNG_TRANSFORMS.eyes_1;
             preview = `<svg viewBox="0 0 120 120" width="64" height="64"><image href="img/avatar/${opt.file}" width="1024" height="1024" transform="${eyeTransform}" /></svg>`;
