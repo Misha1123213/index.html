@@ -2216,7 +2216,9 @@
         .editor-components { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
         .editor-component-row { display: flex; gap: 8px; align-items: stretch; }
         .editor-comp-name { flex: 1; min-width: 0; }
-        .editor-comp-grams { width: 72px; text-align: center; }
+        .editor-comp-weight-wrap { position: relative; display: flex; align-items: center; }
+        .editor-comp-grams { width: 72px; text-align: center; padding-right: 26px; }
+        .editor-comp-unit { position: absolute; right: 8px; color: var(--text-secondary); font-size: 12px; pointer-events: none; }
         .editor-comp-remove {
             width: 36px; height: 36px;
             background: rgba(255, 75, 75, 0.12);
@@ -2331,7 +2333,7 @@
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <script src="supabase_config.js?v=6"></script>
-<script src="platform.js?v=56"></script>
+<script src="platform.js?v=57"></script>
 <script>
 // ====================== STATE ======================
 const APP_KEY = 'ttk_academy_v3';

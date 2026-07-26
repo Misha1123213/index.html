@@ -2354,11 +2354,17 @@ function renderCourseEditorItem(it, idx) {
 
 function renderEditorComponentRow(itemIdx, compIdx, c) {
   const name = typeof c === 'object' ? (c.ingredient || '') : (c || '');
-  const grams = typeof c === 'object' ? (c.grams || '') : '';
+  const grams = typeof c === 'object' ? (c.grams === 0 || c.grams === '0' ? '0' : (c.grams || '')) : '';
+  const isCount = typeof c === 'object' ? !!c.isCount : false;
+  const placeholder = isCount ? 'шт' : 'г';
+  const unit = isCount ? 'шт' : 'г';
   return `
     <div class="editor-component-row">
       <input class="platform-input editor-comp-name" type="text" value="${escapeHtml(name)}" placeholder="Ингредиент" oninput="updateParsedComponentName(${itemIdx}, ${compIdx}, this.value)">
-      <input class="platform-input editor-comp-grams" type="number" inputmode="decimal" placeholder="г" value="${grams}" oninput="updateParsedComponentGrams(${itemIdx}, ${compIdx}, this.value)">
+      <div class="editor-comp-weight-wrap">
+        <input class="platform-input editor-comp-grams" type="number" inputmode="decimal" placeholder="${placeholder}" value="${grams}" oninput="updateParsedComponentGrams(${itemIdx}, ${compIdx}, this.value)">
+        <span class="editor-comp-unit">${unit}</span>
+      </div>
       <button class="editor-comp-remove" onclick="removeParsedComponent(${itemIdx}, ${compIdx})">×</button>
     </div>
   `;
@@ -3382,6 +3388,12 @@ function parseDocxHTML(html) {
   let lastTableItem = null;
   let descriptionBuffer = [];
 
+  function isBoldParagraph(node) {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE || node.tagName.toLowerCase() !== 'p') return false;
+    const bold = [...node.querySelectorAll('strong, b')].map(n => n.textContent).join('');
+    return bold.trim() === node.textContent.trim();
+  }
+
   function flushDescription() {
     if (lastTableItem && descriptionBuffer.length) {
       lastTableItem.description = ((lastTableItem.description || '') + (lastTableItem.description ? '\n\n' : '') + descriptionBuffer.join('\n\n')).trim();
@@ -3408,15 +3420,15 @@ function parseDocxHTML(html) {
       continue;
     }
     const tag = child.nodeType === Node.ELEMENT_NODE ? child.tagName.toLowerCase() : '';
-    const isHeading = headingTags.includes(tag);
+    const isHeading = headingTags.includes(tag) || isBoldParagraph(child);
     const text = nodeText(child).trim();
     if (!text) continue;
     if (/^ттк$/i.test(text)) continue;
     if (/^[A-ZА-ЯЁ\d\s]+$/.test(text)) continue;
-    if (isHeading) {
+    if (isHeading || isLikelyDishName(cleanItemName(text))) {
       flushDescription();
       pendingName = text;
-      pendingIsHeading = true;
+      pendingIsHeading = isHeading;
       lastTableItem = null;
     } else if (lastTableItem) {
       descriptionBuffer.push(text);
@@ -3494,13 +3506,20 @@ function parseTTKPastePreview() {
 function normalizeOCRText(text) {
   if (!text) return '';
   const units = 'шт|штук|штуки|г|гр|грамм|грам|мл|миллилитров|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
+  const ocrUnits = units.split('|').sort((a, b) => b.length - a.length).join('|');
   const ocrDigitRe = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])(' + units + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
+  const ocrDigit2Re = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])([Оо0])\\s*(' + ocrUnits + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
   return text
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/\t/g, ' ')
     .replace(/@/g, 'а')
+    .replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
+      const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
+      return val.toFixed(3).replace(/\.?0+$/, '');
+    })
+    .replace(ocrDigit2Re, (m, before, z, o, unit) => before + '30' + unit.toLowerCase())
     .replace(ocrDigitRe, '$13$3')
     .replace(/[ \xA0]{2,}/g, ' ')
     .trim();
@@ -3552,6 +3571,7 @@ function processTTKBlocks(blocks) {
     }
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
     if (!lines.length) continue;
+    if (lines.length === 1 && !isDescriptionHeader(lines[0]) && isLikelyDishName(lines[0])) continue;
     const headerIdx = lines.findIndex(isDescriptionHeader);
     let descLines = [];
     let headerFound = false;
@@ -3686,7 +3706,7 @@ function isDescriptionHeader(line) {
 function hasInstructionWords(s) {
   const words = s.toLowerCase().split(/\s+/);
   const startWords = new Set(['с','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','а','но','или','чтобы','так','как','если','когда','где','затем','потом','далее']);
-  const verbEndings = /(ем|им|ет|ит|ут|ют|ешь|ишь|ете|ите|ать|ять|еть|ить|уть|ыть|овать|евать|авать|ывать|ивать|оваться|еваться|аваться|ываться|иваться)$/;
+  const verbEndings = /(ем|им|ет|ит|ут|ют|ешь|ишь|ете|ите|ать|ять|еть|ить|уть|ыть|овать|евать|авать|ывать|ивать|аться|еться|иться|уться|ыться|оваться|еваться|аваться|ываться|иваться)$/;
   if (words.length && startWords.has(words[0])) return true;
   return words.some(w => verbEndings.test(w));
 }
@@ -3709,7 +3729,11 @@ function isLikelyDishName(line) {
   const first = s.charAt(0);
   if (!/[A-ZА-ЯЁ]/.test(first) && s !== s.toUpperCase()) return false;
   const words = s.split(/\s+/).filter(Boolean);
-  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length <= 3 && words.length > 1) return false;
+  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length <= 3) {
+    if (words.length === 1) return false;
+    const rest = words.slice(1).join(' ');
+    if (!isLikelyDishName(rest) && !isLikelyIngredientName(rest)) return false;
+  }
   return !hasInstructionWords(s);
 }
 
@@ -3730,6 +3754,12 @@ function parseItemBlock(block) {
   if (!isLikelyDishName(firstCleaned) && !isLikelyIngredientName(firstCleaned) && !isLabelPrefixedDishName(lines[0])) return null;
   const split = splitNameAndComponents(lines[0]);
   let name = split.name;
+  let strippedPrefix = false;
+  const nameWords = name.split(/\s+/).filter(Boolean);
+  if (nameWords.length > 1 && nameWords[0] === nameWords[0].toUpperCase() && nameWords[0].length <= 3 && /[Зз]/.test(nameWords[0]) && isLikelyDishName(nameWords.slice(1).join(' '))) {
+    name = nameWords.slice(1).join(' ');
+    strippedPrefix = true;
+  }
   let components = split.components;
   let description = '';
 
@@ -3760,6 +3790,9 @@ function parseItemBlock(block) {
   if (!name || !components.length) return null;
   components = components.map(parseComponentToken).filter(Boolean);
   if (!components.length) return null;
+  if (strippedPrefix && components.length === 1 && !components[0].ingredient && components[0].grams !== undefined) {
+    components[0].ingredient = name;
+  }
 
   const item = {
     type: 'composition',
@@ -3795,7 +3828,11 @@ function splitNameAndComponents(line, allowNoComponents) {
 function extractComponents(text) {
   if (!text) return [];
   const units = 'г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
-  const stripped = text.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
+  let stripped = text.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
+  stripped = stripped.replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
+    const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
+    return val.toFixed(3).replace(/\.?0+$/, '');
+  });
   const decimalCommaRe = new RegExp('(\\d),(\\d+)(?=\\s*(?:' + units + '))', 'gi');
   const normalized = stripped.replace(decimalCommaRe, '$1.$2');
   const re = new RegExp('(\\d+(?:[.,]\\d+)?)(?:\\s*(' + units + '))?(?![a-zA-Zа-яёЁ])', 'gi');
@@ -3811,7 +3848,7 @@ function extractComponents(text) {
     if (name && (unit || isLikelyIngredientName(name))) {
       tokens.push({ ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
     } else if (!name && isCountUnit) {
-      tokens.push({ ingredient: (grams + (unit ? ' ' + unit : '')).trim(), grams: 0, isCount: false });
+      tokens.push({ ingredient: '', grams: isNaN(grams) ? 0 : grams, isCount: true });
     }
     lastIndex = match.index + match[0].length;
   }
@@ -3832,9 +3869,9 @@ function cleanItemName(str) {
   let s = str.trim();
   s = s.replace(/^(?:блюдо|название|наименование|позиция|товар|dish|name|title)[\s:—–-]+/i, '').trim();
   s = s.replace(/п\\ф/gi, 'п/ф').trim();
-  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]]+\s*/, '').trim();
+  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+]+\s*/, '').trim();
   s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
-  s = s.replace(/[-:;|–—]+\s*$/, '').trim();
+  s = s.replace(/[-:;|–—/+]+\s*$/, '').trim();
   return s;
 }
 
@@ -3849,6 +3886,14 @@ function parseComponentToken(str) {
 
   const units = '(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)';
   const countUnits = /^(шт|штук|штуки|pcs|pc)$/i;
+
+  const orphanMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[.)]*$', 'i'));
+  if (orphanMatch) {
+    const grams = parseFloat(orphanMatch[1].replace(',', '.'));
+    const unit = orphanMatch[2] || '';
+    const isCount = countUnits.test(unit);
+    return { ingredient: '', grams: isNaN(grams) ? 0 : grams, isCount };
+  }
 
   const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*(?:\\([^)]*\\))?\\s*[.)]*$', 'i'));
   if (trailingMatch && trailingMatch[1].trim()) {
@@ -3879,14 +3924,15 @@ function parseComponentToken(str) {
 function buildInfoText(name, components, showGrams = true) {
   const list = components.map(c => {
     if (c && typeof c === 'object') {
-      if (!showGrams || !c.grams) return c.ingredient;
+      if (!showGrams || !c.grams) return c.ingredient || '';
       const val = Number.isInteger(c.grams) ? c.grams : parseFloat(c.grams.toFixed(3));
       const suffix = c.isCount ? ' шт' : 'г';
+      if (!c.ingredient) return `(${val}${suffix})`;
       return `${c.ingredient} (${val}${suffix})`;
     }
     return c || '';
   });
-  return `Состав:\n• ${list.join('\n• ')}`;
+  return `Состав:\n• ${list.filter(Boolean).join('\n• ')}`;
 }
 
 function parseTTKCSV(text) {
