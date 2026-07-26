@@ -3491,14 +3491,23 @@ function parseTTKPastePreview() {
   openCourseEditor();
 }
 
-function parseTTKPlainText(text) {
-  if (!text || !text.trim()) return [];
-  const normalized = text
+function normalizeOCRText(text) {
+  if (!text) return '';
+  const units = 'шт|штук|штуки|г|гр|грамм|грам|мл|миллилитров|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
+  const ocrDigitRe = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])(' + units + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
+  return text
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/\t/g, ' ')
+    .replace(/@/g, 'а')
+    .replace(ocrDigitRe, '$13$3')
     .trim();
+}
+
+function parseTTKPlainText(text) {
+  if (!text || !text.trim()) return [];
+  const normalized = normalizeOCRText(text);
 
   let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
 
@@ -3567,11 +3576,7 @@ function processTTKBlocks(blocks) {
 
 function parseTTKOCRText(text) {
   if (!text || !text.trim()) return [];
-  const normalized = text
-    .replace(/^\uFEFF/, '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .trim();
+  const normalized = normalizeOCRText(text);
 
   let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
   if (blocks.length === 1 && blocks[0].split('\n').length > 2) {
@@ -3695,8 +3700,11 @@ function isLikelyDishName(line) {
   if (isDescriptionHeader(s)) return false;
   if (/[,;!?()]/.test(s)) return false;
   if (/\d/.test(s)) return false;
+  if (!/[аеёиоуыэюя]/i.test(s)) return false;
   const first = s.charAt(0);
   if (!/[A-ZА-ЯЁ]/.test(first) && s !== s.toUpperCase()) return false;
+  const words = s.split(/\s+/).filter(Boolean);
+  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length <= 3 && words.length > 1) return false;
   return !hasInstructionWords(s);
 }
 
@@ -3705,6 +3713,7 @@ function isLikelyIngredientName(line) {
   if (!s || s.length < 2 || s.length > 40) return false;
   if (isDescriptionHeader(s)) return false;
   if (/[,;!?()]/.test(s)) return false;
+  if (!/[аеёиоуыэюя]/i.test(s)) return false;
   return !hasInstructionWords(s);
 }
 
@@ -3775,9 +3784,34 @@ function splitNameAndComponents(line, allowNoComponents) {
 function extractComponents(text) {
   if (!text) return [];
   const units = 'г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
+  const stripped = text.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
   const decimalCommaRe = new RegExp('(\\d),(\\d+)(?=\\s*(?:' + units + '))', 'gi');
-  const normalized = text.replace(decimalCommaRe, '$1.$2');
-  return normalized.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+  const normalized = stripped.replace(decimalCommaRe, '$1.$2');
+  const re = new RegExp('(\\d+(?:[.,]\\d+)?)(?:\\s*(' + units + '))?(?![a-zA-Zа-яёЁ])', 'gi');
+  const tokens = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = re.exec(normalized)) !== null) {
+    if (match.index < lastIndex) break;
+    const name = cleanItemName(normalized.slice(lastIndex, match.index));
+    const grams = parseFloat(match[1].replace(',', '.'));
+    const unit = match[2] || '';
+    if (name && (unit || isLikelyIngredientName(name))) {
+      const isCount = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
+      tokens.push({ ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < normalized.length) {
+    const tail = cleanItemName(normalized.slice(lastIndex));
+    if (tail && isLikelyIngredientName(tail)) {
+      tokens.push({ ingredient: tail, grams: 0, isCount: false });
+    }
+  }
+  if (!tokens.length) {
+    return normalized.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+  }
+  return tokens;
 }
 
 function cleanItemName(str) {
@@ -3791,6 +3825,9 @@ function cleanItemName(str) {
 }
 
 function parseComponentToken(str) {
+  if (str && typeof str === 'object') {
+    return { ingredient: String(str.ingredient || ''), grams: parseFloat(str.grams) || 0, isCount: !!str.isCount };
+  }
   if (!str) return null;
   let s = str.trim();
   s = s.replace(/^(?:[-•–—*‣⁃◦]+|\d+[.)\]])\s*/, '').trim();
