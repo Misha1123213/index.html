@@ -1208,7 +1208,8 @@ body::before { display: none !important; }
 .browse-ingredient { color: var(--text-primary) !important; }
 .browse-grams { color: var(--text-secondary) !important; }
 .browse-arrow { color: var(--text-secondary) !important; }
-.browse-item-description { margin-top: 10px !important; padding-top: 10px !important; border-top: 1px solid var(--border) !important; font-size: 13px !important; line-height: 1.45 !important; color: var(--text-secondary) !important; white-space: pre-wrap !important; }
+.browse-item-description { margin-top: 10px !important; padding-top: 10px !important; border-top: 1px solid var(--border) !important; font-size: 13px !important; line-height: 1.45 !important; color: var(--text-secondary) !important; white-space: pre-wrap !important; word-break: break-word !important; overflow-wrap: anywhere !important; }
+.editor-desc-textarea { white-space: pre-wrap !important; word-break: break-word !important; overflow-wrap: anywhere !important; }
 
 /* Choice and option buttons text handling */
 .choice-btn { width: 100% !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; text-align: left !important; white-space: normal !important; line-height: 1.35 !important; word-break: break-word !important; overflow-wrap: anywhere !important; min-height: 44px !important; height: auto !important; }

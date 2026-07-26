@@ -2336,7 +2336,7 @@ function renderCourseEditorItem(it, idx) {
         </div>
         <button class="editor-add-btn" onclick="addParsedComponent(${idx})">+ Добавить ингредиент</button>
       </div>
-      <details class="editor-description" ${description ? 'open' : ''}>
+      <details class="editor-description" open>
         <summary class="editor-desc-toggle">Описание / процесс приготовления</summary>
         <textarea class="editor-desc-textarea platform-input" rows="4" placeholder="Процесс приготовления блюда" oninput="updateParsedItem(${idx}, 'description', this.value)">${escapeHtml(description)}</textarea>
       </details>
@@ -2453,6 +2453,7 @@ function addParsedItem() {
     type: 'composition',
     name: '',
     correct: [{ ingredient: '', grams: '' }],
+    description: '',
     info_text: 'Состав:\n• ',
   });
   state.editorDirty = true;
@@ -3573,6 +3574,11 @@ function parseTTKOCRText(text) {
     .trim();
 
   let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  if (blocks.length === 1 && blocks[0].split('\n').length > 2) {
+    const lines = blocks[0].split('\n').map(l => l.trim()).filter(Boolean);
+    const split = maybeSplitBlocks(lines);
+    if (split.length > 1) blocks = split;
+  }
   blocks = mergeDescriptionBlocks(blocks);
   const items = processTTKBlocks(blocks);
   return items.length ? items : parseTTKPlainText(text);
@@ -3649,18 +3655,16 @@ function maybeSplitBlocks(lines) {
       if (isDescriptionHeader(s)) return false;
       return /^[A-ZА-ЯЁ\s\d]+$/.test(s) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(s);
     }
-    let prevWasComponent = isLikelyComponent(lines[0]);
     current = [lines[0]];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
-      const comp = isLikelyComponent(line);
-      if (!comp && prevWasComponent && !isSectionHeader(line)) {
+      const cleaned = cleanItemName(line);
+      if (!isLikelyComponent(line) && (isSectionHeader(line) || isLikelyDishName(cleaned))) {
         blocks.push(current.join('\n'));
         current = [line];
       } else {
         current.push(line);
       }
-      prevWasComponent = comp;
     }
   }
 
@@ -3677,19 +3681,52 @@ function isDescriptionHeader(line) {
   return false;
 }
 
+function hasInstructionWords(s) {
+  const words = s.toLowerCase().split(/\s+/);
+  const startWords = new Set(['с','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','а','но','или','чтобы','так','как','если','когда','где','затем','потом','далее']);
+  const verbEndings = /(ем|им|ет|ит|ут|ют|ешь|ишь|ете|ите|ать|ять|еть|ить|уть|ыть|овать|евать|авать|ывать|ивать|оваться|еваться|аваться|ываться|иваться)$/;
+  if (words.length && startWords.has(words[0])) return true;
+  return words.some(w => verbEndings.test(w));
+}
+
+function isLikelyDishName(line) {
+  const s = cleanItemName(line || '');
+  if (!s || s.length < 2 || s.length > 80) return false;
+  if (isDescriptionHeader(s)) return false;
+  if (/[,;!?()]/.test(s)) return false;
+  if (/\d/.test(s)) return false;
+  const first = s.charAt(0);
+  if (!/[A-ZА-ЯЁ]/.test(first) && s !== s.toUpperCase()) return false;
+  return !hasInstructionWords(s);
+}
+
+function isLikelyIngredientName(line) {
+  const s = cleanItemName(line || '');
+  if (!s || s.length < 2 || s.length > 40) return false;
+  if (isDescriptionHeader(s)) return false;
+  if (/[,;!?()]/.test(s)) return false;
+  return !hasInstructionWords(s);
+}
+
 function parseItemBlock(block) {
   const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
   if (!lines.length) return null;
   if (isDescriptionHeader(lines[0])) return null;
+  const firstCleaned = cleanItemName(lines[0]);
+  if (!isLikelyDishName(firstCleaned) && !isLikelyIngredientName(firstCleaned)) return null;
   const split = splitNameAndComponents(lines[0]);
   let name = split.name;
   let components = split.components;
   let description = '';
 
   const remainingLines = lines.slice(1);
-  const descHeaderIdx = remainingLines.findIndex(isDescriptionHeader);
-  const compLines = descHeaderIdx === -1 ? remainingLines : remainingLines.slice(0, descHeaderIdx);
-  const descLines = descHeaderIdx === -1 ? [] : remainingLines.slice(descHeaderIdx);
+  const descStartIdx = remainingLines.findIndex(line => {
+    if (isDescriptionHeader(line)) return true;
+    if (isLikelyComponent(line)) return false;
+    return !isLikelyIngredientName(line);
+  });
+  const compLines = descStartIdx === -1 ? remainingLines : remainingLines.slice(0, descStartIdx);
+  const descLines = descStartIdx === -1 ? [] : remainingLines.slice(descStartIdx);
 
   if (descLines.length) {
     description = descLines.join('\n').trim();
@@ -3737,7 +3774,10 @@ function splitNameAndComponents(line, allowNoComponents) {
 
 function extractComponents(text) {
   if (!text) return [];
-  return text.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+  const units = 'г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
+  const decimalCommaRe = new RegExp('(\\d),(\\d+)(?=\\s*(?:' + units + '))', 'gi');
+  const normalized = text.replace(decimalCommaRe, '$1.$2');
+  return normalized.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
 }
 
 function cleanItemName(str) {
@@ -3759,9 +3799,9 @@ function parseComponentToken(str) {
   const units = '(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)';
   const countUnits = /^(шт|штук|штуки|pcs|pc)$/i;
 
-  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[.)]*$', 'i'));
+  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*(?:\\([^)]*\\))?\\s*[.)]*$', 'i'));
   if (trailingMatch && trailingMatch[1].trim()) {
-    const ingredient = trailingMatch[1].trim();
+    const ingredient = cleanItemName(trailingMatch[1].trim());
     const grams = parseFloat(trailingMatch[2].replace(',', '.'));
     const isCount = countUnits.test(trailingMatch[3]);
     return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
@@ -3769,10 +3809,17 @@ function parseComponentToken(str) {
 
   const leadingMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[-–—:]\\s*(.+)$', 'i'));
   if (leadingMatch && leadingMatch[3].trim()) {
-    const ingredient = leadingMatch[3].trim();
+    const ingredient = cleanItemName(leadingMatch[3].trim());
     const grams = parseFloat(leadingMatch[1].replace(',', '.'));
     const isCount = countUnits.test(leadingMatch[2]);
     return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
+  }
+
+  const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
+  if (noUnitMatch && noUnitMatch[1].trim()) {
+    const ingredient = cleanItemName(noUnitMatch[1].trim());
+    const grams = parseFloat(noUnitMatch[2].replace(',', '.'));
+    return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount: false };
   }
 
   return s;
