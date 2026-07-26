@@ -9,23 +9,33 @@
   <link rel="apple-touch-icon" href="img/icon-192.png">
   <style>
     body { margin: 0; background: #0f0f12; color: #fff; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-    .wrap { max-width: 340px; }
-    img { width: 120px; height: 120px; border-radius: 24px; margin-bottom: 20px; }
-    h1 { font-size: 24px; margin: 0 0 8px; }
-    p { color: #9ca3af; margin: 0 0 24px; line-height: 1.4; }
-    button { background: #d4af37; color: #0f0f12; border: none; border-radius: 14px; padding: 14px 22px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 10px; }
+    .wrap { max-width: 340px; width: 100%; }
+    img { width: 100px; height: 100px; border-radius: 22px; margin-bottom: 16px; }
+    h1 { font-size: 20px; margin: 0 0 8px; font-weight: 800; }
+    p { color: #9ca3af; margin: 0 0 18px; line-height: 1.4; font-size: 14px; }
+    button { background: #d4af37; color: #0f0f12; border: none; border-radius: 14px; padding: 13px 20px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 10px; }
     button.secondary { background: rgba(255,255,255,0.08); color: #fff; }
-    .hint { margin-top: 16px; font-size: 13px; color: #6b7280; }
+    .steps { text-align: left; background: rgba(255,255,255,0.04); border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; }
+    .step { display: flex; align-items: flex-start; gap: 10px; color: #e5e7eb; font-size: 13px; line-height: 1.4; margin-bottom: 10px; }
+    .step:last-child { margin-bottom: 0; }
+    .step-num { flex-shrink: 0; width: 20px; height: 20px; background: #d4af37; color: #0f0f12; border-radius: 50%; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .hint { margin-top: 14px; font-size: 12px; color: #6b7280; line-height: 1.4; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <img src="img/icon-192.png" alt="">
     <h1>Справочник Cognitio</h1>
-    <p>Ярлык для быстрого доступа к актуальному составу блюд.</p>
+    <p>Быстрый доступ к актуальному составу блюд прямо с рабочего стола.</p>
+    <div class="steps" id="steps">
+      <div class="step"><span class="step-num">1</span>Нажмите «Открыть справочник».</div>
+      <div class="step"><span class="step-num">2</span>В браузере нажмите ⋮ (Android) или квадрат с ⬆ (iOS).</div>
+      <div class="step"><span class="step-num">3</span>Выберите «Добавить на главный экран» / «На экран Домой».</div>
+      <div class="step"><span class="step-num">4</span>Готово — иконка «Справочник» появится на рабочем столе.</div>
+    </div>
     <button id="open">Открыть справочник</button>
-    <button id="install" class="secondary" style="display:none">Установить на главный экран</button>
-    <div class="hint" id="hint">Откройте меню браузера → «Добавить на главный экран», чтобы создать ярлык.</div>
+    <button id="install" style="display:none">Установить на главный экран</button>
+    <div class="hint" id="hint">После установки ярлык всегда будет открывать актуальный справочник. Если кнопка не появилась, нажмите ⋮ (Android) или квадрат с ⬆ (iOS) → «Добавить на главный экран».</div>
   </div>
   <script>
     const params = new URLSearchParams(location.search);
@@ -38,7 +48,7 @@
       e.preventDefault();
       deferredPrompt = e;
       installBtn.style.display = 'block';
-      document.getElementById('hint').textContent = 'Нажмите «Установить», чтобы добавить ярлык на рабочий стол.';
+      document.getElementById('hint').textContent = 'Нажмите «Установить» и подтвердите в диалоге браузера. Если кнопка не появилась, добавьте ярлык через меню браузера.';
     });
     installBtn.addEventListener('click', () => { if (deferredPrompt) { deferredPrompt.prompt(); } });
     if ('serviceWorker' in navigator) {

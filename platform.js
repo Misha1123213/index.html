@@ -2110,9 +2110,36 @@ function closeReference() {
   goBack();
 }
 
+function isReferenceStandalone() {
+  if (state.standalone) return true;
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+  if (typeof window !== 'undefined' && window.navigator && window.navigator.standalone === true) return true;
+  return /standalone=1/.test(location.search);
+}
+
 function filterReference(value) {
+  updateReferenceSearch(value);
+}
+
+function updateReferenceSearch(value) {
   state.referenceFilter = value;
-  render();
+  const list = document.getElementById('reference-list');
+  if (list) {
+    list.innerHTML = renderReferenceListHTML(value);
+    requestAnimationFrame(() => {
+      const input = document.getElementById('reference-search');
+      if (input && document.activeElement !== input) {
+        try { input.focus(); } catch (e) {}
+      }
+    });
+  }
+}
+
+function handleReferenceScroll(el) {
+  const header = document.getElementById('reference-header');
+  if (!header) return;
+  if (el.scrollTop > 8) header.classList.add('scrolled');
+  else header.classList.remove('scrolled');
 }
 
 function toggleReferenceItem(btn) {
@@ -2138,20 +2165,18 @@ async function refreshReferenceFromCloud() {
   }
 }
 
-function renderReference() {
-  const venue = state.venue || {};
+function renderReferenceListHTML(query) {
   const settings = getVenueSettings();
-  const query = (state.referenceFilter || '').trim().toLowerCase();
+  const q = (query || '').trim().toLowerCase();
   const sections = getVenueSections();
-
   let sectionsHTML = '';
   let totalItems = 0;
 
   sections.forEach(section => {
     const items = (section.items || []).map(normalizeItem).filter(it => {
-      if (!query) return true;
-      const nameMatch = (it.name || '').toLowerCase().includes(query);
-      const ingMatch = (it._ingredients || []).some(i => i.toLowerCase().includes(query));
+      if (!q) return true;
+      const nameMatch = (it.name || '').toLowerCase().includes(q);
+      const ingMatch = (it._ingredients || []).some(i => i.toLowerCase().includes(q));
       return nameMatch || ingMatch;
     });
     if (!items.length) return;
@@ -2194,24 +2219,44 @@ function renderReference() {
     `;
   });
 
-  const emptyHTML = !sections.length
-    ? '<div class="section-empty">В заведении пока нет разделов</div>'
-    : (totalItems === 0 ? '<div class="section-empty">Ничего не найдено</div>' : '');
+  if (!sections.length) return '<div class="section-empty">В заведении пока нет разделов</div>';
+  if (totalItems === 0) return '<div class="section-empty">Ничего не найдено</div>';
+  return sectionsHTML;
+}
+
+function renderReference() {
+  const venue = state.venue || {};
+  const isStandalone = isReferenceStandalone();
+  const venueName = escapeHtml(venue.name || 'Справочник');
 
   app.innerHTML = `
-    <div class="top-bar">
-      <button class="close-btn" onclick="closeReference()" style="position:static;margin:0">← Назад</button>
-      <div style="flex:1"></div>
-      <button class="settings-btn" onclick="openReferenceShortcut()" aria-label="Добавить ярлык">+</button>
-    </div>
-    <div class="browse-screen">
-      <div class="path-title">${escapeHtml(venue.name || 'Справочник')}</div>
-      <input type="search" class="platform-input" style="margin:12px 0;" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.referenceFilter || '')}" oninput="filterReference(this.value)">
-      ${sectionsHTML}
-      ${emptyHTML}
-      <button class="stats-btn" style="${cementStyle()};margin-top:16px" onclick="openReferenceShortcut()">Добавить ярлык на рабочий стол</button>
+    <div class="reference-screen" onscroll="handleReferenceScroll(this)">
+      <div class="reference-header" id="reference-header">
+        <div class="reference-top">
+          ${isStandalone ? '' : `<button class="reference-back" onclick="closeReference()">← Назад</button>`}
+          <div class="reference-title">${venueName}</div>
+          <button class="reference-add-btn" onclick="openReferenceShortcut()">Добавить</button>
+        </div>
+        <div class="reference-search-wrap">
+          <input type="search" class="reference-search" id="reference-search" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.referenceFilter || '')}" oninput="updateReferenceSearch(this.value)">
+        </div>
+      </div>
+      <div class="reference-list" id="reference-list">
+        ${renderReferenceListHTML(state.referenceFilter || '')}
+      </div>
     </div>
   `;
+
+  requestAnimationFrame(() => {
+    const screen = document.querySelector('.reference-screen');
+    if (screen) handleReferenceScroll(screen);
+    const input = document.getElementById('reference-search');
+    if (input && state.referenceFilter) {
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+  });
 }
 
 // ====================== COURSE EDITOR ======================

@@ -2,7 +2,7 @@
   "name": "Справочник Cognitio",
   "short_name": "Справочник",
   "description": "Справочник составов блюд",
-  "start_url": "reference.html",
+  "start_url": "reference.html?open=0",
   "display": "standalone",
   "background_color": "#0f0f12",
   "theme_color": "#0f0f12",
