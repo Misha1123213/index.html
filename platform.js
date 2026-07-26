@@ -2193,6 +2193,7 @@ function renderReferenceListHTML(query) {
       const mastery = getDishMastery(item.name);
       const crowns = mastery.level > 0 ? '<span class="mastery-crowns" style="margin-left:6px">' + '★'.repeat(mastery.level) + '</span>' : '';
       const masteryLabel = mastery.level > 0 ? `<span class="mastery-label" style="margin-left:6px">${getMasteryLabel(mastery.level)}</span>` : '';
+      const descriptionHTML = item._description ? `<div class="browse-item-description">${escapeHtml(item._description).replace(/\n/g, '<br>')}</div>` : '';
       return `
         <div class="browse-item">
           <button class="browse-item-header" style="${cementStyle()}" onclick="toggleReferenceItem(this)">
@@ -2206,6 +2207,7 @@ function renderReferenceListHTML(query) {
           </button>
           <div class="browse-item-body">
             ${ingredientsHTML}
+            ${descriptionHTML}
           </div>
         </div>
       `;
@@ -2320,6 +2322,7 @@ function renderCourseEditorItem(it, idx) {
   const item = state.platformDraft.parsedItems[idx];
   const image = item.image || '';
   const componentsHTML = (item.correct || []).map((c, i) => renderEditorComponentRow(idx, i, c)).join('');
+  const description = item.description || '';
   return `
     <div class="editor-item" data-idx="${idx}">
       <div class="editor-item-header">
@@ -2333,6 +2336,10 @@ function renderCourseEditorItem(it, idx) {
         </div>
         <button class="editor-add-btn" onclick="addParsedComponent(${idx})">+ Добавить ингредиент</button>
       </div>
+      <details class="editor-description" ${description ? 'open' : ''}>
+        <summary class="editor-desc-toggle">Описание / процесс приготовления</summary>
+        <textarea class="editor-desc-textarea platform-input" rows="4" placeholder="Процесс приготовления блюда" oninput="updateParsedItem(${idx}, 'description', this.value)">${escapeHtml(description)}</textarea>
+      </details>
       <div class="editor-item-section">
         <div style="font-size:12px;color:var(--text-secondary);margin:10px 0 6px">Фото</div>
         <div class="editor-image-row">
@@ -2510,7 +2517,7 @@ function persistCourseEditor() {
     const correctNames = item.correct.map(c => c.ingredient);
     const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
     if (hasGrams) {
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: item.correct,
@@ -2518,9 +2525,11 @@ function persistCourseEditor() {
         info_text: buildInfoText(item.name, item.correct, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     } else {
       const pool = shuffle([...correctNames, ...distractors]);
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: correctNames,
@@ -2528,6 +2537,8 @@ function persistCourseEditor() {
         info_text: buildInfoText(item.name, correctNames, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     }
   });
 
@@ -3367,31 +3378,54 @@ function parseDocxHTML(html) {
   }
 
   const headingTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+  let lastTableItem = null;
+  let descriptionBuffer = [];
+
+  function flushDescription() {
+    if (lastTableItem && descriptionBuffer.length) {
+      lastTableItem.description = ((lastTableItem.description || '') + (lastTableItem.description ? '\n\n' : '') + descriptionBuffer.join('\n\n')).trim();
+      descriptionBuffer = [];
+    }
+  }
 
   for (const child of wrapper.childNodes) {
     if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'table') {
+      flushDescription();
       const menuItems = parseMenuTable(child);
       if (menuItems) {
         items.push(...menuItems);
+        lastTableItem = null;
       } else {
         const item = parseIngredientTable(child, pendingName);
-        if (item) items.push(item);
+        if (item) {
+          items.push(item);
+          lastTableItem = item;
+        }
       }
       pendingName = null;
       pendingIsHeading = false;
+      continue;
+    }
+    const tag = child.nodeType === Node.ELEMENT_NODE ? child.tagName.toLowerCase() : '';
+    const isHeading = headingTags.includes(tag);
+    const text = nodeText(child).trim();
+    if (!text) continue;
+    if (/^ттк$/i.test(text)) continue;
+    if (/^[A-ZА-ЯЁ\d\s]+$/.test(text)) continue;
+    if (isHeading) {
+      flushDescription();
+      pendingName = text;
+      pendingIsHeading = true;
+      lastTableItem = null;
+    } else if (lastTableItem) {
+      descriptionBuffer.push(text);
     } else {
-      const tag = child.nodeType === Node.ELEMENT_NODE ? child.tagName.toLowerCase() : '';
-      const isHeading = headingTags.includes(tag);
-      const text = nodeText(child).trim();
-      if (!text) continue;
-      if (/^ттк$/i.test(text)) continue;
-      if (/^[A-ZА-ЯЁ\d\s]+$/.test(text)) continue;
-      if (isHeading || !pendingIsHeading) {
-        pendingName = text;
-        pendingIsHeading = isHeading;
-      }
+      flushDescription();
+      pendingName = text;
+      pendingIsHeading = false;
     }
   }
+  flushDescription();
 
   return items;
 }
@@ -3474,59 +3508,73 @@ function parseTTKPlainText(text) {
   } else if (blocks.length > 1) {
     blocks = mergeHeadingBlocks(blocks);
   }
+  blocks = mergeDescriptionBlocks(blocks);
 
+  return processTTKBlocks(blocks);
+}
+
+function mergeDescriptionBlocks(blocks) {
+  const merged = [];
+  for (const block of blocks) {
+    const firstLine = (block.split('\n')[0] || '').trim();
+    if (isDescriptionHeader(firstLine) && merged.length) {
+      merged[merged.length - 1] = merged[merged.length - 1] + '\n' + block;
+    } else {
+      merged.push(block);
+    }
+  }
+  return merged;
+}
+
+function processTTKBlocks(blocks) {
   const items = [];
+  let pendingDesc = '';
   for (const block of blocks) {
     const item = parseItemBlock(block);
-    if (item) items.push(item);
+    if (item) {
+      if (pendingDesc) {
+        item.description = (item.description ? item.description + '\n\n' : '') + pendingDesc;
+        pendingDesc = '';
+      }
+      items.push(item);
+      continue;
+    }
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    const headerIdx = lines.findIndex(isDescriptionHeader);
+    let descLines = [];
+    let headerFound = false;
+    if (headerIdx !== -1) {
+      headerFound = true;
+      descLines = lines.slice(headerIdx);
+    } else if (items.length) {
+      descLines = lines;
+    } else {
+      continue;
+    }
+    const descText = descLines.join('\n').trim();
+    if (!descText) continue;
+    if (items.length) {
+      const last = items[items.length - 1];
+      last.description = (last.description ? last.description + '\n\n' : '') + descText;
+    } else if (headerFound) {
+      pendingDesc = descText;
+    }
   }
   return items;
 }
 
 function parseTTKOCRText(text) {
   if (!text || !text.trim()) return [];
-  const lines = text
+  const normalized = text
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
-    .split('\n')
-    .map(l => l.trim())
-    .filter(Boolean);
+    .trim();
 
-  const items = [];
-  let currentName = null;
-  let currentComponents = [];
-
-  function flush() {
-    if (currentName) {
-      const components = currentComponents
-        .flatMap(extractComponents)
-        .map(parseComponentToken)
-        .filter(Boolean);
-      if (components.length) {
-        const name = cleanItemName(currentName);
-        items.push({
-          type: 'composition',
-          name,
-          correct: components,
-          info_text: buildInfoText(name, components),
-        });
-      }
-    }
-    currentName = null;
-    currentComponents = [];
-  }
-
-  for (const line of lines) {
-    if (isLikelyComponent(line)) {
-      if (currentName) currentComponents.push(line);
-    } else {
-      flush();
-      currentName = line;
-    }
-  }
-  flush();
-
+  let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  blocks = mergeDescriptionBlocks(blocks);
+  const items = processTTKBlocks(blocks);
   return items.length ? items : parseTTKPlainText(text);
 }
 
@@ -3575,8 +3623,12 @@ function maybeSplitBlocks(lines) {
   if (numbered >= 2) {
     for (const line of lines) {
       if (/^\d+[.)\]]\s+/.test(line) && current.length) {
-        blocks.push(current.join('\n'));
-        current = [line];
+        if (current.some(isDescriptionHeader)) {
+          current.push(line);
+        } else {
+          blocks.push(current.join('\n'));
+          current = [line];
+        }
       } else {
         current.push(line);
       }
@@ -3594,6 +3646,7 @@ function maybeSplitBlocks(lines) {
     return [lines.join('\n')];
   } else {
     function isSectionHeader(s) {
+      if (isDescriptionHeader(s)) return false;
       return /^[A-ZА-ЯЁ\s\d]+$/.test(s) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(s);
     }
     let prevWasComponent = isLikelyComponent(lines[0]);
@@ -3615,33 +3668,57 @@ function maybeSplitBlocks(lines) {
   return blocks;
 }
 
+function isDescriptionHeader(line) {
+  const s = (line || '').trim().toLowerCase();
+  if (!s) return false;
+  if (/^(?:способ|порядок)\s*приготовления\s*[\-–—:\.]?/i.test(line)) return true;
+  if (/^(?:приготовление|готовка|технология|процесс|рецепт|инструкция|описание|как\s+готовить|приготовить|готовить|execution|preparation|method|instructions|directions)\s*[\-–—:\.]?/i.test(line)) return true;
+  if (/приготовлен(ие|ия|ию)|\sпроцесс\s|\sготовк|\sрецепт\s|\sинструкци/i.test(' ' + s + ' ')) return true;
+  return false;
+}
+
 function parseItemBlock(block) {
   const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
   if (!lines.length) return null;
+  if (isDescriptionHeader(lines[0])) return null;
   const split = splitNameAndComponents(lines[0]);
   let name = split.name;
   let components = split.components;
+  let description = '';
 
-  if (!components.length && lines.length > 1) {
-    components = lines.slice(1).flatMap(extractComponents);
+  const remainingLines = lines.slice(1);
+  const descHeaderIdx = remainingLines.findIndex(isDescriptionHeader);
+  const compLines = descHeaderIdx === -1 ? remainingLines : remainingLines.slice(0, descHeaderIdx);
+  const descLines = descHeaderIdx === -1 ? [] : remainingLines.slice(descHeaderIdx);
+
+  if (descLines.length) {
+    description = descLines.join('\n').trim();
+  }
+
+  if (!components.length && compLines.length) {
+    components = compLines.flatMap(extractComponents);
   }
 
   if (!components.length && lines.length === 1) {
     const fallback = splitNameAndComponents(lines[0], true);
     name = fallback.name;
     components = fallback.components;
+    description = '';
   }
 
   if (!name || !components.length) return null;
   components = components.map(parseComponentToken).filter(Boolean);
   if (!components.length) return null;
 
-  return {
+  const item = {
     type: 'composition',
     name,
     correct: components,
     info_text: buildInfoText(name, components),
+    description,
   };
+  if (!item.description) delete item.description;
+  return item;
 }
 
 function splitNameAndComponents(line, allowNoComponents) {
@@ -3821,13 +3898,15 @@ function normalizeParsedItem(item) {
   if (!item || !item.name) return null;
   const correct = Array.isArray(item.correct) ? item.correct : (Array.isArray(item.components) ? item.components : (Array.isArray(item.ingredients) ? item.ingredients : []));
   if (!correct.length) return null;
-  return {
+  const out = {
     type: 'composition',
     name: item.name,
     correct: correct,
     info_text: item.info_text || buildInfoText(item.name, correct),
     image: item.image || null,
   };
+  if (item.description) out.description = item.description;
+  return out;
 }
 
 function sourceNameToSectionName(sourceName) {
@@ -3882,7 +3961,7 @@ function buildVenueFromParsedItems(items, sourceName) {
     const correctNames = correct.map(c => typeof c === 'object' ? c.ingredient : c);
     const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
     if (hasGrams) {
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: correct,
@@ -3890,9 +3969,11 @@ function buildVenueFromParsedItems(items, sourceName) {
         info_text: buildInfoText(item.name, correct, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     } else {
       const pool = shuffle([...correctNames, ...distractors]);
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: correctNames,
@@ -3900,6 +3981,8 @@ function buildVenueFromParsedItems(items, sourceName) {
         info_text: buildInfoText(item.name, correctNames, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     }
   });
 
