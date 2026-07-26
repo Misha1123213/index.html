@@ -3560,13 +3560,16 @@ function processTTKBlocks(blocks) {
   const items = [];
   let pendingDesc = '';
   for (const block of blocks) {
-    const item = parseItemBlock(block);
-    if (item) {
-      if (pendingDesc) {
-        item.description = (item.description ? item.description + '\n\n' : '') + pendingDesc;
-        pendingDesc = '';
+    const itemOrItems = parseItemBlock(block);
+    const arr = Array.isArray(itemOrItems) ? itemOrItems : (itemOrItems ? [itemOrItems] : []);
+    if (arr.length) {
+      for (const item of arr) {
+        if (pendingDesc) {
+          item.description = (item.description ? item.description + '\n\n' : '') + pendingDesc;
+        }
+        items.push(item);
       }
-      items.push(item);
+      pendingDesc = '';
       continue;
     }
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
@@ -3600,12 +3603,16 @@ function parseTTKOCRText(text) {
   const normalized = normalizeOCRText(text);
 
   let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+
   if (blocks.length === 1 && blocks[0].split('\n').length >= 2) {
     const lines = blocks[0].split('\n').map(l => l.trim()).filter(Boolean);
     const split = maybeSplitBlocks(lines);
     if (split.length > 1) blocks = split;
+  } else if (blocks.length > 1) {
+    blocks = mergeHeadingBlocks(blocks);
   }
   blocks = mergeDescriptionBlocks(blocks);
+
   const items = processTTKBlocks(blocks);
   return items.length ? items : parseTTKPlainText(text);
 }
@@ -3635,14 +3642,23 @@ function mergeHeadingBlocks(blocks) {
 }
 
 function isLikelyComponent(line) {
-  const s = (line || '').trim();
+  let s = (line || '').trim();
   if (!s) return false;
-  if (/^[-•–—*‣⁃◦\d.)\]()]/.test(s)) return true;
+  const stripped = s.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
+  if (/^[-•–—*‣⁃◦.)\]()]/.test(s)) return true;
   if (/п\/ф|пф/i.test(s)) return true;
   const units = ['г', 'гр', 'грамм', 'грам', 'мл', 'миллилитров', 'шт', 'штук', 'штуки', 'л', 'кг', 'кгр', 'мг', 'g', 'gr', 'gram', 'grams', 'ml', 'pcs', 'pc'];
   const unitRe = new RegExp('\\d+(?:[.,]\\d+)?\\s*(?:' + units.join('|') + ')(?:\\s|$|[.,;])', 'i');
-  if (unitRe.test(s)) return true;
+  if (unitRe.test(stripped)) return true;
   if (/\d+(?:[.,]\d+)?\s*%/.test(s)) return true;
+  // count-only ingredient lines like "Соль 1" or "Сахар 10"
+  const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
+  if (noUnitMatch && isLikelyIngredientName(noUnitMatch[1])) return true;
+  // ingredient lines like "Банан: половинка" or "Сметана: 30г" (not a dish heading)
+  if (/:\s+/.test(s)) {
+    const parts = s.split(/:\s+/, 2);
+    if (parts[1] && !/:/.test(parts[1]) && !isDescriptionHeader(parts[0]) && !isLikelyDishName(cleanItemName(parts[1]))) return true;
+  }
   return false;
 }
 
@@ -3681,7 +3697,7 @@ function maybeSplitBlocks(lines) {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       const cleaned = cleanItemName(line);
-      if (!isLikelyComponent(line) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line))) {
+      if (!isLikelyComponent(line) && !isLikelyNote(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line))) {
         blocks.push(current.join('\n'));
         current = [line];
       } else {
@@ -3707,8 +3723,9 @@ function hasInstructionWords(s) {
   const words = s.toLowerCase().split(/\s+/);
   const startWords = new Set(['с','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','а','но','или','чтобы','так','как','если','когда','где','затем','потом','далее']);
   const verbEndings = /(ем|им|ет|ит|ут|ют|ешь|ишь|ете|ите|ать|ять|еть|ить|уть|ыть|овать|евать|авать|ывать|ивать|аться|еться|иться|уться|ыться|оваться|еваться|аваться|ываться|иваться)$/;
+  const nonInstructionNouns = new Set(['омлет','паштет','рулет','котлет','медальон','бриошь','бургер','чизкейк','морс','кисель','компот','смузи','лайм','лимон','бекон','салями','пепперони']);
   if (words.length && startWords.has(words[0])) return true;
-  return words.some(w => verbEndings.test(w));
+  return words.some(w => !nonInstructionNouns.has(w) && verbEndings.test(w));
 }
 
 function isLabelPrefixedDishName(line) {
@@ -3723,12 +3740,15 @@ function isLikelyDishName(line) {
   const s = cleanItemName(line || '');
   if (!s || s.length < 2 || s.length > 80) return false;
   if (isDescriptionHeader(s)) return false;
-  if (/[,;!?()]/.test(s)) return false;
+  if (/[,;!:?()]/.test(s)) return false;
+  if (isLikelyNote(s)) return false;
   if (/\d/.test(s)) return false;
   if (!/[аеёиоуыэюя]/i.test(s)) return false;
   const first = s.charAt(0);
   if (!/[A-ZА-ЯЁ]/.test(first) && s !== s.toUpperCase()) return false;
   const words = s.split(/\s+/).filter(Boolean);
+  const shortPreps = new Set(['а','б','в','и','к','о','с','у','я','м','н','р','я']);
+  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length === 1 && shortPreps.has(words[0].toLowerCase())) return false;
   if (words[0] && words[0] === words[0].toUpperCase() && words[0].length <= 3) {
     if (words.length === 1) return false;
     const rest = words.slice(1).join(' ');
@@ -3741,40 +3761,90 @@ function isLikelyIngredientName(line) {
   const s = cleanItemName(line || '');
   if (!s || s.length < 2 || s.length > 40) return false;
   if (isDescriptionHeader(s)) return false;
-  if (/[,;!?()]/.test(s)) return false;
+  if (/[,;!:?()\d]/.test(s)) return false;
+  if (isLikelyNote(s)) return false;
+  const first = s.charAt(0);
+  if (!/[A-ZА-ЯЁa-zа-яё]/.test(first)) return false;
   if (!/[аеёиоуыэюя]/i.test(s)) return false;
+  const words = s.split(/\s+/).filter(Boolean);
+  if (words[0] && ['ингредиент','ингредиенты'].includes(words[0].toLowerCase())) return false;
+  if (words[0] && words[0].length < 3 && words[0] === words[0].toLowerCase()) return false;
+  if (words.length === 1 && words[0] === words[0].toUpperCase() && words[0].length <= 4 && /[Зз]/.test(words[0])) return false;
   return !hasInstructionWords(s);
+}
+
+function isLikelyNote(s) {
+  if (!s) return false;
+  const words = s.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  const startNoteWords = new Set(['сверху','снизу','внутрь','внутри','вне','для','по','как','фото','рисунок','пример','примерно']);
+  const anyNoteWords = new Set(['украшение','украсить','посыпать','присыпать','разрезать','запечь','половина','треть','четверть','ломтик','кусочек','щепотка','сверху','снизу']);
+  if (startNoteWords.has(words[0])) return true;
+  if (words.some(w => anyNoteWords.has(w))) return true;
+  return hasInstructionWords(s);
+}
+
+function splitDishNames(line) {
+  const cleaned = cleanItemName(line);
+  if (!cleaned) return [];
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const names = [];
+  let start = 0;
+  for (let i = 1; i <= words.length; i++) {
+    if (i === words.length) {
+      const candidate = words.slice(start).join(' ');
+      if (isLikelyDishName(candidate)) names.push(candidate);
+      break;
+    }
+    const left = words.slice(start, i).join(' ');
+    const right = words.slice(i).join(' ');
+    if (isLikelyDishName(left) && isLikelyDishName(right)) {
+      names.push(left);
+      start = i;
+    }
+  }
+  return names.length ? names : [cleaned];
 }
 
 function parseItemBlock(block) {
   const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return null;
-  if (isDescriptionHeader(lines[0])) return null;
+  if (!lines.length) return [];
+  if (isDescriptionHeader(lines[0])) return [];
   const firstCleaned = cleanItemName(lines[0]);
-  if (!isLikelyDishName(firstCleaned) && !isLikelyIngredientName(firstCleaned) && !isLabelPrefixedDishName(lines[0])) return null;
+  if (!isLikelyDishName(firstCleaned) && !isLikelyIngredientName(firstCleaned) && !isLabelPrefixedDishName(lines[0])) return [];
   const split = splitNameAndComponents(lines[0]);
-  let name = split.name;
+  let firstName = split.name;
   let strippedPrefix = false;
-  const nameWords = name.split(/\s+/).filter(Boolean);
+  const nameWords = firstName.split(/\s+/).filter(Boolean);
   if (nameWords.length > 1 && nameWords[0] === nameWords[0].toUpperCase() && nameWords[0].length <= 3 && /[Зз]/.test(nameWords[0]) && isLikelyDishName(nameWords.slice(1).join(' '))) {
-    name = nameWords.slice(1).join(' ');
+    firstName = nameWords.slice(1).join(' ');
     strippedPrefix = true;
   }
-  let components = split.components;
-  let description = '';
 
   const remainingLines = lines.slice(1);
-  const descStartIdx = remainingLines.findIndex(line => {
-    if (isDescriptionHeader(line)) return true;
-    if (isLikelyComponent(line)) return false;
-    return !isLikelyIngredientName(line);
-  });
-  const compLines = descStartIdx === -1 ? remainingLines : remainingLines.slice(0, descStartIdx);
-  const descLines = descStartIdx === -1 ? [] : remainingLines.slice(descStartIdx);
-
-  if (descLines.length) {
-    description = descLines.join('\n').trim();
+  // collect component lines: skip leading descriptions, then collect contiguous plausible component lines
+  const compLines = [];
+  let descLines = [];
+  let collecting = false;
+  for (const line of remainingLines) {
+    if (isDescriptionHeader(line)) {
+      descLines.push(line);
+      break;
+    }
+    if (isLikelyComponent(line) || isLikelyIngredientName(cleanItemName(line))) {
+      compLines.push(line);
+      collecting = true;
+    } else if (collecting) {
+      descLines.push(line);
+      // if line is clearly instruction, stop collecting components
+      if (hasInstructionWords(line)) break;
+    } else {
+      descLines.push(line);
+    }
   }
+
+  let description = descLines.join('\n').trim();
+  let components = split.components;
 
   if (!components.length && compLines.length) {
     components = compLines.flatMap(extractComponents);
@@ -3782,27 +3852,32 @@ function parseItemBlock(block) {
 
   if (!components.length && lines.length === 1) {
     const fallback = splitNameAndComponents(lines[0], true);
-    name = fallback.name;
+    firstName = fallback.name;
     components = fallback.components;
     description = '';
   }
 
-  if (!name || !components.length) return null;
+  if (!firstName || !components.length) return [];
   components = components.map(parseComponentToken).filter(Boolean);
-  if (!components.length) return null;
+  if (!components.length) return [];
   if (strippedPrefix && components.length === 1 && !components[0].ingredient && components[0].grams !== undefined) {
-    components[0].ingredient = name;
+    components[0].ingredient = firstName;
   }
 
-  const item = {
-    type: 'composition',
-    name,
-    correct: components,
-    info_text: buildInfoText(name, components),
-    description,
-  };
-  if (!item.description) delete item.description;
-  return item;
+  const names = splitDishNames(firstName);
+  const items = [];
+  for (const name of names) {
+    const item = {
+      type: 'composition',
+      name,
+      correct: components,
+      info_text: buildInfoText(name, components),
+      description,
+    };
+    if (!item.description) delete item.description;
+    items.push(item);
+  }
+  return items;
 }
 
 function splitNameAndComponents(line, allowNoComponents) {
@@ -3845,7 +3920,9 @@ function extractComponents(text) {
     const grams = parseFloat(match[1].replace(',', '.'));
     const unit = match[2] || '';
     const isCountUnit = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
-    if (name && (unit || isLikelyIngredientName(name))) {
+    if (name && isLikelyIngredientName(name)) {
+      tokens.push({ ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
+    } else if (name && unit && /^[A-Za-zА-Яа-яЁё]/.test(name)) {
       tokens.push({ ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
     } else if (!name && isCountUnit) {
       tokens.push({ ingredient: '', grams: isNaN(grams) ? 0 : grams, isCount: true });
@@ -3854,7 +3931,10 @@ function extractComponents(text) {
   }
   if (lastIndex < normalized.length) {
     const tail = cleanItemName(normalized.slice(lastIndex));
-    if (tail && isLikelyIngredientName(tail)) {
+    if (tail && tokens.length && isLikelyNote(tail)) {
+      const prev = tokens[tokens.length - 1];
+      prev.ingredient = (prev.ingredient ? prev.ingredient + ' ' : '') + '(' + tail + ')';
+    } else if (tail && isLikelyIngredientName(tail)) {
       tokens.push({ ingredient: tail, grams: 0, isCount: false });
     }
   }
@@ -3869,9 +3949,12 @@ function cleanItemName(str) {
   let s = str.trim();
   s = s.replace(/^(?:блюдо|название|наименование|позиция|товар|dish|name|title)[\s:—–-]+/i, '').trim();
   s = s.replace(/п\\ф/gi, 'п/ф').trim();
-  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+]+\s*/, '').trim();
+  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+=!?_"'‘’“”]+\s*/, '').trim();
   s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
-  s = s.replace(/[-:;|–—/+]+\s*$/, '').trim();
+  s = s.replace(/[-:;|–—/_+=!?"'‘’“”]+\s*$/, '').trim();
+  s = s.replace(/_/g, ' ').trim();
+  s = s.replace(/(?<![A-Za-zА-Яа-яЁё])[Зз][A-ZА-ЯЁ]{1,5}(?![A-Za-zА-Яа-яЁё])/g, '').trim();
+  s = s.replace(/\s+/g, ' ').trim();
   return s;
 }
 
@@ -3895,6 +3978,26 @@ function parseComponentToken(str) {
     return { ingredient: '', grams: isNaN(grams) ? 0 : grams, isCount };
   }
 
+  // "Ингредиент: количество" format (OCR screenshots with colons)
+  const colonMatch = s.match(/^(.+?):\s*(.+)$/);
+  if (colonMatch && !isDescriptionHeader(colonMatch[1])) {
+    const ingredientName = cleanItemName(colonMatch[1].trim());
+    const rest = colonMatch[2].trim();
+    if (ingredientName && !/:/.test(rest)) {
+      const weightMatch = rest.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')?\\s*(.*)$', 'i'));
+      if (weightMatch) {
+        const grams = parseFloat(weightMatch[1].replace(',', '.'));
+        const unit = weightMatch[2] || '';
+        const note = cleanItemName(weightMatch[3]);
+        const isCount = countUnits.test(unit);
+        let name = ingredientName;
+        if (note && !/^\d/.test(note)) name += ' (' + note + ')';
+        return { ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount };
+      }
+      return { ingredient: ingredientName + (rest ? ' (' + rest + ')' : ''), grams: 0, isCount: false };
+    }
+  }
+
   const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*(?:\\([^)]*\\))?\\s*[.)]*$', 'i'));
   if (trailingMatch && trailingMatch[1].trim()) {
     const ingredient = cleanItemName(trailingMatch[1].trim());
@@ -3914,8 +4017,10 @@ function parseComponentToken(str) {
   const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
   if (noUnitMatch && noUnitMatch[1].trim()) {
     const ingredient = cleanItemName(noUnitMatch[1].trim());
-    const grams = parseFloat(noUnitMatch[2].replace(',', '.'));
-    return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount: false };
+    if (ingredient && isLikelyIngredientName(ingredient)) {
+      const grams = parseFloat(noUnitMatch[2].replace(',', '.'));
+      return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount: false };
+    }
   }
 
   return s;
