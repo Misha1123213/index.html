@@ -3503,26 +3503,49 @@ function parseTTKPastePreview() {
   openCourseEditor();
 }
 
+function isSectionHeading(s) {
+  const words = ['состав','ингредиенты','ингредиент','рецепт','готовка','техкарта','карточка','описание','фото','фотография'];
+  return words.includes((s || '').toLowerCase().trim());
+}
+
 function normalizeOCRText(text) {
   if (!text) return '';
   const units = 'шт|штук|штуки|г|гр|грамм|грам|мл|миллилитров|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
   const ocrUnits = units.split('|').sort((a, b) => b.length - a.length).join('|');
   const ocrDigitRe = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])(' + units + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
   const ocrDigit2Re = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])([Оо0])\\s*(' + ocrUnits + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
-  return text
+  let t = text
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/\t/g, ' ')
-    .replace(/@/g, 'а')
-    .replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
-      const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
-      return val.toFixed(3).replace(/\.?0+$/, '');
-    })
+    .replace(/@/g, 'а');
+  const uiPatterns = [
+    /^\s*<\s*.*$/,
+    /^\s*\d{1,2}:\d{2}\b/,
+    /редактор\s*\(?фото\s*ттк\)?/i,
+    /сохранено/i,
+    /\+\s*добавить\s*ингредиент/i,
+    /описание\s*\/\s*процесс\s*приготовления/i,
+    /процесс\s*приготовления\s*блюда/i,
+    /^\s*фото\s*$/i,
+    /^\s*[-+=—–…]{2,}\s*$/,
+    /(?:басе64|base64|data:image|image\/)/i,
+  ];
+  t = t.split('\n').map(line => {
+    for (const re of uiPatterns) if (re.test(line)) return '';
+    if (isSectionHeading(cleanItemName(line)) && line.trim().length <= 30) return '';
+    return line;
+  }).filter(l => l.trim().length > 0).join('\n');
+  t = t.replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
+    const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
+    return val.toFixed(3).replace(/\.?0+$/, '');
+  })
     .replace(ocrDigit2Re, (m, before, z, o, unit) => before + '30' + unit.toLowerCase())
     .replace(ocrDigitRe, '$13$3')
     .replace(/[ \xA0]{2,}/g, ' ')
     .trim();
+  return t;
 }
 
 function parseTTKPlainText(text) {
@@ -3540,7 +3563,7 @@ function parseTTKPlainText(text) {
   }
   blocks = mergeDescriptionBlocks(blocks);
 
-  return processTTKBlocks(blocks);
+  return postProcessParsedItems(processTTKBlocks(blocks));
 }
 
 function mergeDescriptionBlocks(blocks) {
@@ -3598,6 +3621,27 @@ function processTTKBlocks(blocks) {
   return items;
 }
 
+function postProcessParsedItems(items) {
+  const out = [];
+  for (const item of (items || [])) {
+    const correct = (item.correct || []).filter(c => {
+      if (typeof c !== 'object') return true;
+      return (c.ingredient || '').trim().length > 0 || c.grams === '' || c.grams === undefined || c.grams === null;
+    });
+    item.correct = correct;
+    const name = (item.name || '').trim();
+    const desc = (item.description || '').trim();
+    if (correct.length === 1 && name && correct[0].ingredient && name.toLowerCase() === correct[0].ingredient.trim().toLowerCase() && !desc && out.length) {
+      const prev = out[out.length - 1];
+      prev.correct = prev.correct.concat(correct);
+      if (item.image) prev.image = item.image;
+      continue;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 function parseTTKOCRText(text) {
   if (!text || !text.trim()) return [];
   const normalized = normalizeOCRText(text);
@@ -3613,7 +3657,7 @@ function parseTTKOCRText(text) {
   }
   blocks = mergeDescriptionBlocks(blocks);
 
-  const items = processTTKBlocks(blocks);
+  const items = postProcessParsedItems(processTTKBlocks(blocks));
   return items.length ? items : parseTTKPlainText(text);
 }
 
@@ -3697,7 +3741,7 @@ function maybeSplitBlocks(lines) {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       const cleaned = cleanItemName(line);
-      if (!isLikelyComponent(line) && !isLikelyNote(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line))) {
+      if (!isLikelyComponent(line) && !isLikelyNote(cleaned) && !isSectionHeading(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line))) {
         blocks.push(current.join('\n'));
         current = [line];
       } else {
@@ -3739,6 +3783,7 @@ function isLabelPrefixedDishName(line) {
 function isLikelyDishName(line) {
   const s = cleanItemName(line || '');
   if (!s || s.length < 2 || s.length > 80) return false;
+  if (isSectionHeading(s)) return false;
   if (isDescriptionHeader(s)) return false;
   if (/[,;!:?()]/.test(s)) return false;
   if (isLikelyNote(s)) return false;
@@ -3760,6 +3805,7 @@ function isLikelyDishName(line) {
 function isLikelyIngredientName(line) {
   const s = cleanItemName(line || '');
   if (!s || s.length < 2 || s.length > 40) return false;
+  if (isSectionHeading(s)) return false;
   if (isDescriptionHeader(s)) return false;
   if (/[,;!:?()\d]/.test(s)) return false;
   if (isLikelyNote(s)) return false;
@@ -3949,9 +3995,9 @@ function cleanItemName(str) {
   let s = str.trim();
   s = s.replace(/^(?:блюдо|название|наименование|позиция|товар|dish|name|title)[\s:—–-]+/i, '').trim();
   s = s.replace(/п\\ф/gi, 'п/ф').trim();
-  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+=!?_"'‘’“”]+\s*/, '').trim();
+  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+=!?_"'‘’‚„“”‹›<>]+\s*/, '').trim();
   s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
-  s = s.replace(/[-:;|–—/_+=!?"'‘’“”]+\s*$/, '').trim();
+  s = s.replace(/[-:;|–—/_+=!?"'‘’‚„“”‹›<>]+\s*$/, '').trim();
   s = s.replace(/_/g, ' ').trim();
   s = s.replace(/(?<![A-Za-zА-Яа-яЁё])[Зз][A-ZА-ЯЁ]{1,5}(?![A-Za-zА-Яа-яЁё])/g, '').trim();
   s = s.replace(/\s+/g, ' ').trim();
@@ -3965,6 +4011,7 @@ function parseComponentToken(str) {
   if (!str) return null;
   let s = str.trim();
   s = s.replace(/^(?:[-•–—*‣⁃◦]+|\d+[.)\]])\s*/, '').trim();
+  s = s.replace(/[-:;|–—/_+=!?"'‘’‚„“”‹›<>]+$/, '').trim();
   if (!s) return null;
 
   const units = '(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)';
