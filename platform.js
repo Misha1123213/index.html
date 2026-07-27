@@ -1416,21 +1416,13 @@ function renderOwnerSetup() {
       <div class="platform-title">${venue.name}</div>
       <div class="platform-subtitle">Код для сотрудников: <span class="venue-code">${venue.code}</span></div>
       <div class="platform-form">
-        <label class="platform-label">Загрузите файл меню</label>
+        <label class="platform-label">Загрузите файл или фото ТТК</label>
         <div class="upload-zone" onclick="document.getElementById('ttk-file').click()">
           <div class="upload-icon"></div>
-          <div class="upload-text">Нажмите, чтобы выбрать файл</div>
-          <div class="upload-hint">.txt, .md, .csv, .json, .docx</div>
+          <div class="upload-text">Нажмите, чтобы выбрать файлы</div>
+          <div class="upload-hint">.txt, .md, .csv, .json, .docx, .jpg, .png, .webp (можно несколько)</div>
         </div>
-        <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx" onchange="handleTTKFile(this.files[0])">
-
-        <label class="platform-label" style="margin-top:18px;">Или фото / скан ТТК</label>
-        <div class="upload-zone" onclick="document.getElementById('ttk-image-file').click()">
-          <div class="upload-icon"></div>
-          <div class="upload-text">Выберите фото меню или ТТК</div>
-          <div class="upload-hint">.jpg, .png, .webp</div>
-        </div>
-        <input type="file" id="ttk-image-file" style="display:none" accept="image/*" multiple onchange="handleTTKImageFiles(this.files)">
+        <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx,image/*" multiple onchange="handleTTKFiles(this.files)">
 
         <label class="platform-label" style="margin-top:18px;">Или вставьте текст ТТК</label>
         <textarea id="ttk-paste" class="platform-input" rows="6" placeholder="Например:\nКапучино\n• Эспрессо 30 мл\n• Молоко 150 мл\n• Молочная пена 30 г"></textarea>
@@ -2175,9 +2167,36 @@ function closeReference() {
   goBack();
 }
 
+function isReferenceStandalone() {
+  if (state.standalone) return true;
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+  if (typeof window !== 'undefined' && window.navigator && window.navigator.standalone === true) return true;
+  return /standalone=1/.test(location.search);
+}
+
 function filterReference(value) {
+  updateReferenceSearch(value);
+}
+
+function updateReferenceSearch(value) {
   state.referenceFilter = value;
-  render();
+  const list = document.getElementById('reference-list');
+  if (list) {
+    list.innerHTML = renderReferenceListHTML(value);
+    requestAnimationFrame(() => {
+      const input = document.getElementById('reference-search');
+      if (input && document.activeElement !== input) {
+        try { input.focus(); } catch (e) {}
+      }
+    });
+  }
+}
+
+function handleReferenceScroll(el) {
+  const header = document.getElementById('reference-header');
+  if (!header) return;
+  if (el.scrollTop > 8) header.classList.add('scrolled');
+  else header.classList.remove('scrolled');
 }
 
 function toggleReferenceItem(btn) {
@@ -2203,20 +2222,18 @@ async function refreshReferenceFromCloud() {
   }
 }
 
-function renderReference() {
-  const venue = state.venue || {};
+function renderReferenceListHTML(query) {
   const settings = getVenueSettings();
-  const query = (state.referenceFilter || '').trim().toLowerCase();
+  const q = (query || '').trim().toLowerCase();
   const sections = getVenueSections();
-
   let sectionsHTML = '';
   let totalItems = 0;
 
   sections.forEach(section => {
     const items = (section.items || []).map(normalizeItem).filter(it => {
-      if (!query) return true;
-      const nameMatch = (it.name || '').toLowerCase().includes(query);
-      const ingMatch = (it._ingredients || []).some(i => i.toLowerCase().includes(query));
+      if (!q) return true;
+      const nameMatch = (it.name || '').toLowerCase().includes(q);
+      const ingMatch = (it._ingredients || []).some(i => i.toLowerCase().includes(q));
       return nameMatch || ingMatch;
     });
     if (!items.length) return;
@@ -2233,6 +2250,7 @@ function renderReference() {
       const mastery = getDishMastery(item.name);
       const crowns = mastery.level > 0 ? '<span class="mastery-crowns" style="margin-left:6px">' + '★'.repeat(mastery.level) + '</span>' : '';
       const masteryLabel = mastery.level > 0 ? `<span class="mastery-label" style="margin-left:6px">${getMasteryLabel(mastery.level)}</span>` : '';
+      const descriptionHTML = item._description ? `<div class="browse-item-description">${escapeHtml(item._description).replace(/\n/g, '<br>')}</div>` : '';
       return `
         <div class="browse-item">
           <button class="browse-item-header" style="${cementStyle()}" onclick="toggleReferenceItem(this)">
@@ -2246,6 +2264,7 @@ function renderReference() {
           </button>
           <div class="browse-item-body">
             ${ingredientsHTML}
+            ${descriptionHTML}
           </div>
         </div>
       `;
@@ -2259,24 +2278,44 @@ function renderReference() {
     `;
   });
 
-  const emptyHTML = !sections.length
-    ? '<div class="section-empty">В заведении пока нет разделов</div>'
-    : (totalItems === 0 ? '<div class="section-empty">Ничего не найдено</div>' : '');
+  if (!sections.length) return '<div class="section-empty">В заведении пока нет разделов</div>';
+  if (totalItems === 0) return '<div class="section-empty">Ничего не найдено</div>';
+  return sectionsHTML;
+}
+
+function renderReference() {
+  const venue = state.venue || {};
+  const isStandalone = isReferenceStandalone();
+  const venueName = escapeHtml(venue.name || 'Справочник');
 
   app.innerHTML = `
-    <div class="top-bar">
-      <button class="close-btn" onclick="closeReference()" style="position:static;margin:0">← Назад</button>
-      <div style="flex:1"></div>
-      <button class="settings-btn" onclick="openReferenceShortcut()" aria-label="Добавить ярлык">+</button>
-    </div>
-    <div class="browse-screen">
-      <div class="path-title">${escapeHtml(venue.name || 'Справочник')}</div>
-      <input type="search" class="platform-input" style="margin:12px 0;" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.referenceFilter || '')}" oninput="filterReference(this.value)">
-      ${sectionsHTML}
-      ${emptyHTML}
-      <button class="stats-btn" style="${cementStyle()};margin-top:16px" onclick="openReferenceShortcut()">Добавить ярлык на рабочий стол</button>
+    <div class="reference-screen" onscroll="handleReferenceScroll(this)">
+      <div class="reference-header" id="reference-header">
+        <div class="reference-top">
+          ${isStandalone ? '' : `<button class="reference-back" onclick="closeReference()">← Назад</button>`}
+          <div class="reference-title">${venueName}</div>
+          <button class="reference-add-btn" onclick="openReferenceShortcut()">Добавить</button>
+        </div>
+        <div class="reference-search-wrap">
+          <input type="search" class="reference-search" id="reference-search" placeholder="Найти блюдо или ингредиент" value="${escapeHtml(state.referenceFilter || '')}" oninput="updateReferenceSearch(this.value)">
+        </div>
+      </div>
+      <div class="reference-list" id="reference-list">
+        ${renderReferenceListHTML(state.referenceFilter || '')}
+      </div>
     </div>
   `;
+
+  requestAnimationFrame(() => {
+    const screen = document.querySelector('.reference-screen');
+    if (screen) handleReferenceScroll(screen);
+    const input = document.getElementById('reference-search');
+    if (input && state.referenceFilter) {
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+  });
 }
 
 // ====================== COURSE EDITOR ======================
@@ -2340,6 +2379,7 @@ function renderCourseEditorItem(it, idx) {
   const item = state.platformDraft.parsedItems[idx];
   const image = item.image || '';
   const componentsHTML = (item.correct || []).map((c, i) => renderEditorComponentRow(idx, i, c)).join('');
+  const description = item.description || '';
   return `
     <div class="editor-item" data-idx="${idx}">
       <div class="editor-item-header">
@@ -2353,6 +2393,10 @@ function renderCourseEditorItem(it, idx) {
         </div>
         <button class="editor-add-btn" onclick="addParsedComponent(${idx})">+ Добавить ингредиент</button>
       </div>
+      <details class="editor-description" open>
+        <summary class="editor-desc-toggle">Описание / процесс приготовления</summary>
+        <textarea class="editor-desc-textarea platform-input" rows="4" placeholder="Процесс приготовления блюда" oninput="updateParsedItem(${idx}, 'description', this.value)">${escapeHtml(description)}</textarea>
+      </details>
       <div class="editor-item-section">
         <div style="font-size:12px;color:var(--text-secondary);margin:10px 0 6px">Фото</div>
         <div class="editor-image-row">
@@ -2367,11 +2411,17 @@ function renderCourseEditorItem(it, idx) {
 
 function renderEditorComponentRow(itemIdx, compIdx, c) {
   const name = typeof c === 'object' ? (c.ingredient || '') : (c || '');
-  const grams = typeof c === 'object' ? (c.grams || '') : '';
+  const grams = typeof c === 'object' ? (c.grams === 0 || c.grams === '0' ? '0' : (c.grams || '')) : '';
+  const isCount = typeof c === 'object' ? !!c.isCount : false;
+  const placeholder = isCount ? 'шт' : 'г';
+  const unit = isCount ? 'шт' : 'г';
   return `
     <div class="editor-component-row">
       <input class="platform-input editor-comp-name" type="text" value="${escapeHtml(name)}" placeholder="Ингредиент" oninput="updateParsedComponentName(${itemIdx}, ${compIdx}, this.value)">
-      <input class="platform-input editor-comp-grams" type="number" inputmode="decimal" placeholder="г" value="${grams}" oninput="updateParsedComponentGrams(${itemIdx}, ${compIdx}, this.value)">
+      <div class="editor-comp-weight-wrap">
+        <input class="platform-input editor-comp-grams" type="number" inputmode="decimal" placeholder="${placeholder}" value="${grams}" oninput="updateParsedComponentGrams(${itemIdx}, ${compIdx}, this.value)">
+        <span class="editor-comp-unit">${unit}</span>
+      </div>
       <button class="editor-comp-remove" onclick="removeParsedComponent(${itemIdx}, ${compIdx})">×</button>
     </div>
   `;
@@ -2466,6 +2516,7 @@ function addParsedItem() {
     type: 'composition',
     name: '',
     correct: [{ ingredient: '', grams: '' }],
+    description: '',
     info_text: 'Состав:\n• ',
   });
   state.editorDirty = true;
@@ -2530,7 +2581,7 @@ function persistCourseEditor() {
     const correctNames = item.correct.map(c => c.ingredient);
     const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
     if (hasGrams) {
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: item.correct,
@@ -2538,9 +2589,11 @@ function persistCourseEditor() {
         info_text: buildInfoText(item.name, item.correct, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     } else {
       const pool = shuffle([...correctNames, ...distractors]);
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: correctNames,
@@ -2548,6 +2601,8 @@ function persistCourseEditor() {
         info_text: buildInfoText(item.name, correctNames, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     }
   });
 
@@ -3021,72 +3076,440 @@ function findBestImageForKeywords(images, keywords) {
 
 // ====================== PARSERS ======================
 
-function handleTTKFile(file) {
-  if (!file) return;
+function isImageFile(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if (ext === 'docx') {
-    handleDocxFile(file);
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const text = e.target.result;
-    const items = parseTTKText(text, ext);
-    previewParsedItems(items, file.name);
-  };
-  reader.onerror = () => showPlatformToast('Не удалось прочитать файл');
-  if (ext === 'json') {
-    reader.readAsText(file);
-  } else {
-    reader.readAsText(file, 'UTF-8');
-  }
+  if (['jpg','jpeg','png','webp','gif','bmp','heic','heif'].includes(ext)) return true;
+  return (file.type || '').startsWith('image/');
 }
 
-function handleDocxFile(file) {
-  if (typeof mammoth === 'undefined') {
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js')
-      .then(() => handleDocxFile(file))
-      .catch(() => showPlatformToast('Не удалось загрузить mammoth.js. Сконвертируйте .docx в .txt/.csv'));
-    return;
-  }
-  file.arrayBuffer().then(arrayBuffer => {
-    mammoth.convertToHtml({ arrayBuffer }).then(result => {
-      const items = parseDocxHTML(result.value);
-      previewParsedItems(items, file.name);
-    }).catch(() => showPlatformToast('Не удалось извлечь текст из .docx'));
+function loadMammoth() {
+  if (typeof mammoth !== 'undefined') return Promise.resolve();
+  return loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+}
+
+function parseDocxFile(file) {
+  return loadMammoth().then(() => {
+    return file.arrayBuffer().then(arrayBuffer => {
+      return mammoth.convertToHtml({ arrayBuffer }).then(result => parseDocxHTML(result.value));
+    });
   });
 }
 
-async function handleTTKImageFiles(files) {
-  if (!files || !files.length) return;
-  showPlatformToast('Распознаём фото...');
-  try {
-    await loadTesseract();
-    const worker = await Tesseract.createWorker('rus');
-    const results = [];
-    for (const file of files) {
-      const items = await processTTKImageWithWorker(file, worker);
-      results.push(items);
-    }
-    await worker.terminate();
-    const allItems = results.flat().filter(Boolean);
-    if (!allItems.length) {
-      showPlatformToast('Не удалось распознать позиции на фото');
+function parseTTKFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) { resolve([]); return; }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'docx') {
+      parseDocxFile(file).then(items => resolve(items || [])).catch(reject);
       return;
     }
-    const sourceName = files.length === 1 ? (files[0].name.replace(/\.[^.]+$/, '').trim() || 'Фото ТТК') : 'Фото ТТК';
-    state.platformDraft = { parsedItems: allItems, sectionName: sourceName };
-    state.editorDirty = true;
-    openCourseEditor();
-  } catch (e) {
-    console.error('TTK image OCR error:', e);
-    showPlatformToast('Ошибка распознавания фото');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const items = parseTTKText(text, ext);
+      resolve(items || []);
+    };
+    reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+    if (ext === 'json') reader.readAsText(file);
+    else reader.readAsText(file, 'UTF-8');
+  });
+}
+
+async function parseTTKImageFiles(files) {
+  if (!files || !files.length) return [];
+  await loadTesseract();
+  const worker = await Tesseract.createWorker('rus');
+  const results = [];
+  for (const file of files) {
+    const items = await processTTKImageWithWorker(file, worker);
+    if (items && items.length) results.push(...items);
   }
+  await worker.terminate();
+  return results;
+}
+
+async function handleTTKFiles(files) {
+  if (!files || !files.length) return;
+  const fileArray = Array.from(files);
+  const allItems = [];
+  let worker = null;
+  let hasImages = false;
+  let ocrSpaceFailed = false;
+  try {
+    for (const file of fileArray) {
+      if (isImageFile(file)) {
+        if (!hasImages) {
+          hasImages = true;
+          showPlatformToast('Распознаём фото...');
+        }
+        let items = null;
+        if (!ocrSpaceFailed) {
+          try {
+            items = await processTTKImageWithOCRSpace(file);
+          } catch (e) {
+            console.warn('OCR.space failed, falling back to Tesseract', e);
+            ocrSpaceFailed = true;
+          }
+        }
+        if (!items || !items.length) {
+          if (!worker) {
+            await loadTesseract();
+            worker = await Tesseract.createWorker('rus');
+          }
+          items = await processTTKImageWithWorker(file, worker);
+        }
+        if (items && items.length) allItems.push(...items);
+      } else {
+        const items = await parseTTKFile(file);
+        if (items && items.length) allItems.push(...items);
+      }
+    }
+  } catch (e) {
+    console.error('TTK files error:', e);
+    showPlatformToast('Ошибка распознавания файлов');
+    return;
+  } finally {
+    if (worker) await worker.terminate();
+  }
+  if (!allItems.length) {
+    showPlatformToast('Не удалось распознать позиции');
+    return;
+  }
+  const sourceName = fileArray.length === 1 ? (fileArray[0].name.replace(/\.[^.]+$/, '').trim() || 'ТТК') : 'ТТК';
+  previewParsedItems(allItems, sourceName);
+}
+
+function handleTTKFile(file) {
+  if (file) handleTTKFiles([file]);
+}
+
+async function handleTTKImageFiles(files) {
+  await handleTTKFiles(files);
 }
 
 function loadTesseract() {
   if (typeof Tesseract !== 'undefined') return Promise.resolve();
   return loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+}
+
+function median(arr) {
+  if (!arr || !arr.length) return 0;
+  const s = arr.slice().sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+}
+
+function parseTTKImageLayout(ret) {
+  let lines = ret && ret.data && ret.data.lines;
+  const words = ret && ret.data && ret.data.words;
+  const text = (ret && ret.data && ret.data.text) || '';
+  if (!lines || !lines.length || !words || !words.length) return parseTTKOCRText(text);
+  // Attach per-line word lists from the global word list (Tesseract does not always include them).
+  lines = lines.map(l => {
+    const lWords = words.filter(w => {
+      const cy = ((w.bbox.y0 || 0) + (w.bbox.y1 || 0)) / 2;
+      return cy >= (l.bbox.y0 - 5) && cy <= (l.bbox.y1 + 5);
+    });
+    return Object.assign({}, l, { words: lWords });
+  });
+  const cardTexts = extractCardTextsFromLines(lines, words);
+  if (!cardTexts.length) return parseTTKOCRText(text);
+  const all = [];
+  for (const cardText of cardTexts) {
+    const items = parseCardBlock(cardText);
+    if (items && items.length) all.push(...items);
+  }
+  return postProcessParsedItems(all);
+}
+
+function extractCardTextsFromLines(lines, words) {
+  // 1. Build per-line segments. Title lines are kept whole or split by dish-name
+  //    ranges so the title does not lose words. Non-title lines are split by
+  //    horizontal word gaps to separate side-by-side columns/pages.
+  const allSegments = [];
+  for (const l of lines) {
+    const ws = (l.words || []).filter(w => w.text && w.text.trim().length)
+      .sort((a, b) => (a.bbox.x0 || 0) - (b.bbox.x0 || 0));
+    if (!ws.length) continue;
+    const lineY0 = Math.min(...ws.map(w => w.bbox.y0));
+    const lineY1 = Math.max(...ws.map(w => w.bbox.y1));
+    const lineX0 = Math.min(...ws.map(w => w.bbox.x0));
+    const lineX1 = Math.max(...ws.map(w => w.bbox.x1));
+    const lineWidth = Math.max(1, lineX1 - lineX0);
+    const fullText = normalizeOCRText(ws.map(w => w.text).join(' '));
+    const dishNames = (splitDishNames(fullText) || []).filter(isLikelyDishName);
+    const isTitleLine = dishNames.length > 1 || (dishNames.length === 1 && isLikelyDishName(fullText) && !isLikelyComponent(fullText));
+    if (isTitleLine) {
+      const ranges = findTitleWordRanges(ws, dishNames);
+      for (const range of ranges) {
+        if (range && range.length) allSegments.push(makeSegment(range, lineY0, lineY1));
+      }
+      continue;
+    }
+    const gaps = [];
+    for (let i = 1; i < ws.length; i++) {
+      gaps.push((ws[i].bbox.x0 || 0) - (ws[i - 1].bbox.x1 || 0));
+    }
+    const avgGap = gaps.length ? (gaps.reduce((a, b) => a + b, 0) / gaps.length) : 0;
+    const gapThresh = Math.max(70, lineWidth * 0.30, avgGap * 4);
+    let start = 0;
+    for (let i = 1; i < ws.length; i++) {
+      if ((ws[i].bbox.x0 || 0) - (ws[i - 1].bbox.x1 || 0) > gapThresh) {
+        allSegments.push(makeSegment(ws.slice(start, i), lineY0, lineY1));
+        start = i;
+      }
+    }
+    allSegments.push(makeSegment(ws.slice(start), lineY0, lineY1));
+  }
+
+  function makeSegment(segWords, y0, y1) {
+    const x0 = Math.min(...segWords.map(w => w.bbox.x0));
+    const x1 = Math.max(...segWords.map(w => w.bbox.x1));
+    const text = normalizeOCRText(segWords.map(w => w.text).join(' '));
+    return { text, x0, x1, y0, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, words: segWords };
+  }
+
+  const segments = allSegments.filter(s => s.text && s.text.trim().length).sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+  if (!segments.length) return [];
+
+  // 2. Extract titles from segments.
+  const titles = extractLayoutTitles(segments);
+  if (!titles.length) return segments.map(s => s.text);
+
+  // 3. Cluster titles by horizontal position to separate side-by-side pages/cards.
+  const maxX = Math.max(1, ...segments.map(s => s.x1));
+  const sortedTitles = titles.slice().sort((a, b) => a.cx - b.cx);
+  const clusters = [];
+  const xGapThresh = Math.max(70, maxX * 0.12);
+  for (const t of sortedTitles) {
+    let placed = false;
+    for (const c of clusters) {
+      const centerDiff = Math.abs(t.cx - (c.cx / c.titles.length));
+      if (centerDiff <= xGapThresh) { c.titles.push(t); c.cx += t.cx; placed = true; break; }
+    }
+    if (!placed) clusters.push({ titles: [t], cx: t.cx });
+  }
+  for (const c of clusters) {
+    c.cx = c.cx / c.titles.length;
+    c.cards = c.titles.slice().sort((a, b) => a.y0 - b.y0);
+  }
+
+  // 4. Horizontal zones for clusters.
+  clusters.sort((a, b) => a.cx - b.cx);
+  for (let i = 0; i < clusters.length; i++) {
+    let left = 0, right = maxX;
+    if (clusters.length > 1) {
+      if (i === 0) right = (clusters[0].cx + clusters[1].cx) / 2;
+      else if (i === clusters.length - 1) left = (clusters[i - 1].cx + clusters[i].cx) / 2;
+      else {
+        left = (clusters[i - 1].cx + clusters[i].cx) / 2;
+        right = (clusters[i].cx + clusters[i + 1].cx) / 2;
+      }
+    }
+    clusters[i].left = left - 25;
+    clusters[i].right = right + 25;
+  }
+
+  // 5. Assign every non-title segment to the nearest title in its horizontal zone.
+  const titleSegments = new Set(titles.map(t => t.line).filter(Boolean));
+  const cardMap = new Map();
+  for (const t of titles) cardMap.set(t, { title: t, segments: [] });
+
+  function findTitleForSegment(seg) {
+    let cluster = clusters.find(c => seg.cx >= c.left && seg.cx <= c.right);
+    if (!cluster) cluster = clusters.reduce((best, c) => Math.abs(seg.cx - c.cx) < Math.abs(seg.cx - best.cx) ? c : best, clusters[0]);
+    let best = null, bestScore = Infinity;
+    for (const t of cluster.cards) {
+      if (seg.cy < t.y0 - 10) continue;
+      const score = Math.abs(seg.cy - t.cy) * 1.5 + Math.abs(seg.cx - t.cx);
+      if (score < bestScore) { bestScore = score; best = t; }
+    }
+    return best;
+  }
+
+  for (const seg of segments) {
+    if (titleSegments.has(seg)) continue;
+    const t = findTitleForSegment(seg);
+    if (t) cardMap.get(t).segments.push(seg);
+  }
+
+  // 6. Build per-card text blocks; merge same-y segments left-to-right.
+  const cards = Array.from(cardMap.values()).sort((a, b) => a.title.y0 - b.title.y0 || a.title.cx - b.title.cx);
+  return cards.map(({ title, segments: segs }) => {
+    if (!segs.length) return title.text;
+    const sorted = segs.slice().sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+    const avgHeight = Math.max(10, median(sorted.map(s => s.y1 - s.y0)) || 20);
+    const rows = [];
+    for (const seg of sorted) {
+      if (!rows.length) { rows.push([seg]); continue; }
+      const last = rows[rows.length - 1];
+      const lastMinY = Math.min(...last.map(s => s.y0));
+      const lastMaxY = Math.max(...last.map(s => s.y1));
+      const lastCy = (lastMinY + lastMaxY) / 2;
+      const lastMaxX = Math.max(...last.map(s => s.x1));
+      const curCy = (seg.y0 + seg.y1) / 2;
+      const overlap = Math.max(0, Math.min(seg.y1, lastMaxY) - Math.max(seg.y0, lastMinY));
+      const yClose = Math.abs(curCy - lastCy) <= avgHeight * 0.55 || overlap > avgHeight * 0.4;
+      // A big jump back to the left column means a new table row, even if y is close.
+      const movedRight = seg.x0 >= lastMaxX - 20 || Math.abs(curCy - lastCy) <= avgHeight * 0.25;
+      if (yClose && movedRight) {
+        last.push(seg);
+      } else {
+        rows.push([seg]);
+      }
+    }
+    const rowTexts = rows.map(row => {
+      row.sort((a, b) => a.x0 - b.x0);
+      return row.map(s => s.text).join(' ').trim();
+    }).filter(Boolean);
+    return [title.text, ...rowTexts].join('\n').trim();
+  }).filter(Boolean);
+}
+
+function extractLayoutTitles(lineObjs) {
+  const titles = [];
+  for (const line of lineObjs) {
+    const norm = normalizeOCRText(line.text);
+    if (!norm.trim()) continue;
+    const names = splitDishNames(norm);
+    if (names.length > 1) {
+      const ranges = findTitleWordRanges(line.words, names);
+      for (let i = 0; i < names.length && i < ranges.length; i++) {
+        const ws = ranges[i];
+        const rangeText = ws.map(w => w.text).join(' ');
+        if (isLikelyComponent(rangeText)) continue;
+        const x0 = Math.min(...ws.map(w => w.bbox.x0));
+        const x1 = Math.max(...ws.map(w => w.bbox.x1));
+        const xs = ws.map(w => (w.bbox.x0 + w.bbox.x1) / 2);
+        titles.push({ text: names[i], x0, x1, cx: median(xs), y0: line.y0, y1: line.y1, cy: line.cy, words: ws, line });
+      }
+    } else if (names.length === 1 && isLikelyDishName(names[0]) && !isLikelyComponent(norm)) {
+      titles.push({ text: names[0], x0: line.x0, x1: line.x1, cx: line.cx, y0: line.y0, y1: line.y1, cy: line.cy, words: line.words, line });
+    }
+  }
+  return titles;
+}
+
+function findTitleWordRanges(words, names) {
+  const n = names.length;
+  const cache = new Map();
+  function isDishCached(text) {
+    if (cache.has(text)) return cache.get(text);
+    const ok = isLikelyDishName(cleanItemName(text));
+    cache.set(text, ok);
+    return ok;
+  }
+  function search(startIdx, nameIdx) {
+    if (nameIdx === n - 1) {
+      const left = words.slice(startIdx).map(w => w.text).join(' ');
+      if (isDishCached(left)) return [words.slice(startIdx)];
+      return null;
+    }
+    let best = null;
+    let bestGap = -1;
+    for (let i = startIdx + 1; i <= words.length - (n - nameIdx - 1); i++) {
+      const left = words.slice(startIdx, i).map(w => w.text).join(' ');
+      if (!isDishCached(left)) continue;
+      const rightWords = words.slice(i);
+      if (rightWords.length < n - nameIdx - 1) continue;
+      const rest = search(i, nameIdx + 1);
+      if (!rest) continue;
+      const gap = i < words.length ? words[i].bbox.x0 - words[i - 1].bbox.x1 : 0;
+      if (gap > bestGap) { bestGap = gap; best = [words.slice(startIdx, i), ...rest]; }
+    }
+    return best;
+  }
+  return search(0, 0) || [words];
+}
+
+function parseCardBlock(text) {
+  if (!text) return [];
+  const normalized = normalizeOCRText(text);
+  const lines = normalized.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const name = cleanItemName(lines[0]);
+  if (!name || !isLikelyDishName(name)) return [];
+  const noteStartWords = new Set(['сверху','снизу','внутрь','внутри','вне','для','по','как','фото','рисунок','пример','примерно']);
+  const noteAnyWords = new Set(['украшение','украсить','посыпать','присыпать','разрезать','запечь','половина','треть','четверть','ломтик','кусочек','щепотка','сверху','снизу']);
+  function isNoteFragment(line) {
+    const words = (line || '').toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return false;
+    return noteStartWords.has(words[0]);
+  }
+  function parseComponentLine(line) {
+    const compList = [];
+    const ex = extractComponents(line);
+    if (ex.tokens && ex.tokens.length) {
+      for (const t of ex.tokens) {
+        const comp = parseComponentToken(t);
+        if (comp && comp.ingredient) compList.push(comp);
+      }
+    }
+    if (!compList.length) {
+      const comp = parseComponentToken(line);
+      if (comp && comp.ingredient) compList.push(comp);
+    }
+    return { comps: compList, description: ex.description || '' };
+  }
+  function appendNote(note) {
+    if (!components.length || !note) return;
+    const prev = components[components.length - 1];
+    if (!prev.ingredient) return;
+    const m = prev.ingredient.match(/^(.*)\((.*)\)$/);
+    if (m) {
+      prev.ingredient = m[1] + '(' + m[2] + ' ' + note + ')';
+    } else {
+      prev.ingredient = prev.ingredient + ' (' + note + ')';
+    }
+  }
+  const components = [];
+  const descLines = [];
+  let inDesc = false;
+  let hasComponent = false;
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (isDescriptionHeader(line)) { inDesc = true; descLines.push(line); continue; }
+    if (inDesc) { descLines.push(line); continue; }
+    if (isLikelyComponent(line) || isLikelyIngredientName(cleanItemName(line))) {
+      if (!isLikelyComponent(line)) {
+        const firstChar = line.charAt(0);
+        const wordCount = line.split(/\s+/).filter(Boolean).length;
+        if (firstChar !== firstChar.toUpperCase() && wordCount > 1) {
+          if (hasComponent) appendNote(cleanItemName(line));
+          continue;
+        }
+      }
+      const { comps, description: lineDesc } = parseComponentLine(line);
+      if (comps.length) {
+        components.push(...comps);
+        hasComponent = true;
+      }
+      if (lineDesc) {
+        descLines.push(lineDesc);
+      }
+      continue;
+    }
+    if (isNoteFragment(line)) {
+      if (hasComponent) appendNote(cleanItemName(line));
+      continue;
+    }
+    if (hasInstructionWords(line) || line.length > 70) {
+      if (hasComponent) { inDesc = true; descLines.push(line); }
+      continue;
+    }
+    if (hasComponent && line.length < 60) {
+      appendNote(cleanItemName(line));
+      continue;
+    }
+    // ignore leading noise until first component is found
+  }
+  if (!components.length) return [];
+  return [{
+    type: 'composition',
+    name,
+    correct: components,
+    info_text: buildInfoText(name, components),
+    description: descLines.join('\n').trim() || undefined
+  }];
 }
 
 async function processTTKImageWithWorker(file, worker) {
@@ -3095,11 +3518,114 @@ async function processTTKImageWithWorker(file, worker) {
   const text = ret.data.text || '';
   const words = ret.data.words || [];
   const photoUrl = words.length ? await extractDishPhoto(imageUrl, words) : null;
-  const items = parseTTKOCRText(text);
+  let items = parseTTKImageLayout(ret, imageUrl) || [];
+  if (!items.length) {
+    // fallback to plain OCR reading-order parser
+    items = parseTTKOCRText(text) || [];
+  }
   if (photoUrl && items.length) {
     items[0].image = photoUrl;
   }
   return items;
+}
+
+function getOCRSpaceApiKey() {
+  try {
+    return localStorage.getItem('ocrSpaceApiKey') || 'helloworld';
+  } catch (e) {
+    return 'helloworld';
+  }
+}
+
+async function callOCRSpace(imageDataUrl) {
+  const form = new FormData();
+  form.append('apikey', getOCRSpaceApiKey());
+  form.append('language', 'rus');
+  form.append('OCREngine', '2');
+  form.append('isTable', 'true');
+  form.append('scale', 'true');
+  form.append('isOverlayRequired', 'true');
+  form.append('base64Image', imageDataUrl);
+  const resp = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
+  if (!resp.ok) throw new Error('OCR.space HTTP ' + resp.status);
+  const json = await resp.json();
+  if (json.IsErroredOnProcessing || !json.ParsedResults || !json.ParsedResults[0]) {
+    throw new Error(json.ErrorMessage || 'OCR.space error');
+  }
+  return json.ParsedResults[0];
+}
+
+function isQualityItem(item) {
+  const comps = (item && item.correct) || [];
+  if (comps.length > 40) return false; // likely several dishes merged together
+  for (const c of comps) {
+    if (c.grams > 0 || c.isCount) return true;
+    const clean = cleanItemName(c.ingredient || '');
+    if (clean && /[а-яё]{2,}/i.test(clean)) return true;
+  }
+  return false;
+}
+
+function isQualityOCRResult(items) {
+  if (!items || !items.length) return false;
+  return items.some(isQualityItem);
+}
+
+async function processTTKImageWithOCRSpace(file) {
+  const imageUrl = await resizeImageFile(file, 1400, 0.9);
+  const result = await callOCRSpace(imageUrl);
+  const parsedText = (result.ParsedText || '').replace(/\r\n/g, '\n');
+  const overlay = result.TextOverlay || {};
+  const rawLines = overlay.Lines || [];
+
+  // Try tabular OCR text first; OCR.space with isTable=true returns tabs between columns.
+  let items = parseTTKTableText(parsedText) || [];
+  if (isQualityOCRResult(items)) {
+    items = items.filter(isQualityItem);
+    const allWords = rawLines.reduce((acc, line) => {
+      (line.Words || []).forEach(w => acc.push({
+        text: w.WordText || '',
+        confidence: 95,
+        bbox: { x0: w.Left || 0, y0: w.Top || 0, x1: (w.Left || 0) + (w.Width || 0), y1: (w.Top || 0) + (w.Height || 0) }
+      }));
+      return acc;
+    }, []).filter(w => w.text);
+    const photoUrl = allWords.length ? await extractDishPhoto(imageUrl, allWords) : null;
+    if (photoUrl && items.length) items[0].image = photoUrl;
+    return items;
+  }
+
+  if (!rawLines.length) {
+    items = parseTTKOCRText(parsedText) || [];
+    if (isQualityOCRResult(items)) return items.filter(isQualityItem);
+    return [];
+  }
+  const lines = rawLines.map(line => {
+    const ws = (line.Words || []).map(w => ({
+      text: w.WordText || '',
+      confidence: 95,
+      bbox: {
+        x0: w.Left || 0,
+        y0: w.Top || 0,
+        x1: (w.Left || 0) + (w.Width || 0),
+        y1: (w.Top || 0) + (w.Height || 0)
+      }
+    })).filter(w => w.text);
+    const x0s = ws.map(w => w.bbox.x0);
+    const x1s = ws.map(w => w.bbox.x1);
+    const y0s = ws.map(w => w.bbox.y0);
+    const y1s = ws.map(w => w.bbox.y1);
+    const bbox = ws.length ? { x0: Math.min(...x0s), x1: Math.max(...x1s), y0: Math.min(...y0s), y1: Math.max(...y1s) } : { x0: 0, y0: 0, x1: 0, y1: 0 };
+    return { text: (line.LineText || '').trim(), words: ws, bbox };
+  }).filter(l => l.words.length);
+  const allWords = lines.reduce((acc, l) => { acc.push(...l.words); return acc; }, []);
+  const ret = { data: { text: parsedText, lines, words: allWords } };
+  items = parseTTKImageLayout(ret, imageUrl) || [];
+  if (!isQualityOCRResult(items)) items = parseTTKOCRText(parsedText) || [];
+  items = items.filter(isQualityItem);
+  const photoUrl = allWords.length ? await extractDishPhoto(imageUrl, allWords) : null;
+  if (photoUrl && items.length) items[0].image = photoUrl;
+  return items.length ? items : [];
 }
 
 async function extractDishPhoto(imageDataUrl, words) {
@@ -3387,31 +3913,60 @@ function parseDocxHTML(html) {
   }
 
   const headingTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+  let lastTableItem = null;
+  let descriptionBuffer = [];
+
+  function isBoldParagraph(node) {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE || node.tagName.toLowerCase() !== 'p') return false;
+    const bold = [...node.querySelectorAll('strong, b')].map(n => n.textContent).join('');
+    return bold.trim() === node.textContent.trim();
+  }
+
+  function flushDescription() {
+    if (lastTableItem && descriptionBuffer.length) {
+      lastTableItem.description = ((lastTableItem.description || '') + (lastTableItem.description ? '\n\n' : '') + descriptionBuffer.join('\n\n')).trim();
+      descriptionBuffer = [];
+    }
+  }
 
   for (const child of wrapper.childNodes) {
     if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'table') {
+      flushDescription();
       const menuItems = parseMenuTable(child);
       if (menuItems) {
         items.push(...menuItems);
+        lastTableItem = null;
       } else {
         const item = parseIngredientTable(child, pendingName);
-        if (item) items.push(item);
+        if (item) {
+          items.push(item);
+          lastTableItem = item;
+        }
       }
       pendingName = null;
       pendingIsHeading = false;
+      continue;
+    }
+    const tag = child.nodeType === Node.ELEMENT_NODE ? child.tagName.toLowerCase() : '';
+    const isHeading = headingTags.includes(tag) || isBoldParagraph(child);
+    const text = nodeText(child).trim();
+    if (!text) continue;
+    if (/^ттк$/i.test(text)) continue;
+    if (/^[A-ZА-ЯЁ\d\s]+$/.test(text)) continue;
+    if (isHeading || isLikelyDishName(cleanItemName(text))) {
+      flushDescription();
+      pendingName = text;
+      pendingIsHeading = isHeading;
+      lastTableItem = null;
+    } else if (lastTableItem) {
+      descriptionBuffer.push(text);
     } else {
-      const tag = child.nodeType === Node.ELEMENT_NODE ? child.tagName.toLowerCase() : '';
-      const isHeading = headingTags.includes(tag);
-      const text = nodeText(child).trim();
-      if (!text) continue;
-      if (/^ттк$/i.test(text)) continue;
-      if (/^[A-ZА-ЯЁ\d\s]+$/.test(text)) continue;
-      if (isHeading || !pendingIsHeading) {
-        pendingName = text;
-        pendingIsHeading = isHeading;
-      }
+      flushDescription();
+      pendingName = text;
+      pendingIsHeading = false;
     }
   }
+  flushDescription();
 
   return items;
 }
@@ -3476,77 +4031,315 @@ function parseTTKPastePreview() {
   openCourseEditor();
 }
 
-function parseTTKPlainText(text) {
-  if (!text || !text.trim()) return [];
-  const normalized = text
+function isSectionHeading(s) {
+  const words = ['состав','ингредиенты','ингредиент','рецепт','готовка','техкарта','карточка','описание','фото','фотография'];
+  return words.includes((s || '').toLowerCase().trim());
+}
+
+function normalizeOCRText(text) {
+  if (!text) return '';
+  const units = 'шт|штук|штуки|г|гр|грамм|грам|мл|миллилитров|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
+  const ocrUnits = units.split('|').sort((a, b) => b.length - a.length).join('|');
+  const ocrDigitRe = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])(' + units + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
+  const ocrDigit2Re = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])([Оо0])\\s*(' + ocrUnits + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
+  const ocrZeroRe = new RegExp('(\\d)(?:\\s*[ОоO]\\s*)+(' + ocrUnits + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
+  let t = text
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
-    .replace(/\t/g, ' ')
+    .replace(/@/g, 'а');
+  const uiPatterns = [
+    /^\s*<\s*.*$/,
+    /^\s*\d{1,2}:\d{2}\b/,
+    /редактор\s*\(?фото\s*ттк\)?/i,
+    /сохранено/i,
+    /\+\s*добавить\s*ингредиент/i,
+    /описание\s*\/\s*процесс\s*приготовления/i,
+    /процесс\s*приготовления\s*блюда/i,
+    /^\s*фото\s*$/i,
+    /^\s*[-+=—–…]{2,}\s*$/,
+    /(?:басе64|base64|data:image|image\/)/i,
+    /закрепл[её]нное\s+сообщение/i,
+    /\bсообщение\b/i,
+    /\bфотография\b/i,
+    /\bв\s+сети\b/i,
+    /^\s*\d{1,2}:\d{2}\s*(?:[ap]m)?\s*$/i,
+    /\d{1,2}:\d{2}/,
+    /[®©]/,
+    /^\s*[\[<].*$/,
+  ];
+  t = t.split('\n').map(line => {
+    for (const re of uiPatterns) if (re.test(line)) return '';
+    if (isSectionHeading(cleanItemName(line)) && line.trim().length <= 30) return '';
+    return line;
+  }).filter(l => l.trim().length > 0).join('\n');
+  t = t.replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
+    const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
+    return val.toFixed(3).replace(/\.?0+$/, '');
+  })
+    // drop common OCR garbage tokens
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])(?:ке\s*сонеы|зоне|зонеы|зерен|зере|зее|зеее|сонеы|сенеы)(?![a-zA-Zа-яёЁ0-9])/gi, '$1')
+    // OCR misreads "60г" as "бог" (б->6, о->0, г->г)
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])[Бб][Оо0][Гг](?![a-zA-Zа-яёЁ0-9])/g, '$160г')
+    .replace(ocrZeroRe, (m, digit, unit) => digit + '0' + unit.toLowerCase())
+    .replace(ocrDigit2Re, (m, before, z, o, unit) => before + '30' + unit.toLowerCase())
+    .replace(ocrDigitRe, '$13$3')
+    .replace(/[ \xA0]{2,}/g, ' ')
     .trim();
+  return t;
+}
+
+function parseTTKPlainText(text) {
+  if (!text || !text.trim()) return [];
+  const normalized = normalizeOCRText(text);
 
   let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
 
-  if (blocks.length === 1 && blocks[0].split('\n').length > 2) {
+  if (blocks.length === 1 && blocks[0].split('\n').length >= 2) {
     const lines = blocks[0].split('\n').map(l => l.trim()).filter(Boolean);
     const split = maybeSplitBlocks(lines);
     if (split.length > 1) blocks = split;
   } else if (blocks.length > 1) {
     blocks = mergeHeadingBlocks(blocks);
   }
+  blocks = mergeDescriptionBlocks(blocks);
 
-  const items = [];
+  return postProcessParsedItems(processTTKBlocks(blocks));
+}
+
+function mergeDescriptionBlocks(blocks) {
+  const merged = [];
   for (const block of blocks) {
-    const item = parseItemBlock(block);
-    if (item) items.push(item);
+    const firstLine = (block.split('\n')[0] || '').trim();
+    if (isDescriptionHeader(firstLine) && merged.length) {
+      merged[merged.length - 1] = merged[merged.length - 1] + '\n' + block;
+    } else {
+      merged.push(block);
+    }
+  }
+  return merged;
+}
+
+function processTTKBlocks(blocks) {
+  const items = [];
+  let pendingDesc = '';
+  for (const block of blocks) {
+    const itemOrItems = parseItemBlock(block);
+    const arr = Array.isArray(itemOrItems) ? itemOrItems : (itemOrItems ? [itemOrItems] : []);
+    if (arr.length) {
+      for (const item of arr) {
+        if (pendingDesc) {
+          item.description = (item.description ? item.description + '\n\n' : '') + pendingDesc;
+        }
+        items.push(item);
+      }
+      pendingDesc = '';
+      continue;
+    }
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+    if (lines.length === 1 && !isDescriptionHeader(lines[0]) && isLikelyDishName(lines[0])) continue;
+    const headerIdx = lines.findIndex(isDescriptionHeader);
+    let descLines = [];
+    let headerFound = false;
+    if (headerIdx !== -1) {
+      headerFound = true;
+      descLines = lines.slice(headerIdx);
+    } else if (items.length) {
+      descLines = lines;
+    } else {
+      continue;
+    }
+    const descText = descLines.join('\n').trim();
+    if (!descText) continue;
+    if (items.length) {
+      const last = items[items.length - 1];
+      last.description = (last.description ? last.description + '\n\n' : '') + descText;
+    } else if (headerFound) {
+      pendingDesc = descText;
+    }
   }
   return items;
 }
 
-function parseTTKOCRText(text) {
-  if (!text || !text.trim()) return [];
-  const lines = text
-    .replace(/^\uFEFF/, '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .split('\n')
-    .map(l => l.trim())
-    .filter(Boolean);
+function postProcessParsedItems(items) {
+  const out = [];
+  for (const item of (items || [])) {
+    const correct = (item.correct || []).filter(c => {
+      if (typeof c !== 'object') return true;
+      return (c.ingredient || '').trim().length > 0 || c.grams === '' || c.grams === undefined || c.grams === null;
+    });
+    item.correct = correct;
+    const name = (item.name || '').trim();
+    const desc = (item.description || '').trim();
+    if (correct.length === 1 && name && correct[0].ingredient && name.toLowerCase() === correct[0].ingredient.trim().toLowerCase() && !desc && out.length) {
+      const prev = out[out.length - 1];
+      prev.correct = prev.correct.concat(correct);
+      if (item.image) prev.image = item.image;
+      continue;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
+function parseTTKTableText(text) {
+  if (!text || !text.trim() || text.indexOf('\t') === -1) return [];
+  const lines = normalizeOCRText(text).split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+
+  const headerRe = /^(?:ингредиент|кол[-\s]?во|количество|вес|состав|наименование|продукт|ед\.?\s*изм|грамм|шт|мл|единица)$/i;
+  const commonSingleDish = new Set(['оладьи','сырники','борщ','салат','суп','омлет','гречка','рис','каша','мюсли','бриошь','бургер','чизкейк','морс','кисель','компот','смузи','пельмени','макароны','паштет','рулет','котлет','медальон','салями','пепперони','бекон','лимон','лайм','пицца','паста','лаваш','шаурма','плов','курица','рыба','мясо']);
+
+  function isStrongDishTitle(l) {
+    if (headerRe.test(l)) return false;
+    if (isLikelyComponent(l)) return false;
+    const s = cleanItemName(l);
+    if (!s || s.length < 3 || s.length > 80) return false;
+    if (/^\d/.test(s)) return false;
+    if (!isLikelyDishName(s)) return false;
+    const words = s.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      // Require at least one clearly dish-related word or a preposition; otherwise it is likely an ingredient phrase.
+      const preps = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли','со','во','с','о']);
+      const dishWords = new Set([...commonSingleDish, 'сэндвич','салат','суп','бургер','пицца','паста','ролл','тартин','кремчиз','грильчиз','завтрак','завтраки','бриошь','мортаделла','страчателла','прошутто','паштет','рулет','котлет','медальон','салями','пепперони']);
+      const hasDishMarker = words.some(w => dishWords.has(w.toLowerCase()) || preps.has(w.toLowerCase()));
+      if (!hasDishMarker) return false;
+      return true;
+    }
+    return commonSingleDish.has(words[0].toLowerCase());
+  }
+
+  // Find the first solid dish title; skip Telegram/UI noise like "4 Instagram" or "Алина".
+  const titleIdx = lines.findIndex(isStrongDishTitle);
+  let title = titleIdx >= 0 ? lines[titleIdx] : (lines.find(l => !headerRe.test(l) && !l.includes('\t')) || 'Блюдо');
 
   const items = [];
-  let currentName = null;
-  let currentComponents = [];
+  let item = { type: 'composition', name: cleanItemName(title), correct: [], info_text: '', description: '' };
+  let inHeader = true;
+  let inDescription = false;
+  let descLines = [];
 
-  function flush() {
-    if (currentName) {
-      const components = currentComponents
-        .flatMap(extractComponents)
-        .map(parseComponentToken)
-        .filter(Boolean);
-      if (components.length) {
-        const name = cleanItemName(currentName);
-        items.push({
-          type: 'composition',
-          name,
-          correct: components,
-          info_text: buildInfoText(name, components),
-        });
+  function pushItem() {
+    if (item.correct.length || item.description || descLines.length) {
+      if (descLines.length && !item.description) item.description = descLines.join('\n').trim();
+      items.push(postProcessParsedItems([item])[0]);
+    }
+    item = { type: 'composition', name: '', correct: [], info_text: '', description: '' };
+    descLines = [];
+    inHeader = true;
+    inDescription = false;
+  }
+
+  for (let i = titleIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+    if (i === titleIdx) continue;
+    if (headerRe.test(line) && inHeader) continue;
+    inHeader = false;
+    if (isDescriptionHeader(line)) { inDescription = true; if (line) descLines.push(line); continue; }
+    if (inDescription) { descLines.push(line); continue; }
+
+    // New dish title: flush current and start next.
+    if (!line.includes('\t') && isStrongDishTitle(line) && item.correct.length) {
+      pushItem();
+      item.name = cleanItemName(line);
+      continue;
+    }
+
+    if (!line.includes('\t')) {
+      if (isLikelyComponent(line)) {
+        const ex = extractComponents(line);
+        if (ex.tokens && ex.tokens.length) {
+          for (const t of ex.tokens) {
+            const comp = parseComponentToken(t);
+            if (comp && comp.ingredient) item.correct.push(comp);
+          }
+        } else {
+          const comp = parseComponentToken(line);
+          if (comp && comp.ingredient) item.correct.push(comp);
+          else if (ex.description) descLines.push(ex.description);
+        }
+        if (ex.description && !item.correct.length) descLines.push(ex.description);
+      } else if (isLikelyDishName(line)) {
+        descLines.push(line);
+      } else {
+        descLines.push(line);
       }
+      continue;
     }
-    currentName = null;
-    currentComponents = [];
-  }
 
-  for (const line of lines) {
-    if (isLikelyComponent(line)) {
-      if (currentName) currentComponents.push(line);
+    const cells = line.split('\t').map(c => c.trim()).filter(c => c);
+    if (!cells.length) continue;
+    if (cells.length === 1) {
+      const cell = cells[0];
+      if (headerRe.test(cell)) continue;
+      if (isLikelyComponent(cell)) {
+        const ex = extractComponents(cell);
+        if (ex.tokens && ex.tokens.length) {
+          for (const t of ex.tokens) {
+            const comp = parseComponentToken(t);
+            if (comp && comp.ingredient) item.correct.push(comp);
+          }
+        } else {
+          const comp = parseComponentToken(cell);
+          if (comp && comp.ingredient) item.correct.push(comp);
+          else if (ex.description) descLines.push(ex.description);
+        }
+        if (ex.description && !item.correct.length) descLines.push(ex.description);
+      } else if (isStrongDishTitle(cell)) {
+        pushItem();
+        item.name = cleanItemName(cell);
+      } else if (isLikelyDishName(cell)) {
+        descLines.push(cell);
+      } else {
+        descLines.push(cell);
+      }
+      continue;
+    }
+    // At least 2 cells: name and weight/quantity.
+    const name = cells[0];
+    const weight = cells.slice(1).join(' ');
+    if (headerRe.test(name)) continue;
+    const fullLine = (name + ' ' + weight).trim();
+    const ex = extractComponents(fullLine);
+    if (ex.tokens && ex.tokens.length) {
+      for (const t of ex.tokens) {
+        const comp = parseComponentToken(t);
+        if (comp && comp.ingredient) item.correct.push(comp);
+      }
     } else {
-      flush();
-      currentName = line;
+      const comp = parseComponentToken(fullLine);
+      if (comp && comp.ingredient) item.correct.push(comp);
+      else if (name) item.correct.push({ ingredient: cleanItemName(name), grams: 0, isCount: false });
     }
+    if (ex.description && !item.correct.length) descLines.push(ex.description);
   }
-  flush();
 
+  pushItem();
+  return items.length ? items : [];
+}
+
+function parseTTKOCRText(text) {
+  if (!text || !text.trim()) return [];
+  const normalized = normalizeOCRText(text);
+  if (normalized.indexOf('\t') !== -1) {
+    const tableItems = parseTTKTableText(normalized);
+    if (tableItems && tableItems.length) return tableItems;
+  }
+
+  let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+
+  if (blocks.length === 1 && blocks[0].split('\n').length >= 2) {
+    const lines = blocks[0].split('\n').map(l => l.trim()).filter(Boolean);
+    const split = maybeSplitBlocks(lines);
+    if (split.length > 1) blocks = split;
+  } else if (blocks.length > 1) {
+    blocks = mergeHeadingBlocks(blocks);
+  }
+  blocks = mergeDescriptionBlocks(blocks);
+
+  const items = postProcessParsedItems(processTTKBlocks(blocks));
   return items.length ? items : parseTTKPlainText(text);
 }
 
@@ -3575,14 +4368,29 @@ function mergeHeadingBlocks(blocks) {
 }
 
 function isLikelyComponent(line) {
-  const s = (line || '').trim();
+  let s = (line || '').trim();
   if (!s) return false;
-  if (/^[-•–—*‣⁃◦\d.)\]()]/.test(s)) return true;
+  const stripped = s.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
+  if (/^[-•–—*‣⁃◦.)\]()]/.test(s)) return true;
   if (/п\/ф|пф/i.test(s)) return true;
   const units = ['г', 'гр', 'грамм', 'грам', 'мл', 'миллилитров', 'шт', 'штук', 'штуки', 'л', 'кг', 'кгр', 'мг', 'g', 'gr', 'gram', 'grams', 'ml', 'pcs', 'pc'];
   const unitRe = new RegExp('\\d+(?:[.,]\\d+)?\\s*(?:' + units.join('|') + ')(?:\\s|$|[.,;])', 'i');
-  if (unitRe.test(s)) return true;
-  if (/\d+(?:[.,]\d+)?\s*%/.test(s)) return true;
+  if (unitRe.test(stripped)) return true;
+  const pctMatch = s.match(/^(.*?)\s*[\s(]*(\d+(?:[.,]\d+)?)\s*%[\s)]*/);
+  if (pctMatch && isLikelyIngredientName(cleanItemName(pctMatch[1].replace(/[\s(]+$/, '')))) return true;
+  // count-only ingredient lines like "Соль 1" or "Сахар 10"
+  const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
+  if (noUnitMatch && isLikelyIngredientName(noUnitMatch[1])) return true;
+  // measure-word ingredient lines like "Соль 1 щепотка" or "Авокадо 1/2 шт"
+  const measureWords = 'щепотка|щепотки|ложка|ложки|ложечка|чайная|столовая|стакан|чашка|горсть|горсти|пучок|пучки|зубчик|зубчика|стручок|стручка|капля|капли|кусочек|кусочка|ломтик|ломтика|пластинка|пластинки|долька|дольки|половинка|половинки|четвертинка|четвертинки|пучочек|горошина|горошины|кружка|банка|пакет|пакетик';
+  const measureRe = new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + measureWords + ')(?![a-zA-Zа-яёЁ0-9])', 'i');
+  const measureMatch = s.match(measureRe);
+  if (measureMatch && isLikelyIngredientName(cleanItemName(measureMatch[1]))) return true;
+  // ingredient lines like "Банан: половинка" or "Сметана: 30г" (not a dish heading)
+  if (/:\s+/.test(s)) {
+    const parts = s.split(/:\s+/, 2);
+    if (parts[1] && !/:/.test(parts[1]) && !isDescriptionHeader(parts[0]) && !isLikelyDishName(cleanItemName(parts[1]))) return true;
+  }
   return false;
 }
 
@@ -3614,20 +4422,43 @@ function maybeSplitBlocks(lines) {
     return [lines.join('\n')];
   } else {
     function isSectionHeader(s) {
+      if (isDescriptionHeader(s)) return false;
       return /^[A-ZА-ЯЁ\s\d]+$/.test(s) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(s);
     }
-    let prevWasComponent = isLikelyComponent(lines[0]);
+    const weightUnitRe = /\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг)(?![a-zA-Zа-яёЁ0-9])/i;
+    function blockHasComponent(arr) {
+      return arr.some(l => weightUnitRe.test(l));
+    }
     current = [lines[0]];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
-      const comp = isLikelyComponent(line);
-      if (!comp && prevWasComponent && !isSectionHeader(line)) {
+      const cleaned = cleanItemName(line);
+      const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
+      const nextIsComponent = nextLine && isLikelyComponent(nextLine);
+      const isDishHeader = !isLikelyComponent(line) && !isLikelyNote(cleaned) && !isSectionHeading(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line));
+      if (isDishHeader) {
+        // split on a likely dish name that is followed by a component line (new dish block)
+        if (nextIsComponent) {
+          blocks.push(current.join('\n'));
+          current = [line];
+          continue;
+        }
+        // don't split on an ingredient-looking word when the current block already has real components (multi-column OCR)
+        if (isLikelyIngredientName(cleaned) && blockHasComponent(current)) {
+          current.push(line);
+          continue;
+        }
+        // don't split on an ingredient-looking word that is followed by a description/process header (multi-column OCR)
+        if (isLikelyIngredientName(cleaned) && i + 1 < lines.length && isDescriptionHeader(lines[i + 1])) {
+          current.push(line);
+          continue;
+        }
+        // otherwise split on a clear dish title
         blocks.push(current.join('\n'));
         current = [line];
       } else {
         current.push(line);
       }
-      prevWasComponent = comp;
     }
   }
 
@@ -3635,76 +4466,429 @@ function maybeSplitBlocks(lines) {
   return blocks;
 }
 
+function isDescriptionHeader(line) {
+  const s = (line || '').trim().toLowerCase();
+  if (!s) return false;
+  if (/^(?:способ|порядок)\s*приготовления\s*[\-–—:\.]?/i.test(line)) return true;
+  if (/^(?:приготовление|готовка|технология|процесс|рецепт|инструкция|описание|как\s+готовить|приготовить|готовить|execution|preparation|method|instructions|directions)\s*[\-–—:\.]?/i.test(line)) return true;
+  if (/приготовлен(ие|ия|ию)|\sпроцесс\s|\sготовк|\sрецепт\s|\sинструкци/i.test(' ' + s + ' ')) return true;
+  return false;
+}
+
+function hasInstructionWords(s) {
+  const words = (s || '').toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  const verbEndings = /(ем|им|ет|ит|ут|ют|ешь|ишь|ете|ите|ать|ять|еть|ить|уть|ыть|овать|евать|авать|ывать|ивать|аться|еться|иться|уться|ыться|оваться|еваться|аваться|ываться|иваться)$/;
+  const nonInstructionNouns = new Set(['омлет','паштет','рулет','котлет','медальон','бриошь','бургер','чизкейк','морс','кисель','компот','смузи','лайм','лимон','бекон','салями','пепперони','салат','суп','борщ','сирт','оладьи','сырники','пельмени','макароны','гречка','рис','каша','мюсли']);
+  const prepositions = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли']);
+  function isVerb(w) {
+    const lw = w.toLowerCase();
+    if (nonInstructionNouns.has(lw) || nonInstructionNouns.has(lw.replace(/[иы]$/, ''))) return false;
+    return verbEndings.test(lw) && lw.length > 3;
+  }
+  // if the first word is a verb, it's an instruction
+  if (isVerb(words[0])) return true;
+  // if the line starts with a preposition/conjunction, it is an instruction only if a verb follows
+  if (prepositions.has(words[0])) {
+    return words.slice(1).some(isVerb);
+  }
+  // otherwise it's an instruction only if it contains a verb (description/prose)
+  return words.some((w, i) => i > 0 && isVerb(w));
+}
+
+function isLabelPrefixedDishName(line) {
+  const s = (line || '').trim();
+  const m = s.match(/^(?:блюдо|название|наименование|позиция|товар|dish|name|title)[\s:—–-]+(.+)$/i);
+  if (!m) return false;
+  const rest = cleanItemName(m[1]);
+  return rest.length >= 2 && !/\d/.test(rest);
+}
+
+function isLikelyDishName(line) {
+  const s = cleanItemName(line || '');
+  if (!s || s.length < 2 || s.length > 80) return false;
+  if (isSectionHeading(s)) return false;
+  if (isDescriptionHeader(s)) return false;
+  if (/[,;!:?().]/.test(s)) return false;
+  if (isLikelyNote(s)) return false;
+  if (/\d/.test(s)) return false;
+  if (!/[аеёиоуыэюя]/i.test(s)) return false;
+  const first = s.charAt(0);
+  if (!/[A-ZА-ЯЁ]/.test(first) && s !== s.toUpperCase()) return false;
+  const words = s.split(/\s+/).filter(Boolean);
+  // reject noise like "ЕООД ых": a long all-caps word mixed with lowercase
+  if (words.some(w => w.length > 3 && w === w.toUpperCase()) && words.some(w => w !== w.toUpperCase())) return false;
+  const shortPreps = new Set(['а','б','в','и','к','о','с','у','я','м','н','р','я']);
+  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length === 1 && shortPreps.has(words[0].toLowerCase())) return false;
+  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length <= 3) {
+    if (words.length === 1) return false;
+    const rest = words.slice(1).join(' ');
+    if (!isLikelyDishName(rest) && !isLikelyIngredientName(rest)) return false;
+  }
+  // reject ingredient-prep phrases that OCR put on their own line (e.g. "Грецкий орех крошка")
+  const last = words[words.length - 1].toLowerCase();
+  const exactEndings = new Set(['г','гр','мл','шт','штук','штуки','кг','л','мг','грамм','граммов','миллилитров']);
+  const suffixEndings = ['крошка','крошки','ломтик','ломтики','щепотка','щепотки','зубчик','зубчики','стручок','стручки','долька','дольки','половинка','половинки','кусочек','кусочки','порция','порции','замороженная','замороженный','замороженные','вяленые','вяленый','маринованные','консервированные','слайсы','свежемороженые'];
+  if (exactEndings.has(last) || suffixEndings.some(e => last.endsWith(e))) return false;
+  if (/(?:\b|^)(?:п\/ф|пф|с\/с|с\/м|с\/о)(?:\b|$)/i.test(s)) return false;
+  return !hasInstructionWords(s);
+}
+
+function isLikelyIngredientName(line) {
+  const s = cleanItemName(line || '');
+  if (!s || s.length < 2 || s.length > 40) return false;
+  if (isSectionHeading(s)) return false;
+  if (isDescriptionHeader(s)) return false;
+  if (/[,;!:?().\d]/.test(s)) return false;
+  if (isLikelyNote(s)) return false;
+  const first = s.charAt(0);
+  if (!/[A-ZА-ЯЁa-zа-яё]/.test(first)) return false;
+  if (!/[аеёиоуыэюя]/i.test(s)) return false;
+  const words = s.split(/\s+/).filter(Boolean);
+  if (words[0] && ['ингредиент','ингредиенты'].includes(words[0].toLowerCase())) return false;
+  if (words[0] && words[0].length < 3 && words[0] === words[0].toLowerCase()) return false;
+  if (words.length === 1 && words[0] === words[0].toUpperCase() && words[0].length <= 4 && /[Зз]/.test(words[0])) return false;
+  const nonIngredientNouns = new Set(['гриль','гриле','сковород','сковорода','сковороде','тарелка','тарелке','плита','плите','духовка','духовке','микроволновка','нож','вилка','ложка','кастрюля','сотейник','доска','толкушка','венчик','половник','кухня','посуда','огонь','газ','плитка','минута','минут','секунда','час','градус','температура','время','процесс','способ']);
+  if (words.some(w => nonIngredientNouns.has(w.toLowerCase()))) return false;
+  const nonIngredientRoots = /^(гриль|гриле|сковород|тарелк|плит|духов|микроволнов|нож|вилк|ложк|кастрюл|сотейник|дос(?!пех)|толкушк|венчик|половник|кухн|посуд|огон|газ|минут|секунд|час|градус|температур|врем|процесс|способ)/i;
+  if (words.some(w => nonIngredientRoots.test(w))) return false;
+  const prepositions = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли','со','во']);
+  if (words.slice(1).some(w => prepositions.has(w.toLowerCase()))) return false;
+  if (words.length === 1 && isAdjectiveOnly(words[0])) return false;
+  return !hasInstructionWords(s);
+}
+
+function isLikelyNote(s) {
+  if (!s) return false;
+  const words = s.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  const startNoteWords = new Set(['сверху','снизу','внутрь','внутри','вне','для','по','как','фото','рисунок','пример','примерно']);
+  const anyNoteWords = new Set(['украшение','украсить','посыпать','присыпать','разрезать','запечь','половина','треть','четверть','ломтик','кусочек','щепотка','сверху','снизу']);
+  if (startNoteWords.has(words[0])) return true;
+  if (words.some(w => anyNoteWords.has(w))) return true;
+  return hasInstructionWords(s);
+}
+
+function isAdjectiveOnly(word) {
+  const s = (word || '').toLowerCase();
+  return /(ский|ской|ская|ское|ские|ный|ная|ное|ные|вой|вый|вая|вое|вые|чный|чная|чное|чные|кой|кий|кая|кое|кие|ой|ая|ое|ые|ий|яя|ее|ие|ым|им|ом|ем)$/i.test(s) && !/(ник|ик|ок|ек|чик|щик|ец|ор|ер)$/i.test(s);
+}
+
+function splitDishNames(line) {
+  const cleaned = cleanItemName(line);
+  if (!cleaned) return [];
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const names = [];
+  let start = 0;
+  for (let i = 1; i <= words.length; i++) {
+    if (i === words.length) {
+      const candidate = words.slice(start).join(' ');
+      if (isLikelyDishName(candidate)) names.push(candidate);
+      break;
+    }
+    const left = words.slice(start, i).join(' ');
+    const right = words.slice(i).join(' ');
+    if (isLikelyDishName(left) && isLikelyDishName(right)) {
+      const rightWords = right.split(/\s+/).filter(Boolean);
+      if (rightWords.length === 1 && isAdjectiveOnly(right)) continue;
+      names.push(left);
+      start = i;
+    }
+  }
+  return names.length ? names : [cleaned];
+}
+
 function parseItemBlock(block) {
   const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return null;
+  if (!lines.length) return [];
+  if (isDescriptionHeader(lines[0])) return [];
+  const firstCleaned = cleanItemName(lines[0]);
+  if (!isLikelyDishName(firstCleaned) && !isLikelyIngredientName(firstCleaned) && !isLabelPrefixedDishName(lines[0])) return [];
   const split = splitNameAndComponents(lines[0]);
-  let name = split.name;
+  let firstName = split.name;
+  let strippedPrefix = false;
+  const nameWords = firstName.split(/\s+/).filter(Boolean);
+  if (nameWords.length > 1 && nameWords[0] === nameWords[0].toUpperCase() && nameWords[0].length <= 3 && /[Зз]/.test(nameWords[0]) && isLikelyDishName(nameWords.slice(1).join(' '))) {
+    firstName = nameWords.slice(1).join(' ');
+    strippedPrefix = true;
+  }
+
+  const remainingLines = lines.slice(1);
+  // collect component lines: skip leading descriptions, then collect contiguous plausible component lines
+  const compLines = [];
+  let descLines = [];
+  let collecting = false;
+  let inDescription = false;
+  for (const line of remainingLines) {
+    if (isDescriptionHeader(line)) {
+      descLines.push(line);
+      inDescription = true;
+      collecting = true;
+      continue;
+    }
+    if (inDescription) {
+      descLines.push(line);
+      continue;
+    }
+    if (isLikelyComponent(line) || isLikelyIngredientName(cleanItemName(line))) {
+      compLines.push(line);
+      collecting = true;
+    } else if (collecting) {
+      descLines.push(line);
+      if (hasInstructionWords(line)) inDescription = true;
+    } else {
+      descLines.push(line);
+    }
+  }
+
+  let description = descLines.join('\n').trim();
   let components = split.components;
 
-  if (!components.length && lines.length > 1) {
-    components = lines.slice(1).flatMap(extractComponents);
+  if (!components.length && compLines.length) {
+    const extracted = compLines.map(extractComponents).reduce((acc, ex) => {
+      if (ex.tokens && ex.tokens.length) {
+        acc.tokens.push(...ex.tokens);
+        if (ex.description) acc.description.push(ex.description);
+      } else if (ex.description) {
+        acc.description.push(ex.description);
+      }
+      return acc;
+    }, { tokens: [], description: [] });
+    components = extracted.tokens;
+    if (extracted.description.length) {
+      description = (description ? description + '\n' : '') + extracted.description.filter(Boolean).join('\n');
+    }
   }
 
   if (!components.length && lines.length === 1) {
     const fallback = splitNameAndComponents(lines[0], true);
-    name = fallback.name;
+    firstName = fallback.name;
     components = fallback.components;
+    description = '';
   }
 
-  if (!name || !components.length) return null;
+  if (!firstName || !components.length) return [];
   components = components.map(parseComponentToken).filter(Boolean);
-  if (!components.length) return null;
+  if (!components.length) return [];
+  if (strippedPrefix && components.length === 1 && !components[0].ingredient && components[0].grams !== undefined) {
+    components[0].ingredient = firstName;
+  }
 
-  return {
-    type: 'composition',
-    name,
-    correct: components,
-    info_text: buildInfoText(name, components),
-  };
+  const names = splitDishNames(firstName);
+  const items = [];
+  for (const name of names) {
+    const item = {
+      type: 'composition',
+      name,
+      correct: components,
+      info_text: buildInfoText(name, components),
+      description,
+    };
+    if (!item.description) delete item.description;
+    items.push(item);
+  }
+  return items;
 }
 
 function splitNameAndComponents(line, allowNoComponents) {
+  const labelRe = /^(?:блюдо|название|наименование|позиция|товар|dish|name|title|menu item)[\s:—–-]*$/i;
   const delimiters = [':', ' - ', ' – ', ' — ', '=>', '|', ';'];
   for (const delim of delimiters) {
     const idx = line.indexOf(delim);
     if (idx > 0) {
       const name = cleanItemName(line.slice(0, idx));
       const rest = line.slice(idx + delim.length);
-      const components = extractComponents(rest);
-      if (components.length || allowNoComponents) return { name, components };
+      if (labelRe.test(name)) {
+        const nested = splitNameAndComponents(rest, allowNoComponents);
+        if (nested.name || nested.components.length) return nested;
+        return { name: cleanItemName(rest), components: [] };
+      }
+      const extracted = extractComponents(rest);
+      if (extracted.tokens.length || allowNoComponents) return { name, components: extracted.tokens };
     }
   }
   return { name: cleanItemName(line), components: [] };
 }
 
+function findIngredientInPrefix(prefix) {
+  const segments = (prefix || '').split(/[.,;|]\s+/).map(s => s.trim()).filter(Boolean);
+  const target = segments.length ? segments[segments.length - 1] : '';
+  const beforeSegments = segments.slice(0, -1).join(', ');
+  const words = cleanItemName(target).split(/\s+/).filter(Boolean);
+  if (!words.length) return null;
+  const prepositions = new Set(['в','на','с','по','из','к','от','для','при','про','без','до','за','над','под','об','у','и','но','или','со','во']);
+  for (let start = words.length - 1; start >= 0; start--) {
+    const suffix = words.slice(start).join(' ');
+    if (!isLikelyIngredientName(suffix)) continue;
+    const leftover = words.slice(0, start).join(' ');
+    if (!leftover) return { name: suffix, leftover: beforeSegments, type: 'none' };
+    const leftoverWords = leftover.split(/\s+/).filter(Boolean);
+    const allModifiers = leftoverWords.every(w => isAdjectiveOnly(w) || prepositions.has(w.toLowerCase()));
+    if (allModifiers) {
+      const name = leftover + ' ' + suffix;
+      return { name: name.trim(), leftover: beforeSegments, type: 'none' };
+    }
+    if (isLikelyNote(leftover) || hasInstructionWords(leftover)) {
+      return { name: suffix, leftover: (beforeSegments ? beforeSegments + ' ' : '') + leftover, type: hasInstructionWords(leftover) ? 'instruction' : 'note' };
+    }
+    return { name: suffix, leftover: (beforeSegments ? beforeSegments + ' ' : '') + leftover, type: 'note' };
+  }
+  return null;
+}
+
 function extractComponents(text) {
-  if (!text) return [];
-  return text.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+  if (!text) return { tokens: [], description: '' };
+  const units = 'г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
+  let stripped = text.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
+  stripped = stripped.replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
+    const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
+    return val.toFixed(3).replace(/\.?0+$/, '');
+  });
+  const decimalCommaRe = new RegExp('(\\d),(\\d+)(?=\\s*(?:' + units + '))', 'gi');
+  const normalized = stripped.replace(decimalCommaRe, '$1.$2');
+  const measureWords = 'щепотка|щепотки|ложка|ложки|ложечка|чайная|столовая|стакан|чашка|горсть|горсти|пучок|пучки|зубчик|зубчика|стручок|стручка|капля|капли|кусочек|кусочка|ломтик|ломтика|пластинка|пластинки|долька|дольки|половинка|половинки|четвертинка|четвертинки|пучочек|горошина|горошины|кружка|банка|пакет|пакетик';
+  const measureRe = new RegExp('^\\s*(' + measureWords + ')(?![a-zA-Zа-яёЁ0-9])', 'i');
+  const re = new RegExp('(\\d+(?:[.,]\\d+)?)(?:\\s*(' + units + '))?(?![a-zA-Zа-яёЁ])', 'gi');
+  const tokens = [];
+  const descriptionFrags = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = re.exec(normalized)) !== null) {
+    if (match.index < lastIndex) break;
+    const rawName = normalized.slice(lastIndex, match.index);
+    let grams = parseFloat(match[1].replace(',', '.'));
+    let unit = match[2] || '';
+    let hasUnit = !!unit;
+    let restAfter = normalized.slice(match.index + match[0].length).trim().replace(/[.,;:!?]+$/, '');
+    let isEnd = restAfter.length === 0;
+    let measure = '';
+    if (!hasUnit && !isEnd) {
+      const measureMatch = restAfter.match(measureRe);
+      if (measureMatch) {
+        measure = measureMatch[1];
+        hasUnit = true;
+        restAfter = restAfter.slice(measureMatch[0].length).trim().replace(/[.,;:!?]+$/, '');
+        isEnd = restAfter.length === 0;
+        re.lastIndex = match.index + match[0].length + measureMatch[0].length;
+      } else {
+        re.lastIndex = match.index + match[0].length;
+        lastIndex = re.lastIndex;
+        continue;
+      }
+    }
+    let isCountUnit = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
+    const parsed = findIngredientInPrefix(rawName);
+    if (parsed && parsed.name) {
+      let ingredient = parsed.name;
+      if (parsed.type === 'note' && parsed.leftover) {
+        ingredient += ' (' + parsed.leftover + ')';
+      } else if (parsed.type === 'instruction' && parsed.leftover) {
+        descriptionFrags.push(parsed.leftover);
+      }
+      if (measure) {
+        ingredient += ' (' + grams + ' ' + measure + ')';
+        grams = 0;
+        isCountUnit = false;
+      }
+      tokens.push({ ingredient, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
+    } else if (rawName && rawName.trim() && (hasUnit || isEnd)) {
+      const cleaned = cleanItemName(rawName);
+      if (cleaned && hasInstructionWords(cleaned)) descriptionFrags.push(cleaned);
+      else if (cleaned && isLikelyNote(cleaned)) descriptionFrags.push(cleaned);
+    }
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < normalized.length) {
+    const tail = cleanItemName(normalized.slice(lastIndex));
+    if (tail) {
+      if (tokens.length && isLikelyNote(tail)) {
+        const prev = tokens[tokens.length - 1];
+        prev.ingredient = (prev.ingredient ? prev.ingredient + ' ' : '') + '(' + tail + ')';
+      } else if (isLikelyIngredientName(tail)) {
+        tokens.push({ ingredient: tail, grams: 0, isCount: false });
+      } else if (hasInstructionWords(tail) || isLikelyNote(tail)) {
+        descriptionFrags.push(tail);
+      }
+    }
+  }
+  if (!tokens.length) {
+    if (descriptionFrags.length) return { tokens: [], description: descriptionFrags.filter(Boolean).join(' ').trim() };
+    const fallback = normalized.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+    if (fallback.length) return { tokens: fallback, description: '' };
+  }
+  const description = descriptionFrags.filter(Boolean).join(' ').trim();
+  return { tokens, description };
 }
 
 function cleanItemName(str) {
   if (!str) return '';
   let s = str.trim();
+  s = s.replace(/^(?:блюдо|название|наименование|позиция|товар|dish|name|title)[\s:—–-]+/i, '').trim();
   s = s.replace(/п\\ф/gi, 'п/ф').trim();
-  s = s.replace(/^[-•–—*‣⁃◦\d.)\]]+\s*/, '').trim();
+  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+=!?_"'‘’‚„“”‹›<>]+\s*/, '').trim();
   s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
-  s = s.replace(/[-:;|–—]+\s*$/, '').trim();
+  s = s.replace(/[-.,:;|–—/_+=!?"'‘’‚„“”‹›<>()]+\s*$/, '').trim();
+  s = s.replace(/_/g, ' ').trim();
+  s = s.replace(/(?<![A-Za-zА-Яа-яЁё])[Зз][A-ZА-ЯЁ]{1,5}(?![A-Za-zА-Яа-яЁё])/g, '').trim();
+  s = s.replace(/\s+/g, ' ').trim();
   return s;
 }
 
 function parseComponentToken(str) {
+  if (str && typeof str === 'object') {
+    return { ingredient: String(str.ingredient || ''), grams: parseFloat(str.grams) || 0, isCount: !!str.isCount };
+  }
   if (!str) return null;
   let s = str.trim();
   s = s.replace(/^(?:[-•–—*‣⁃◦]+|\d+[.)\]])\s*/, '').trim();
+  s = s.replace(/[-:;|–—/_+=!?"'‘’‚„“”‹›<>]+$/, '').trim();
   if (!s) return null;
 
   const units = '(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)';
   const countUnits = /^(шт|штук|штуки|pcs|pc)$/i;
 
-  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[.)]*$', 'i'));
+  // percentage-only notes, e.g. "Сливки 20%" or "Сливки(20%)"
+  const pctMatch = s.match(/^(.*?)\s*[\s(]*(\d+(?:[.,]\d+)?)\s*%[\s)]*(.*)$/);
+  if (pctMatch) {
+    const ingredient = cleanItemName(pctMatch[1].trim());
+    const note = cleanItemName(pctMatch[3].trim());
+    if (ingredient) {
+      const name = note ? ingredient + ' ' + pctMatch[2] + '% (' + note + ')' : ingredient + ' ' + pctMatch[2] + '%';
+      return { ingredient: name, grams: 0, isCount: false };
+    }
+  }
+
+  const orphanMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[.)]*$', 'i'));
+  if (orphanMatch) {
+    const grams = parseFloat(orphanMatch[1].replace(',', '.'));
+    const unit = orphanMatch[2] || '';
+    const isCount = countUnits.test(unit);
+    return { ingredient: '', grams: isNaN(grams) ? 0 : grams, isCount };
+  }
+
+  // "Ингредиент: количество" format (OCR screenshots with colons)
+  const colonMatch = s.match(/^(.+?):\s*(.+)$/);
+  if (colonMatch && !isDescriptionHeader(colonMatch[1])) {
+    const ingredientName = cleanItemName(colonMatch[1].trim());
+    const rest = colonMatch[2].trim();
+    if (ingredientName && !/:/.test(rest)) {
+      const weightMatch = rest.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')?\\s*(.*)$', 'i'));
+      if (weightMatch) {
+        const grams = parseFloat(weightMatch[1].replace(',', '.'));
+        const unit = weightMatch[2] || '';
+        const note = cleanItemName(weightMatch[3]);
+        const isCount = countUnits.test(unit);
+        let name = ingredientName;
+        if (note && !/^\d/.test(note)) name += ' (' + note + ')';
+        return { ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount };
+      }
+      return { ingredient: ingredientName + (rest ? ' (' + rest + ')' : ''), grams: 0, isCount: false };
+    }
+  }
+
+  const trailingMatch = s.match(new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*(?:\\([^)]*\\))?\\s*[.)]*$', 'i'));
   if (trailingMatch && trailingMatch[1].trim()) {
-    const ingredient = trailingMatch[1].trim();
+    const ingredient = cleanItemName(trailingMatch[1].trim());
     const grams = parseFloat(trailingMatch[2].replace(',', '.'));
     const isCount = countUnits.test(trailingMatch[3]);
     return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
@@ -3712,26 +4896,40 @@ function parseComponentToken(str) {
 
   const leadingMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[-–—:]\\s*(.+)$', 'i'));
   if (leadingMatch && leadingMatch[3].trim()) {
-    const ingredient = leadingMatch[3].trim();
+    const ingredient = cleanItemName(leadingMatch[3].trim());
     const grams = parseFloat(leadingMatch[1].replace(',', '.'));
     const isCount = countUnits.test(leadingMatch[2]);
     return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
   }
 
-  return s;
+  const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
+  if (noUnitMatch && noUnitMatch[1].trim()) {
+    const ingredient = cleanItemName(noUnitMatch[1].trim());
+    if (ingredient && isLikelyIngredientName(ingredient)) {
+      const grams = parseFloat(noUnitMatch[2].replace(',', '.'));
+      return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount: false };
+    }
+  }
+
+  const leftover = cleanItemName(s);
+  if (leftover && leftover.length >= 2) {
+    return { ingredient: leftover, grams: 0, isCount: false };
+  }
+  return null;
 }
 
 function buildInfoText(name, components, showGrams = true) {
   const list = components.map(c => {
     if (c && typeof c === 'object') {
-      if (!showGrams || !c.grams) return c.ingredient;
+      if (!showGrams || !c.grams) return c.ingredient || '';
       const val = Number.isInteger(c.grams) ? c.grams : parseFloat(c.grams.toFixed(3));
       const suffix = c.isCount ? ' шт' : 'г';
+      if (!c.ingredient) return `(${val}${suffix})`;
       return `${c.ingredient} (${val}${suffix})`;
     }
     return c || '';
   });
-  return `Состав:\n• ${list.join('\n• ')}`;
+  return `Состав:\n• ${list.filter(Boolean).join('\n• ')}`;
 }
 
 function parseTTKCSV(text) {
@@ -3744,6 +4942,7 @@ function parseTTKCSV(text) {
   const nameIdx = findHeaderIndex(headers, ['name', 'название', 'блюдо', 'напиток', 'item', 'title', 'продукт', 'position', 'позиция', 'назва']);
   const compIdx = findHeaderIndex(headers, ['component', 'components', 'ingredient', 'ingredients', 'ingr', 'состав', 'ингредиент', 'ингредиенты']);
   const gramsIdx = findHeaderIndex(headers, ['gram', 'grams', 'гр', 'грам', 'грамм', 'weight', 'вес', 'количество', 'кол-во', 'amount', 'мл', 'объем', 'объём']);
+  const descIdx = findHeaderIndex(headers, ['способ', 'приготовление', 'описание', 'рецепт', 'инструкция', 'description', 'instruction', 'method', 'preparation']);
 
   const items = [];
   for (let i = 1; i < lines.length; i++) {
@@ -3785,7 +4984,9 @@ function parseTTKCSV(text) {
       });
     }
 
-    items.push({ type: 'composition', name, correct: components, info_text: buildInfoText(name, components) });
+    const item = { type: 'composition', name, correct: components, info_text: buildInfoText(name, components) };
+    if (descIdx !== -1 && cols[descIdx]) item.description = cols[descIdx].trim();
+    items.push(item);
   }
   return items;
 }
@@ -3806,7 +5007,11 @@ function detectCSVDelimiter(line) {
 
 function findHeaderIndex(headers, candidates) {
   for (const c of candidates) {
-    const idx = headers.findIndex(h => h === c || h.includes(c));
+    const idx = headers.findIndex(h => {
+      if (h === c) return true;
+      const words = h.split(/[^a-zA-Zа-яёЁ0-9]+/);
+      return words.includes(c);
+    });
     if (idx !== -1) return idx;
   }
   return -1;
@@ -3841,13 +5046,15 @@ function normalizeParsedItem(item) {
   if (!item || !item.name) return null;
   const correct = Array.isArray(item.correct) ? item.correct : (Array.isArray(item.components) ? item.components : (Array.isArray(item.ingredients) ? item.ingredients : []));
   if (!correct.length) return null;
-  return {
+  const out = {
     type: 'composition',
     name: item.name,
     correct: correct,
     info_text: item.info_text || buildInfoText(item.name, correct),
     image: item.image || null,
   };
+  if (item.description) out.description = item.description;
+  return out;
 }
 
 function sourceNameToSectionName(sourceName) {
@@ -3902,7 +5109,7 @@ function buildVenueFromParsedItems(items, sourceName) {
     const correctNames = correct.map(c => typeof c === 'object' ? c.ingredient : c);
     const distractors = shuffle(allComponentsArray.filter(c => !correctNames.includes(c))).slice(0, Math.min(6, Math.max(0, allComponentsArray.length - correctNames.length)));
     if (hasGrams) {
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: correct,
@@ -3910,9 +5117,11 @@ function buildVenueFromParsedItems(items, sourceName) {
         info_text: buildInfoText(item.name, correct, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     } else {
       const pool = shuffle([...correctNames, ...distractors]);
-      return {
+      const out = {
         type: 'composition',
         name: item.name,
         correct: correctNames,
@@ -3920,6 +5129,8 @@ function buildVenueFromParsedItems(items, sourceName) {
         info_text: buildInfoText(item.name, correctNames, showGrams),
         image: item.image || null,
       };
+      if (item.description) out.description = item.description;
+      return out;
     }
   });
 

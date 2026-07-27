@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cognitio-v1';
+const CACHE_NAME = 'cognitio-v37';
 const ASSETS = [
   './',
   './index.html',
