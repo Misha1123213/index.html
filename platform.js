@@ -886,8 +886,14 @@ function renderAuthOptions() {
           </div>
           <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
           <div class="landing-cta">
-            <button class="landing-btn-primary" onclick="goToScreen('roleSelect', true)">Начать бесплатно</button>
-            <button class="landing-btn-secondary" onclick="goToScreen('roleSelect', true)">Смотреть демо</button>
+            <button class="landing-btn-primary" onclick="goToScreen('roleSelect', true)">
+              <span>Начать бесплатно</span>
+              <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="landing-btn-primary" onclick="goToScreen('roleSelect', true)">
+              <span>Смотреть демо</span>
+              <svg class="btn-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
           </div>
           <div class="landing-logos">
             <span class="landing-logo">Cofix</span>
@@ -925,14 +931,31 @@ function renderAuthOptions() {
         </div>
         <div class="landing-auth">
           <div class="auth-panel">
-            <div class="auth-brain-wrap"><img src="img/hero-brain.png" class="auth-brain" alt=""></div>
-            <div class="platform-title">Cognitio</div>
-            <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
-            <button class="onboarding-btn" style="width:100%;margin-bottom:10px;" onclick="goToScreen('login', true)">Войти</button>
-            <button class="stats-btn" style="width:100%;margin-bottom:16px;" onclick="goToScreen('roleSelect', true)">Регистрация</button>
-            <button class="onboarding-btn" style="width:100%;margin-top:4px;" onclick="goToScreen('roleSelect', true)">Продолжить с Email</button>
+            <div class="auth-header">
+              <div class="auth-brain-wrap"><img src="img/hero-brain.png" class="auth-brain" alt=""></div>
+              <div class="auth-brand">Cognitio</div>
+            </div>
+            <div class="auth-tagline">Знания, которые создают качество сервиса</div>
+            <div class="auth-desc">Обучайте сотрудников меню заведения за 10 минут в день.</div>
+            <button class="auth-login-btn" onclick="goToScreen('login', true)">
+              <span>Войти</span>
+              <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="auth-register-btn" onclick="goToScreen('roleSelect', true)">Регистрация</button>
+            <div class="auth-divider"><span>или продолжить с</span></div>
+            <div class="auth-socials">
+              <button class="auth-social" aria-label="Google" onclick="goToScreen('roleSelect', true)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2h-1.5c-3.5 0-6.5 2.5-7.3 6"></path><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10"></path></svg>
+              </button>
+              <button class="auth-social" aria-label="Apple" onclick="goToScreen('roleSelect', true)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.7 8.1c-.9-.8-2.2-1.1-3.4-.7-.7.2-1.3.7-1.7 1.3-.5.8-.5 1.8-.1 2.6.2.4.5.8.9 1.1-1 1.6-2.5 2.6-4.3 2.6-1 0-2-.3-2.8-.9-1-.7-1.6-1.8-1.6-3 0-1.8 1.2-3.4 3-4 .6-.2 1.2-.3 1.8-.2.7.1 1.3.4 1.8.8l.2.2c.5-.8 1.2-1.4 2.1-1.8.9-.4 2-.5 3-.2 1.2.3 2.2 1.1 2.8 2.2-.3.2-.6.5-.9.7-.6.5-1.1 1.1-1.4 1.8-.4.9-.4 1.9 0 2.8.3.7.8 1.3 1.4 1.8.3.2.6.4.9.6-.4 1.1-1.1 2-2.1 2.7-1.2.9-2.8 1.4-4.3 1.1-.8-.2-1.5-.5-2.1-1l-.2-.2c-.6.7-1.3 1.2-2.2 1.5-.8.3-1.8.3-2.6-.1 1.3-1.2 2.1-2.9 2.1-4.7 0-1.9-1-3.6-2.6-4.5.3-1.3 1-2.4 2.1-3.1 1-.7 2.3-1 3.5-.7.6.1 1.1.4 1.6.7z"></path></svg>
+              </button>
+              <button class="auth-social" aria-label="Email" onclick="goToScreen('roleSelect', true)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><polyline points="2 7 12 13 22 7"></polyline></svg>
+              </button>
+            </div>
             <div class="auth-privacy">Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</div>
-            <button class="link-btn" style="margin-top:16px;" onclick="goToScreen('forgotPassword', { login: '' })">Забыли пароль?</button>
+            <button class="link-btn auth-forgot" onclick="goToScreen('forgotPassword', { login: '' })">Забыли пароль?</button>
           </div>
         </div>
       </div>
