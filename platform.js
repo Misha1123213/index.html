@@ -879,22 +879,23 @@ function renderAuthOptions() {
       </nav>
       <div class="landing-main">
         <div class="landing-hero">
-          <div class="brand">Cognitio</div>
+          <div class="brand">Обучение в формате Duolingo для бизнеса</div>
           <div class="hero-brain-wrap">
             <img src="img/hero-brain.png" class="hero-brain" alt="">
-            <h1>Знания, которые создают качество сервиса</h1>
+            <h1>Знания, которые создают <span class="hero-gold">качество</span> сервиса</h1>
           </div>
           <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
           <div class="landing-cta">
             <button class="landing-btn-primary" onclick="goToScreen('roleSelect', true)">
-              <span>Начать бесплатно</span>
+              <span>Попробовать бесплатно</span>
               <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </button>
-            <button class="landing-btn-primary" onclick="goToScreen('roleSelect', true)">
-              <span>Смотреть демо</span>
+            <button class="landing-btn-secondary" onclick="goToScreen('roleSelect', true)">
               <svg class="btn-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Смотреть демо</span>
             </button>
           </div>
+          <div class="landing-logos-label">Доверяют лидеры индустрии</div>
           <div class="landing-logos">
             <span class="landing-logo">Cofix</span>
             <span class="landing-logo">Teremok</span>

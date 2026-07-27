@@ -1855,3 +1855,71 @@ body::before { display: none !important; }
 }
 
 .landing-layout.landing-v1 .auth-forgot:hover { color: var(--gold) !important; }
+
+/* Landing v1 — hero refinements to match variant 1 */
+.landing-layout.landing-v1 .landing-hero .brand {
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+    margin-bottom: 12px !important;
+}
+
+.landing-layout.landing-v1 .hero-gold { color: var(--gold) !important; }
+
+.landing-layout.landing-v1 .hero-brain-wrap { position: relative !important; display: inline-block !important; max-width: 560px !important; }
+
+.landing-layout.landing-v1 .hero-brain {
+    position: absolute !important;
+    right: 20px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    height: 90px !important;
+    width: auto !important;
+    opacity: 0.5 !important;
+    filter: drop-shadow(0 0 20px rgba(212,175,55,0.35)) !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+}
+
+@media (min-width: 1000px) {
+    .landing-layout.landing-v1 .hero-brain { height: 110px !important; right: 30px !important; opacity: .55 !important; }
+}
+
+.landing-layout.landing-v1 .landing-hero h1 { position: relative !important; z-index: 1 !important; }
+
+.landing-layout.landing-v1 .landing-btn-secondary {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    width: auto !important;
+    flex: 0 1 auto !important;
+    min-width: 200px !important;
+    background: transparent !important;
+    color: var(--gold) !important;
+    border: 1.5px solid var(--gold) !important;
+    border-radius: 999px !important;
+    padding: 14px 28px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: background .15s ease, color .15s ease, transform .15s ease !important;
+    text-align: center !important;
+}
+
+.landing-layout.landing-v1 .landing-btn-secondary:hover { background: rgba(212,175,55,0.12) !important; transform: translateY(-2px) !important; }
+
+.landing-layout.landing-v1 .landing-btn-secondary .btn-play { width: 18px !important; height: 18px !important; flex-shrink: 0 !important; }
+
+.landing-layout.landing-v1 .landing-logos-label {
+    font-size: 12px !important;
+    color: var(--text-dim) !important;
+    margin-bottom: 10px !important;
+    text-align: center !important;
+}
+
+@media (min-width: 1000px) {
+    .landing-layout.landing-v1 .landing-logos-label { text-align: left !important; }
+}
