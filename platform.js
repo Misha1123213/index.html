@@ -1351,21 +1351,13 @@ function renderOwnerSetup() {
       <div class="platform-title">${venue.name}</div>
       <div class="platform-subtitle">Код для сотрудников: <span class="venue-code">${venue.code}</span></div>
       <div class="platform-form">
-        <label class="platform-label">Загрузите файл меню</label>
+        <label class="platform-label">Загрузите файл или фото ТТК</label>
         <div class="upload-zone" onclick="document.getElementById('ttk-file').click()">
           <div class="upload-icon"></div>
-          <div class="upload-text">Нажмите, чтобы выбрать файл</div>
-          <div class="upload-hint">.txt, .md, .csv, .json, .docx</div>
+          <div class="upload-text">Нажмите, чтобы выбрать файлы</div>
+          <div class="upload-hint">.txt, .md, .csv, .json, .docx, .jpg, .png, .webp (можно несколько)</div>
         </div>
-        <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx" onchange="handleTTKFile(this.files[0])">
-
-        <label class="platform-label" style="margin-top:18px;">Или фото / скан ТТК</label>
-        <div class="upload-zone" onclick="document.getElementById('ttk-image-file').click()">
-          <div class="upload-icon"></div>
-          <div class="upload-text">Выберите фото меню или ТТК</div>
-          <div class="upload-hint">.jpg, .png, .webp</div>
-        </div>
-        <input type="file" id="ttk-image-file" style="display:none" accept="image/*" multiple onchange="handleTTKImageFiles(this.files)">
+        <input type="file" id="ttk-file" style="display:none" accept=".txt,.md,.csv,.json,.docx,image/*" multiple onchange="handleTTKFiles(this.files)">
 
         <label class="platform-label" style="margin-top:18px;">Или вставьте текст ТТК</label>
         <textarea id="ttk-paste" class="platform-input" rows="6" placeholder="Например:\nКапучино\n• Эспрессо 30 мл\n• Молоко 150 мл\n• Молочная пена 30 г"></textarea>
@@ -3019,67 +3011,101 @@ function findBestImageForKeywords(images, keywords) {
 
 // ====================== PARSERS ======================
 
-function handleTTKFile(file) {
-  if (!file) return;
+function isImageFile(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if (ext === 'docx') {
-    handleDocxFile(file);
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const text = e.target.result;
-    const items = parseTTKText(text, ext);
-    previewParsedItems(items, file.name);
-  };
-  reader.onerror = () => showPlatformToast('Не удалось прочитать файл');
-  if (ext === 'json') {
-    reader.readAsText(file);
-  } else {
-    reader.readAsText(file, 'UTF-8');
-  }
+  if (['jpg','jpeg','png','webp','gif','bmp','heic','heif'].includes(ext)) return true;
+  return (file.type || '').startsWith('image/');
 }
 
-function handleDocxFile(file) {
-  if (typeof mammoth === 'undefined') {
-    loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js')
-      .then(() => handleDocxFile(file))
-      .catch(() => showPlatformToast('Не удалось загрузить mammoth.js. Сконвертируйте .docx в .txt/.csv'));
-    return;
-  }
-  file.arrayBuffer().then(arrayBuffer => {
-    mammoth.convertToHtml({ arrayBuffer }).then(result => {
-      const items = parseDocxHTML(result.value);
-      previewParsedItems(items, file.name);
-    }).catch(() => showPlatformToast('Не удалось извлечь текст из .docx'));
+function loadMammoth() {
+  if (typeof mammoth !== 'undefined') return Promise.resolve();
+  return loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+}
+
+function parseDocxFile(file) {
+  return loadMammoth().then(() => {
+    return file.arrayBuffer().then(arrayBuffer => {
+      return mammoth.convertToHtml({ arrayBuffer }).then(result => parseDocxHTML(result.value));
+    });
   });
 }
 
-async function handleTTKImageFiles(files) {
-  if (!files || !files.length) return;
-  showPlatformToast('Распознаём фото...');
-  try {
-    await loadTesseract();
-    const worker = await Tesseract.createWorker('rus');
-    const results = [];
-    for (const file of files) {
-      const items = await processTTKImageWithWorker(file, worker);
-      results.push(items);
-    }
-    await worker.terminate();
-    const allItems = results.flat().filter(Boolean);
-    if (!allItems.length) {
-      showPlatformToast('Не удалось распознать позиции на фото');
+function parseTTKFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) { resolve([]); return; }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'docx') {
+      parseDocxFile(file).then(items => resolve(items || [])).catch(reject);
       return;
     }
-    const sourceName = files.length === 1 ? (files[0].name.replace(/\.[^.]+$/, '').trim() || 'Фото ТТК') : 'Фото ТТК';
-    state.platformDraft = { parsedItems: allItems, sectionName: sourceName };
-    state.editorDirty = true;
-    openCourseEditor();
-  } catch (e) {
-    console.error('TTK image OCR error:', e);
-    showPlatformToast('Ошибка распознавания фото');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const items = parseTTKText(text, ext);
+      resolve(items || []);
+    };
+    reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+    if (ext === 'json') reader.readAsText(file);
+    else reader.readAsText(file, 'UTF-8');
+  });
+}
+
+async function parseTTKImageFiles(files) {
+  if (!files || !files.length) return [];
+  await loadTesseract();
+  const worker = await Tesseract.createWorker('rus');
+  const results = [];
+  for (const file of files) {
+    const items = await processTTKImageWithWorker(file, worker);
+    if (items && items.length) results.push(...items);
   }
+  await worker.terminate();
+  return results;
+}
+
+async function handleTTKFiles(files) {
+  if (!files || !files.length) return;
+  const fileArray = Array.from(files);
+  const allItems = [];
+  let worker = null;
+  let hasImages = false;
+  try {
+    for (const file of fileArray) {
+      if (isImageFile(file)) {
+        if (!hasImages) {
+          hasImages = true;
+          showPlatformToast('Распознаём фото...');
+          await loadTesseract();
+          worker = await Tesseract.createWorker('rus');
+        }
+        const items = await processTTKImageWithWorker(file, worker);
+        if (items && items.length) allItems.push(...items);
+      } else {
+        const items = await parseTTKFile(file);
+        if (items && items.length) allItems.push(...items);
+      }
+    }
+  } catch (e) {
+    console.error('TTK files error:', e);
+    showPlatformToast('Ошибка распознавания файлов');
+    return;
+  } finally {
+    if (worker) await worker.terminate();
+  }
+  if (!allItems.length) {
+    showPlatformToast('Не удалось распознать позиции');
+    return;
+  }
+  const sourceName = fileArray.length === 1 ? (fileArray[0].name.replace(/\.[^.]+$/, '').trim() || 'ТТК') : 'ТТК';
+  previewParsedItems(allItems, sourceName);
+}
+
+function handleTTKFile(file) {
+  if (file) handleTTKFiles([file]);
+}
+
+async function handleTTKImageFiles(files) {
+  await handleTTKFiles(files);
 }
 
 function loadTesseract() {
@@ -3830,6 +3856,11 @@ function isLikelyNote(s) {
   return hasInstructionWords(s);
 }
 
+function isAdjectiveOnly(word) {
+  const s = (word || '').toLowerCase();
+  return /(ский|ской|ская|ское|ские|ный|ная|ное|ные|вой|вый|вая|вое|вые|чный|чная|чное|чные|кой|кий|кая|кое|кие|ой|ая|ое|ые|ий|яя|ее|ие)$/i.test(s) && !/(ник|ник|ик|ок|ек|чик|щик|ец|ец|ор|ер)$/i.test(s);
+}
+
 function splitDishNames(line) {
   const cleaned = cleanItemName(line);
   if (!cleaned) return [];
@@ -3845,6 +3876,8 @@ function splitDishNames(line) {
     const left = words.slice(start, i).join(' ');
     const right = words.slice(i).join(' ');
     if (isLikelyDishName(left) && isLikelyDishName(right)) {
+      const rightWords = right.split(/\s+/).filter(Boolean);
+      if (rightWords.length === 1 && isAdjectiveOnly(right)) continue;
       names.push(left);
       start = i;
     }
