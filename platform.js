@@ -3069,16 +3069,30 @@ async function handleTTKFiles(files) {
   const allItems = [];
   let worker = null;
   let hasImages = false;
+  let ocrSpaceFailed = false;
   try {
     for (const file of fileArray) {
       if (isImageFile(file)) {
         if (!hasImages) {
           hasImages = true;
           showPlatformToast('Распознаём фото...');
-          await loadTesseract();
-          worker = await Tesseract.createWorker('rus');
         }
-        const items = await processTTKImageWithWorker(file, worker);
+        let items = null;
+        if (!ocrSpaceFailed) {
+          try {
+            items = await processTTKImageWithOCRSpace(file);
+          } catch (e) {
+            console.warn('OCR.space failed, falling back to Tesseract', e);
+            ocrSpaceFailed = true;
+          }
+        }
+        if (!items || !items.length) {
+          if (!worker) {
+            await loadTesseract();
+            worker = await Tesseract.createWorker('rus');
+          }
+          items = await processTTKImageWithWorker(file, worker);
+        }
         if (items && items.length) allItems.push(...items);
       } else {
         const items = await parseTTKFile(file);
@@ -3120,10 +3134,18 @@ function median(arr) {
 }
 
 function parseTTKImageLayout(ret) {
-  const lines = ret && ret.data && ret.data.lines;
+  let lines = ret && ret.data && ret.data.lines;
   const words = ret && ret.data && ret.data.words;
   const text = (ret && ret.data && ret.data.text) || '';
   if (!lines || !lines.length || !words || !words.length) return parseTTKOCRText(text);
+  // Attach per-line word lists from the global word list (Tesseract does not always include them).
+  lines = lines.map(l => {
+    const lWords = words.filter(w => {
+      const cy = ((w.bbox.y0 || 0) + (w.bbox.y1 || 0)) / 2;
+      return cy >= (l.bbox.y0 - 5) && cy <= (l.bbox.y1 + 5);
+    });
+    return Object.assign({}, l, { words: lWords });
+  });
   const cardTexts = extractCardTextsFromLines(lines, words);
   if (!cardTexts.length) return parseTTKOCRText(text);
   const all = [];
@@ -3135,62 +3157,147 @@ function parseTTKImageLayout(ret) {
 }
 
 function extractCardTextsFromLines(lines, words) {
-  const lineObjs = lines.map(l => {
-    const ws = (l.words || []).filter(w => (w.confidence || 0) > 25 && w.text && w.text.trim().length);
-    if (!ws.length) return null;
-    const x0 = Math.min(...ws.map(w => w.bbox.x0));
-    const x1 = Math.max(...ws.map(w => w.bbox.x1));
-    const y0 = Math.min(...ws.map(w => w.bbox.y0));
-    const y1 = Math.max(...ws.map(w => w.bbox.y1));
-    const text = (l.text || '').replace(/\n/g, ' ').trim();
-    return { text, x0, x1, y0, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, words: ws };
-  }).filter(Boolean);
-  const titles = extractLayoutTitles(lineObjs);
-  if (!titles.length) return [];
-  titles.sort((a, b) => a.y0 - b.y0 || a.cx - b.cx);
-  const cardWords = titles.map(() => []);
-  const titleLines = new Set();
-  for (const t of titles) if (t.line) titleLines.add(t.line);
-  for (const line of lineObjs) {
-    if (titleLines.has(line)) continue;
-    for (const w of line.words) {
-      const wcx = (w.bbox.x0 + w.bbox.x1) / 2;
-      const wcy = (w.bbox.y0 + w.bbox.y1) / 2;
-      let best = -1;
-      let bestScore = Infinity;
-      for (let i = 0; i < titles.length; i++) {
-        const t = titles[i];
-        // word must be at or below the title
-        if (wcy < t.y0 - 10) continue;
-        const dy = Math.max(0, wcy - t.cy);
-        const dx = wcx < t.x0 ? t.x0 - wcx : (wcx > t.x1 ? wcx - t.x1 : 0);
-        const score = dy + dx * 2.5;
-        if (score < bestScore) { bestScore = score; best = i; }
+  // 1. Build per-line segments. Title lines are kept whole or split by dish-name
+  //    ranges so the title does not lose words. Non-title lines are split by
+  //    horizontal word gaps to separate side-by-side columns/pages.
+  const allSegments = [];
+  for (const l of lines) {
+    const ws = (l.words || []).filter(w => w.text && w.text.trim().length)
+      .sort((a, b) => (a.bbox.x0 || 0) - (b.bbox.x0 || 0));
+    if (!ws.length) continue;
+    const lineY0 = Math.min(...ws.map(w => w.bbox.y0));
+    const lineY1 = Math.max(...ws.map(w => w.bbox.y1));
+    const lineX0 = Math.min(...ws.map(w => w.bbox.x0));
+    const lineX1 = Math.max(...ws.map(w => w.bbox.x1));
+    const lineWidth = Math.max(1, lineX1 - lineX0);
+    const fullText = normalizeOCRText(ws.map(w => w.text).join(' '));
+    const dishNames = (splitDishNames(fullText) || []).filter(isLikelyDishName);
+    const isTitleLine = dishNames.length > 1 || (dishNames.length === 1 && isLikelyDishName(fullText) && !isLikelyComponent(fullText));
+    if (isTitleLine) {
+      const ranges = findTitleWordRanges(ws, dishNames);
+      for (const range of ranges) {
+        if (range && range.length) allSegments.push(makeSegment(range, lineY0, lineY1));
       }
-      if (best >= 0) cardWords[best].push(w);
+      continue;
     }
+    const gaps = [];
+    for (let i = 1; i < ws.length; i++) {
+      gaps.push((ws[i].bbox.x0 || 0) - (ws[i - 1].bbox.x1 || 0));
+    }
+    const avgGap = gaps.length ? (gaps.reduce((a, b) => a + b, 0) / gaps.length) : 0;
+    const gapThresh = Math.max(70, lineWidth * 0.30, avgGap * 4);
+    let start = 0;
+    for (let i = 1; i < ws.length; i++) {
+      if ((ws[i].bbox.x0 || 0) - (ws[i - 1].bbox.x1 || 0) > gapThresh) {
+        allSegments.push(makeSegment(ws.slice(start, i), lineY0, lineY1));
+        start = i;
+      }
+    }
+    allSegments.push(makeSegment(ws.slice(start), lineY0, lineY1));
   }
-  return titles.map((t, i) => {
-    const ws = cardWords[i].slice().sort((a, b) => a.bbox.y0 - b.bbox.y0 || a.bbox.x0 - b.bbox.x0);
-    // group words into lines by y proximity
-    const parts = [t.text];
-    let currentLine = [];
-    let currentY = null;
-    const avgHeight = median(ws.map(w => w.bbox.y1 - w.bbox.y0)) || 15;
-    for (const w of ws) {
-      const wy = (w.bbox.y0 + w.bbox.y1) / 2;
-      if (currentY === null || Math.abs(wy - currentY) <= Math.max(avgHeight * 0.8, 8)) {
-        currentLine.push(w);
-        if (currentY === null) currentY = wy;
-      } else {
-        if (currentLine.length) parts.push(currentLine.sort((a, b) => a.bbox.x0 - b.bbox.x0).map(w => w.text).join(' '));
-        currentLine = [w];
-        currentY = wy;
+
+  function makeSegment(segWords, y0, y1) {
+    const x0 = Math.min(...segWords.map(w => w.bbox.x0));
+    const x1 = Math.max(...segWords.map(w => w.bbox.x1));
+    const text = normalizeOCRText(segWords.map(w => w.text).join(' '));
+    return { text, x0, x1, y0, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, words: segWords };
+  }
+
+  const segments = allSegments.filter(s => s.text && s.text.trim().length).sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+  if (!segments.length) return [];
+
+  // 2. Extract titles from segments.
+  const titles = extractLayoutTitles(segments);
+  if (!titles.length) return segments.map(s => s.text);
+
+  // 3. Cluster titles by horizontal position to separate side-by-side pages/cards.
+  const maxX = Math.max(1, ...segments.map(s => s.x1));
+  const sortedTitles = titles.slice().sort((a, b) => a.cx - b.cx);
+  const clusters = [];
+  const xGapThresh = Math.max(70, maxX * 0.12);
+  for (const t of sortedTitles) {
+    let placed = false;
+    for (const c of clusters) {
+      const centerDiff = Math.abs(t.cx - (c.cx / c.titles.length));
+      if (centerDiff <= xGapThresh) { c.titles.push(t); c.cx += t.cx; placed = true; break; }
+    }
+    if (!placed) clusters.push({ titles: [t], cx: t.cx });
+  }
+  for (const c of clusters) {
+    c.cx = c.cx / c.titles.length;
+    c.cards = c.titles.slice().sort((a, b) => a.y0 - b.y0);
+  }
+
+  // 4. Horizontal zones for clusters.
+  clusters.sort((a, b) => a.cx - b.cx);
+  for (let i = 0; i < clusters.length; i++) {
+    let left = 0, right = maxX;
+    if (clusters.length > 1) {
+      if (i === 0) right = (clusters[0].cx + clusters[1].cx) / 2;
+      else if (i === clusters.length - 1) left = (clusters[i - 1].cx + clusters[i].cx) / 2;
+      else {
+        left = (clusters[i - 1].cx + clusters[i].cx) / 2;
+        right = (clusters[i].cx + clusters[i + 1].cx) / 2;
       }
     }
-    if (currentLine.length) parts.push(currentLine.sort((a, b) => a.bbox.x0 - b.bbox.x0).map(w => w.text).join(' '));
-    return parts.join('\n').trim();
-  });
+    clusters[i].left = left - 25;
+    clusters[i].right = right + 25;
+  }
+
+  // 5. Assign every non-title segment to the nearest title in its horizontal zone.
+  const titleSegments = new Set(titles.map(t => t.line).filter(Boolean));
+  const cardMap = new Map();
+  for (const t of titles) cardMap.set(t, { title: t, segments: [] });
+
+  function findTitleForSegment(seg) {
+    let cluster = clusters.find(c => seg.cx >= c.left && seg.cx <= c.right);
+    if (!cluster) cluster = clusters.reduce((best, c) => Math.abs(seg.cx - c.cx) < Math.abs(seg.cx - best.cx) ? c : best, clusters[0]);
+    let best = null, bestScore = Infinity;
+    for (const t of cluster.cards) {
+      if (seg.cy < t.y0 - 10) continue;
+      const score = Math.abs(seg.cy - t.cy) * 1.5 + Math.abs(seg.cx - t.cx);
+      if (score < bestScore) { bestScore = score; best = t; }
+    }
+    return best;
+  }
+
+  for (const seg of segments) {
+    if (titleSegments.has(seg)) continue;
+    const t = findTitleForSegment(seg);
+    if (t) cardMap.get(t).segments.push(seg);
+  }
+
+  // 6. Build per-card text blocks; merge same-y segments left-to-right.
+  const cards = Array.from(cardMap.values()).sort((a, b) => a.title.y0 - b.title.y0 || a.title.cx - b.title.cx);
+  return cards.map(({ title, segments: segs }) => {
+    if (!segs.length) return title.text;
+    const sorted = segs.slice().sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+    const avgHeight = Math.max(10, median(sorted.map(s => s.y1 - s.y0)) || 20);
+    const rows = [];
+    for (const seg of sorted) {
+      if (!rows.length) { rows.push([seg]); continue; }
+      const last = rows[rows.length - 1];
+      const lastMinY = Math.min(...last.map(s => s.y0));
+      const lastMaxY = Math.max(...last.map(s => s.y1));
+      const lastCy = (lastMinY + lastMaxY) / 2;
+      const lastMaxX = Math.max(...last.map(s => s.x1));
+      const curCy = (seg.y0 + seg.y1) / 2;
+      const overlap = Math.max(0, Math.min(seg.y1, lastMaxY) - Math.max(seg.y0, lastMinY));
+      const yClose = Math.abs(curCy - lastCy) <= avgHeight * 0.55 || overlap > avgHeight * 0.4;
+      // A big jump back to the left column means a new table row, even if y is close.
+      const movedRight = seg.x0 >= lastMaxX - 20 || Math.abs(curCy - lastCy) <= avgHeight * 0.25;
+      if (yClose && movedRight) {
+        last.push(seg);
+      } else {
+        rows.push([seg]);
+      }
+    }
+    const rowTexts = rows.map(row => {
+      row.sort((a, b) => a.x0 - b.x0);
+      return row.map(s => s.text).join(' ').trim();
+    }).filter(Boolean);
+    return [title.text, ...rowTexts].join('\n').trim();
+  }).filter(Boolean);
 }
 
 function extractLayoutTitles(lineObjs) {
@@ -3306,12 +3413,13 @@ function parseCardBlock(text) {
           continue;
         }
       }
-      const { comps, description } = parseComponentLine(line);
+      const { comps, description: lineDesc } = parseComponentLine(line);
       if (comps.length) {
         components.push(...comps);
         hasComponent = true;
-      } else if (description) {
-        descLines.push(description);
+      }
+      if (lineDesc) {
+        descLines.push(lineDesc);
       }
       continue;
     }
@@ -3354,6 +3462,105 @@ async function processTTKImageWithWorker(file, worker) {
     items[0].image = photoUrl;
   }
   return items;
+}
+
+function getOCRSpaceApiKey() {
+  try {
+    return localStorage.getItem('ocrSpaceApiKey') || 'helloworld';
+  } catch (e) {
+    return 'helloworld';
+  }
+}
+
+async function callOCRSpace(imageDataUrl) {
+  const form = new FormData();
+  form.append('apikey', getOCRSpaceApiKey());
+  form.append('language', 'rus');
+  form.append('OCREngine', '2');
+  form.append('isTable', 'true');
+  form.append('scale', 'true');
+  form.append('isOverlayRequired', 'true');
+  form.append('base64Image', imageDataUrl);
+  const resp = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: form });
+  if (!resp.ok) throw new Error('OCR.space HTTP ' + resp.status);
+  const json = await resp.json();
+  if (json.IsErroredOnProcessing || !json.ParsedResults || !json.ParsedResults[0]) {
+    throw new Error(json.ErrorMessage || 'OCR.space error');
+  }
+  return json.ParsedResults[0];
+}
+
+function isQualityItem(item) {
+  const comps = (item && item.correct) || [];
+  if (comps.length > 40) return false; // likely several dishes merged together
+  for (const c of comps) {
+    if (c.grams > 0 || c.isCount) return true;
+    const clean = cleanItemName(c.ingredient || '');
+    if (clean && /[а-яё]{2,}/i.test(clean)) return true;
+  }
+  return false;
+}
+
+function isQualityOCRResult(items) {
+  if (!items || !items.length) return false;
+  return items.some(isQualityItem);
+}
+
+async function processTTKImageWithOCRSpace(file) {
+  const imageUrl = await resizeImageFile(file, 1400, 0.9);
+  const result = await callOCRSpace(imageUrl);
+  const parsedText = (result.ParsedText || '').replace(/\r\n/g, '\n');
+  const overlay = result.TextOverlay || {};
+  const rawLines = overlay.Lines || [];
+
+  // Try tabular OCR text first; OCR.space with isTable=true returns tabs between columns.
+  let items = parseTTKTableText(parsedText) || [];
+  if (isQualityOCRResult(items)) {
+    items = items.filter(isQualityItem);
+    const allWords = rawLines.reduce((acc, line) => {
+      (line.Words || []).forEach(w => acc.push({
+        text: w.WordText || '',
+        confidence: 95,
+        bbox: { x0: w.Left || 0, y0: w.Top || 0, x1: (w.Left || 0) + (w.Width || 0), y1: (w.Top || 0) + (w.Height || 0) }
+      }));
+      return acc;
+    }, []).filter(w => w.text);
+    const photoUrl = allWords.length ? await extractDishPhoto(imageUrl, allWords) : null;
+    if (photoUrl && items.length) items[0].image = photoUrl;
+    return items;
+  }
+
+  if (!rawLines.length) {
+    items = parseTTKOCRText(parsedText) || [];
+    if (isQualityOCRResult(items)) return items.filter(isQualityItem);
+    return [];
+  }
+  const lines = rawLines.map(line => {
+    const ws = (line.Words || []).map(w => ({
+      text: w.WordText || '',
+      confidence: 95,
+      bbox: {
+        x0: w.Left || 0,
+        y0: w.Top || 0,
+        x1: (w.Left || 0) + (w.Width || 0),
+        y1: (w.Top || 0) + (w.Height || 0)
+      }
+    })).filter(w => w.text);
+    const x0s = ws.map(w => w.bbox.x0);
+    const x1s = ws.map(w => w.bbox.x1);
+    const y0s = ws.map(w => w.bbox.y0);
+    const y1s = ws.map(w => w.bbox.y1);
+    const bbox = ws.length ? { x0: Math.min(...x0s), x1: Math.max(...x1s), y0: Math.min(...y0s), y1: Math.max(...y1s) } : { x0: 0, y0: 0, x1: 0, y1: 0 };
+    return { text: (line.LineText || '').trim(), words: ws, bbox };
+  }).filter(l => l.words.length);
+  const allWords = lines.reduce((acc, l) => { acc.push(...l.words); return acc; }, []);
+  const ret = { data: { text: parsedText, lines, words: allWords } };
+  items = parseTTKImageLayout(ret, imageUrl) || [];
+  if (!isQualityOCRResult(items)) items = parseTTKOCRText(parsedText) || [];
+  items = items.filter(isQualityItem);
+  const photoUrl = allWords.length ? await extractDishPhoto(imageUrl, allWords) : null;
+  if (photoUrl && items.length) items[0].image = photoUrl;
+  return items.length ? items : [];
 }
 
 async function extractDishPhoto(imageDataUrl, words) {
@@ -3775,7 +3982,6 @@ function normalizeOCRText(text) {
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
-    .replace(/\t/g, ' ')
     .replace(/@/g, 'а');
   const uiPatterns = [
     /^\s*<\s*.*$/,
@@ -3806,6 +4012,10 @@ function normalizeOCRText(text) {
     const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
     return val.toFixed(3).replace(/\.?0+$/, '');
   })
+    // drop common OCR garbage tokens
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])(?:ке\s*сонеы|зоне|зонеы|зерен|зере|зее|зеее|сонеы|сенеы)(?![a-zA-Zа-яёЁ0-9])/gi, '$1')
+    // OCR misreads "60г" as "бог" (б->6, о->0, г->г)
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])[Бб][Оо0][Гг](?![a-zA-Zа-яёЁ0-9])/g, '$160г')
     .replace(ocrZeroRe, (m, digit, unit) => digit + '0' + unit.toLowerCase())
     .replace(ocrDigit2Re, (m, before, z, o, unit) => before + '30' + unit.toLowerCase())
     .replace(ocrDigitRe, '$13$3')
@@ -3908,9 +4118,150 @@ function postProcessParsedItems(items) {
   return out;
 }
 
+function parseTTKTableText(text) {
+  if (!text || !text.trim() || text.indexOf('\t') === -1) return [];
+  const lines = normalizeOCRText(text).split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+
+  const headerRe = /^(?:ингредиент|кол[-\s]?во|количество|вес|состав|наименование|продукт|ед\.?\s*изм|грамм|шт|мл|единица)$/i;
+  const commonSingleDish = new Set(['оладьи','сырники','борщ','салат','суп','омлет','гречка','рис','каша','мюсли','бриошь','бургер','чизкейк','морс','кисель','компот','смузи','пельмени','макароны','паштет','рулет','котлет','медальон','салями','пепперони','бекон','лимон','лайм','пицца','паста','лаваш','шаурма','плов','курица','рыба','мясо']);
+
+  function isStrongDishTitle(l) {
+    if (headerRe.test(l)) return false;
+    if (isLikelyComponent(l)) return false;
+    const s = cleanItemName(l);
+    if (!s || s.length < 3 || s.length > 80) return false;
+    if (/^\d/.test(s)) return false;
+    if (!isLikelyDishName(s)) return false;
+    const words = s.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      // Require at least one clearly dish-related word or a preposition; otherwise it is likely an ingredient phrase.
+      const preps = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли','со','во','с','о']);
+      const dishWords = new Set([...commonSingleDish, 'сэндвич','салат','суп','бургер','пицца','паста','ролл','тартин','кремчиз','грильчиз','завтрак','завтраки','бриошь','мортаделла','страчателла','прошутто','паштет','рулет','котлет','медальон','салями','пепперони']);
+      const hasDishMarker = words.some(w => dishWords.has(w.toLowerCase()) || preps.has(w.toLowerCase()));
+      if (!hasDishMarker) return false;
+      return true;
+    }
+    return commonSingleDish.has(words[0].toLowerCase());
+  }
+
+  // Find the first solid dish title; skip Telegram/UI noise like "4 Instagram" or "Алина".
+  const titleIdx = lines.findIndex(isStrongDishTitle);
+  let title = titleIdx >= 0 ? lines[titleIdx] : (lines.find(l => !headerRe.test(l) && !l.includes('\t')) || 'Блюдо');
+
+  const items = [];
+  let item = { type: 'composition', name: cleanItemName(title), correct: [], info_text: '', description: '' };
+  let inHeader = true;
+  let inDescription = false;
+  let descLines = [];
+
+  function pushItem() {
+    if (item.correct.length || item.description || descLines.length) {
+      if (descLines.length && !item.description) item.description = descLines.join('\n').trim();
+      items.push(postProcessParsedItems([item])[0]);
+    }
+    item = { type: 'composition', name: '', correct: [], info_text: '', description: '' };
+    descLines = [];
+    inHeader = true;
+    inDescription = false;
+  }
+
+  for (let i = titleIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+    if (i === titleIdx) continue;
+    if (headerRe.test(line) && inHeader) continue;
+    inHeader = false;
+    if (isDescriptionHeader(line)) { inDescription = true; if (line) descLines.push(line); continue; }
+    if (inDescription) { descLines.push(line); continue; }
+
+    // New dish title: flush current and start next.
+    if (!line.includes('\t') && isStrongDishTitle(line) && item.correct.length) {
+      pushItem();
+      item.name = cleanItemName(line);
+      continue;
+    }
+
+    if (!line.includes('\t')) {
+      if (isLikelyComponent(line)) {
+        const ex = extractComponents(line);
+        if (ex.tokens && ex.tokens.length) {
+          for (const t of ex.tokens) {
+            const comp = parseComponentToken(t);
+            if (comp && comp.ingredient) item.correct.push(comp);
+          }
+        } else {
+          const comp = parseComponentToken(line);
+          if (comp && comp.ingredient) item.correct.push(comp);
+          else if (ex.description) descLines.push(ex.description);
+        }
+        if (ex.description && !item.correct.length) descLines.push(ex.description);
+      } else if (isLikelyDishName(line)) {
+        descLines.push(line);
+      } else {
+        descLines.push(line);
+      }
+      continue;
+    }
+
+    const cells = line.split('\t').map(c => c.trim()).filter(c => c);
+    if (!cells.length) continue;
+    if (cells.length === 1) {
+      const cell = cells[0];
+      if (headerRe.test(cell)) continue;
+      if (isLikelyComponent(cell)) {
+        const ex = extractComponents(cell);
+        if (ex.tokens && ex.tokens.length) {
+          for (const t of ex.tokens) {
+            const comp = parseComponentToken(t);
+            if (comp && comp.ingredient) item.correct.push(comp);
+          }
+        } else {
+          const comp = parseComponentToken(cell);
+          if (comp && comp.ingredient) item.correct.push(comp);
+          else if (ex.description) descLines.push(ex.description);
+        }
+        if (ex.description && !item.correct.length) descLines.push(ex.description);
+      } else if (isStrongDishTitle(cell)) {
+        pushItem();
+        item.name = cleanItemName(cell);
+      } else if (isLikelyDishName(cell)) {
+        descLines.push(cell);
+      } else {
+        descLines.push(cell);
+      }
+      continue;
+    }
+    // At least 2 cells: name and weight/quantity.
+    const name = cells[0];
+    const weight = cells.slice(1).join(' ');
+    if (headerRe.test(name)) continue;
+    const fullLine = (name + ' ' + weight).trim();
+    const ex = extractComponents(fullLine);
+    if (ex.tokens && ex.tokens.length) {
+      for (const t of ex.tokens) {
+        const comp = parseComponentToken(t);
+        if (comp && comp.ingredient) item.correct.push(comp);
+      }
+    } else {
+      const comp = parseComponentToken(fullLine);
+      if (comp && comp.ingredient) item.correct.push(comp);
+      else if (name) item.correct.push({ ingredient: cleanItemName(name), grams: 0, isCount: false });
+    }
+    if (ex.description && !item.correct.length) descLines.push(ex.description);
+  }
+
+  pushItem();
+  return items.length ? items : [];
+}
+
 function parseTTKOCRText(text) {
   if (!text || !text.trim()) return [];
   const normalized = normalizeOCRText(text);
+  if (normalized.indexOf('\t') !== -1) {
+    const tableItems = parseTTKTableText(normalized);
+    if (tableItems && tableItems.length) return tableItems;
+  }
 
   let blocks = normalized.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
 
@@ -3965,6 +4316,11 @@ function isLikelyComponent(line) {
   // count-only ingredient lines like "Соль 1" or "Сахар 10"
   const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
   if (noUnitMatch && isLikelyIngredientName(noUnitMatch[1])) return true;
+  // measure-word ingredient lines like "Соль 1 щепотка" or "Авокадо 1/2 шт"
+  const measureWords = 'щепотка|щепотки|ложка|ложки|ложечка|чайная|столовая|стакан|чашка|горсть|горсти|пучок|пучки|зубчик|зубчика|стручок|стручка|капля|капли|кусочек|кусочка|ломтик|ломтика|пластинка|пластинки|долька|дольки|половинка|половинки|четвертинка|четвертинки|пучочек|горошина|горошины|кружка|банка|пакет|пакетик';
+  const measureRe = new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + measureWords + ')(?![a-zA-Zа-яёЁ0-9])', 'i');
+  const measureMatch = s.match(measureRe);
+  if (measureMatch && isLikelyIngredientName(cleanItemName(measureMatch[1]))) return true;
   // ingredient lines like "Банан: половинка" or "Сметана: 30г" (not a dish heading)
   if (/:\s+/.test(s)) {
     const parts = s.split(/:\s+/, 2);
@@ -4104,6 +4460,12 @@ function isLikelyDishName(line) {
     const rest = words.slice(1).join(' ');
     if (!isLikelyDishName(rest) && !isLikelyIngredientName(rest)) return false;
   }
+  // reject ingredient-prep phrases that OCR put on their own line (e.g. "Грецкий орех крошка")
+  const last = words[words.length - 1].toLowerCase();
+  const exactEndings = new Set(['г','гр','мл','шт','штук','штуки','кг','л','мг','грамм','граммов','миллилитров']);
+  const suffixEndings = ['крошка','крошки','ломтик','ломтики','щепотка','щепотки','зубчик','зубчики','стручок','стручки','долька','дольки','половинка','половинки','кусочек','кусочки','порция','порции','замороженная','замороженный','замороженные','вяленые','вяленый','маринованные','консервированные','слайсы','свежемороженые'];
+  if (exactEndings.has(last) || suffixEndings.some(e => last.endsWith(e))) return false;
+  if (/(?:\b|^)(?:п\/ф|пф|с\/с|с\/м|с\/о)(?:\b|$)/i.test(s)) return false;
   return !hasInstructionWords(s);
 }
 
@@ -4319,6 +4681,8 @@ function extractComponents(text) {
   });
   const decimalCommaRe = new RegExp('(\\d),(\\d+)(?=\\s*(?:' + units + '))', 'gi');
   const normalized = stripped.replace(decimalCommaRe, '$1.$2');
+  const measureWords = 'щепотка|щепотки|ложка|ложки|ложечка|чайная|столовая|стакан|чашка|горсть|горсти|пучок|пучки|зубчик|зубчика|стручок|стручка|капля|капли|кусочек|кусочка|ломтик|ломтика|пластинка|пластинки|долька|дольки|половинка|половинки|четвертинка|четвертинки|пучочек|горошина|горошины|кружка|банка|пакет|пакетик';
+  const measureRe = new RegExp('^\\s*(' + measureWords + ')(?![a-zA-Zа-яёЁ0-9])', 'i');
   const re = new RegExp('(\\d+(?:[.,]\\d+)?)(?:\\s*(' + units + '))?(?![a-zA-Zа-яёЁ])', 'gi');
   const tokens = [];
   const descriptionFrags = [];
@@ -4327,13 +4691,27 @@ function extractComponents(text) {
   while ((match = re.exec(normalized)) !== null) {
     if (match.index < lastIndex) break;
     const rawName = normalized.slice(lastIndex, match.index);
-    const grams = parseFloat(match[1].replace(',', '.'));
-    const unit = match[2] || '';
-    const hasUnit = !!unit;
-    const restAfter = normalized.slice(match.index + match[0].length).trim().replace(/[.,;:!?]+$/, '');
-    const isEnd = restAfter.length === 0;
-    if (!hasUnit && !isEnd) { lastIndex = match.index + match[0].length; continue; }
-    const isCountUnit = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
+    let grams = parseFloat(match[1].replace(',', '.'));
+    let unit = match[2] || '';
+    let hasUnit = !!unit;
+    let restAfter = normalized.slice(match.index + match[0].length).trim().replace(/[.,;:!?]+$/, '');
+    let isEnd = restAfter.length === 0;
+    let measure = '';
+    if (!hasUnit && !isEnd) {
+      const measureMatch = restAfter.match(measureRe);
+      if (measureMatch) {
+        measure = measureMatch[1];
+        hasUnit = true;
+        restAfter = restAfter.slice(measureMatch[0].length).trim().replace(/[.,;:!?]+$/, '');
+        isEnd = restAfter.length === 0;
+        re.lastIndex = match.index + match[0].length + measureMatch[0].length;
+      } else {
+        re.lastIndex = match.index + match[0].length;
+        lastIndex = re.lastIndex;
+        continue;
+      }
+    }
+    let isCountUnit = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
     const parsed = findIngredientInPrefix(rawName);
     if (parsed && parsed.name) {
       let ingredient = parsed.name;
@@ -4342,13 +4720,18 @@ function extractComponents(text) {
       } else if (parsed.type === 'instruction' && parsed.leftover) {
         descriptionFrags.push(parsed.leftover);
       }
+      if (measure) {
+        ingredient += ' (' + grams + ' ' + measure + ')';
+        grams = 0;
+        isCountUnit = false;
+      }
       tokens.push({ ingredient, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
     } else if (rawName && rawName.trim() && (hasUnit || isEnd)) {
       const cleaned = cleanItemName(rawName);
       if (cleaned && hasInstructionWords(cleaned)) descriptionFrags.push(cleaned);
       else if (cleaned && isLikelyNote(cleaned)) descriptionFrags.push(cleaned);
     }
-    lastIndex = match.index + match[0].length;
+    lastIndex = re.lastIndex;
   }
   if (lastIndex < normalized.length) {
     const tail = cleanItemName(normalized.slice(lastIndex));
