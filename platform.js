@@ -3720,7 +3720,8 @@ function isLikelyComponent(line) {
   const units = ['г', 'гр', 'грамм', 'грам', 'мл', 'миллилитров', 'шт', 'штук', 'штуки', 'л', 'кг', 'кгр', 'мг', 'g', 'gr', 'gram', 'grams', 'ml', 'pcs', 'pc'];
   const unitRe = new RegExp('\\d+(?:[.,]\\d+)?\\s*(?:' + units.join('|') + ')(?:\\s|$|[.,;])', 'i');
   if (unitRe.test(stripped)) return true;
-  if (/\d+(?:[.,]\d+)?\s*%/.test(s)) return true;
+  const pctMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*%/);
+  if (pctMatch && isLikelyIngredientName(cleanItemName(pctMatch[1]))) return true;
   // count-only ingredient lines like "Соль 1" or "Сахар 10"
   const noUnitMatch = s.match(/^(.*?)\s+(\d+(?:[.,]\d+)?)\s*[.)]*$/);
   if (noUnitMatch && isLikelyIngredientName(noUnitMatch[1])) return true;
@@ -3763,11 +3764,35 @@ function maybeSplitBlocks(lines) {
       if (isDescriptionHeader(s)) return false;
       return /^[A-ZА-ЯЁ\s\d]+$/.test(s) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(s);
     }
+    const weightUnitRe = /\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг)(?![a-zA-Zа-яёЁ0-9])/i;
+    function blockHasComponent(arr) {
+      return arr.some(l => weightUnitRe.test(l));
+    }
     current = [lines[0]];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
       const cleaned = cleanItemName(line);
-      if (!isLikelyComponent(line) && !isLikelyNote(cleaned) && !isSectionHeading(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line))) {
+      const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
+      const nextIsComponent = nextLine && isLikelyComponent(nextLine);
+      const isDishHeader = !isLikelyComponent(line) && !isLikelyNote(cleaned) && !isSectionHeading(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line));
+      if (isDishHeader) {
+        // split on a likely dish name that is followed by a component line (new dish block)
+        if (nextIsComponent) {
+          blocks.push(current.join('\n'));
+          current = [line];
+          continue;
+        }
+        // don't split on an ingredient-looking word when the current block already has real components (multi-column OCR)
+        if (isLikelyIngredientName(cleaned) && blockHasComponent(current)) {
+          current.push(line);
+          continue;
+        }
+        // don't split on an ingredient-looking word that is followed by a description/process header (multi-column OCR)
+        if (isLikelyIngredientName(cleaned) && i + 1 < lines.length && isDescriptionHeader(lines[i + 1])) {
+          current.push(line);
+          continue;
+        }
+        // otherwise split on a clear dish title
         blocks.push(current.join('\n'));
         current = [line];
       } else {
@@ -3842,6 +3867,10 @@ function isLikelyIngredientName(line) {
   if (words[0] && ['ингредиент','ингредиенты'].includes(words[0].toLowerCase())) return false;
   if (words[0] && words[0].length < 3 && words[0] === words[0].toLowerCase()) return false;
   if (words.length === 1 && words[0] === words[0].toUpperCase() && words[0].length <= 4 && /[Зз]/.test(words[0])) return false;
+  const nonIngredientNouns = new Set(['гриль','гриле','сковород','сковорода','сковороде','тарелка','тарелке','плита','плите','духовка','духовке','микроволновка','нож','вилка','ложка','кастрюля','сотейник','доска','толкушка','венчик','половник','кухня','посуда','огонь','газ','плитка','минута','минут','секунда','час','градус','температура','время','процесс','способ']);
+  if (words.some(w => nonIngredientNouns.has(w.toLowerCase()))) return false;
+  const nonIngredientRoots = /^(гриль|гриле|сковород|тарелк|плит|духов|микроволнов|нож|вилк|ложк|кастрюл|сотейник|дос(?!пех)|толкушк|венчик|половник|кухн|посуд|огон|газ|минут|секунд|час|градус|температур|врем|процесс|способ)/i;
+  if (words.some(w => nonIngredientRoots.test(w))) return false;
   return !hasInstructionWords(s);
 }
 
@@ -3905,18 +3934,24 @@ function parseItemBlock(block) {
   const compLines = [];
   let descLines = [];
   let collecting = false;
+  let inDescription = false;
   for (const line of remainingLines) {
     if (isDescriptionHeader(line)) {
       descLines.push(line);
-      break;
+      inDescription = true;
+      collecting = true;
+      continue;
+    }
+    if (inDescription) {
+      descLines.push(line);
+      continue;
     }
     if (isLikelyComponent(line) || isLikelyIngredientName(cleanItemName(line))) {
       compLines.push(line);
       collecting = true;
     } else if (collecting) {
       descLines.push(line);
-      // if line is clearly instruction, stop collecting components
-      if (hasInstructionWords(line)) break;
+      if (hasInstructionWords(line)) inDescription = true;
     } else {
       descLines.push(line);
     }
@@ -3926,7 +3961,19 @@ function parseItemBlock(block) {
   let components = split.components;
 
   if (!components.length && compLines.length) {
-    components = compLines.flatMap(extractComponents);
+    const extracted = compLines.map(extractComponents).reduce((acc, ex) => {
+      if (ex.tokens && ex.tokens.length) {
+        acc.tokens.push(...ex.tokens);
+        if (ex.description) acc.description.push(ex.description);
+      } else if (ex.description) {
+        acc.description.push(ex.description);
+      }
+      return acc;
+    }, { tokens: [], description: [] });
+    components = extracted.tokens;
+    if (extracted.description.length) {
+      description = (description ? description + '\n' : '') + extracted.description.filter(Boolean).join('\n');
+    }
   }
 
   if (!components.length && lines.length === 1) {
@@ -3972,15 +4019,55 @@ function splitNameAndComponents(line, allowNoComponents) {
         if (nested.name || nested.components.length) return nested;
         return { name: cleanItemName(rest), components: [] };
       }
-      const components = extractComponents(rest);
-      if (components.length || allowNoComponents) return { name, components };
+      const extracted = extractComponents(rest);
+      if (extracted.tokens.length || allowNoComponents) return { name, components: extracted.tokens };
     }
   }
   return { name: cleanItemName(line), components: [] };
 }
 
+function findIngredientInPrefix(prefix) {
+  const words = cleanItemName(prefix).split(/\s+/).filter(Boolean);
+  if (!words.length) return null;
+  function search(arr) {
+    for (let start = arr.length - 1; start >= 0; start--) {
+      const suffix = arr.slice(start).join(' ');
+      if (!isLikelyIngredientName(suffix)) continue;
+      const leftover = arr.slice(0, start).join(' ');
+      if (!leftover) return { name: suffix, leftover: '', type: 'none' };
+      if (isLikelyNote(leftover) || hasInstructionWords(leftover)) {
+        return { name: suffix, leftover, type: hasInstructionWords(leftover) ? 'instruction' : 'note' };
+      }
+      if (isLikelyIngredientName(arr.join(' '))) {
+        return { name: arr.join(' '), leftover: '', type: 'none' };
+      }
+    }
+    return null;
+  }
+  let res = search(words);
+  if (res) return res;
+  for (let k = 1; k <= Math.min(4, words.length); k++) {
+    const tail = words.slice(-k).join(' ');
+    if (isLikelyNote(tail) || hasInstructionWords(tail)) {
+      const rest = words.slice(0, -k);
+      const found = search(rest);
+      if (found) {
+        if (found.type === 'none') {
+          found.leftover = tail;
+          found.type = hasInstructionWords(tail) ? 'instruction' : 'note';
+        } else {
+          found.leftover = (found.leftover ? found.leftover + ' ' : '') + tail;
+          found.type = hasInstructionWords(tail) ? 'instruction' : 'note';
+        }
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
 function extractComponents(text) {
-  if (!text) return [];
+  if (!text) return { tokens: [], description: '' };
   const units = 'г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
   let stripped = text.replace(/\([^)]*\)/g, ' ').replace(/\[.*?\]/g, ' ');
   stripped = stripped.replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
@@ -3991,36 +4078,55 @@ function extractComponents(text) {
   const normalized = stripped.replace(decimalCommaRe, '$1.$2');
   const re = new RegExp('(\\d+(?:[.,]\\d+)?)(?:\\s*(' + units + '))?(?![a-zA-Zа-яёЁ])', 'gi');
   const tokens = [];
+  const descriptionFrags = [];
   let lastIndex = 0;
   let match;
   while ((match = re.exec(normalized)) !== null) {
     if (match.index < lastIndex) break;
-    const name = cleanItemName(normalized.slice(lastIndex, match.index));
+    const rawName = normalized.slice(lastIndex, match.index);
     const grams = parseFloat(match[1].replace(',', '.'));
     const unit = match[2] || '';
+    const hasUnit = !!unit;
+    const restAfter = normalized.slice(match.index + match[0].length).trim().replace(/[.,;:!?]+$/, '');
+    const isEnd = restAfter.length === 0;
+    if (!hasUnit && !isEnd) { lastIndex = match.index + match[0].length; continue; }
     const isCountUnit = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
-    if (name && isLikelyIngredientName(name)) {
-      tokens.push({ ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
-    } else if (name && unit && /^[A-Za-zА-Яа-яЁё]/.test(name)) {
-      tokens.push({ ingredient: name, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
-    } else if (!name && isCountUnit) {
-      tokens.push({ ingredient: '', grams: isNaN(grams) ? 0 : grams, isCount: true });
+    const parsed = findIngredientInPrefix(rawName);
+    if (parsed && parsed.name) {
+      let ingredient = parsed.name;
+      if (parsed.type === 'note' && parsed.leftover) {
+        ingredient += ' (' + parsed.leftover + ')';
+      } else if (parsed.type === 'instruction' && parsed.leftover) {
+        descriptionFrags.push(parsed.leftover);
+      }
+      tokens.push({ ingredient, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
+    } else if (rawName && rawName.trim() && (hasUnit || isEnd)) {
+      const cleaned = cleanItemName(rawName);
+      if (cleaned && hasInstructionWords(cleaned)) descriptionFrags.push(cleaned);
+      else if (cleaned && isLikelyNote(cleaned)) descriptionFrags.push(cleaned);
     }
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < normalized.length) {
     const tail = cleanItemName(normalized.slice(lastIndex));
-    if (tail && tokens.length && isLikelyNote(tail)) {
-      const prev = tokens[tokens.length - 1];
-      prev.ingredient = (prev.ingredient ? prev.ingredient + ' ' : '') + '(' + tail + ')';
-    } else if (tail && isLikelyIngredientName(tail)) {
-      tokens.push({ ingredient: tail, grams: 0, isCount: false });
+    if (tail) {
+      if (tokens.length && isLikelyNote(tail)) {
+        const prev = tokens[tokens.length - 1];
+        prev.ingredient = (prev.ingredient ? prev.ingredient + ' ' : '') + '(' + tail + ')';
+      } else if (isLikelyIngredientName(tail)) {
+        tokens.push({ ingredient: tail, grams: 0, isCount: false });
+      } else if (hasInstructionWords(tail) || isLikelyNote(tail)) {
+        descriptionFrags.push(tail);
+      }
     }
   }
   if (!tokens.length) {
-    return normalized.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+    if (descriptionFrags.length) return { tokens: [], description: descriptionFrags.filter(Boolean).join(' ').trim() };
+    const fallback = normalized.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+    if (fallback.length) return { tokens: fallback, description: '' };
   }
-  return tokens;
+  const description = descriptionFrags.filter(Boolean).join(' ').trim();
+  return { tokens, description };
 }
 
 function cleanItemName(str) {
