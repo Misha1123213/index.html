@@ -3453,11 +3453,14 @@ async function processTTKImageWithWorker(file, worker) {
   const text = ret.data.text || '';
   const words = ret.data.words || [];
   const photoUrl = words.length ? await extractDishPhoto(imageUrl, words) : null;
-  let items = parseTTKImageLayout(ret, imageUrl) || [];
-  if (!items.length) {
-    // fallback to plain OCR reading-order parser
-    items = parseTTKOCRText(text) || [];
+  const layoutItems = parseTTKImageLayout(ret, imageUrl) || [];
+  const plainItems = parseTTKOCRText(text) || [];
+  function totalComponents(arr) { return arr.reduce((s, it) => s + ((it.correct && it.correct.length) || 0), 0); }
+  let items = layoutItems;
+  if (totalComponents(plainItems) > totalComponents(layoutItems)) {
+    items = plainItems;
   }
+  if (!items.length) items = plainItems.length ? plainItems : layoutItems;
   if (photoUrl && items.length) {
     items[0].image = photoUrl;
   }
@@ -3971,18 +3974,27 @@ function isSectionHeading(s) {
   return words.includes((s || '').toLowerCase().trim());
 }
 
+const headerDishWords = new Set(['салат','суп','омлет','яичница','блюдо','гарнир','соус','закуска','десерт','напиток','каша','салями','рыба','мясо']);
+function isDishDishHeader(s) {
+  const t = (s || '').trim();
+  const m = t.match(/^([A-ZА-ЯЁ][a-zа-яё\s-]{1,20}):\s*([A-ZА-ЯЁ][a-zа-яё\s-]{1,20}):?$/);
+  if (!m) return false;
+  return headerDishWords.has(m[2].toLowerCase().trim());
+}
+
 function normalizeOCRText(text) {
   if (!text) return '';
   const units = 'шт|штук|штуки|г|гр|грамм|грам|мл|миллилитров|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc';
   const ocrUnits = units.split('|').sort((a, b) => b.length - a.length).join('|');
-  const ocrDigitRe = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])(' + units + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
+  const ocrDigitRe = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([ЗзАа])(' + units + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
   const ocrDigit2Re = new RegExp('(^|[^a-zA-Zа-яёЁ0-9])([Зз])([Оо0])\\s*(' + ocrUnits + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
   const ocrZeroRe = new RegExp('(\\d)(?:\\s*[ОоO]\\s*)+(' + ocrUnits + ')(?![a-zA-Zа-яёЁ0-9])', 'gi');
   let t = text
     .replace(/^\uFEFF/, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
-    .replace(/@/g, 'а');
+    .replace(/@/g, 'а')
+    .replace(/`/g, '');
   const uiPatterns = [
     /^\s*<\s*.*$/,
     /^\s*\d{1,2}:\d{2}\b/,
@@ -3992,7 +4004,7 @@ function normalizeOCRText(text) {
     /описание\s*\/\s*процесс\s*приготовления/i,
     /процесс\s*приготовления\s*блюда/i,
     /^\s*фото\s*$/i,
-    /^\s*[-+=—–…]{2,}\s*$/,
+    /^\s*[-+=—–…]+\s*$/,
     /(?:басе64|base64|data:image|image\/)/i,
     /закрепл[её]нное\s+сообщение/i,
     /\bсообщение\b/i,
@@ -4002,12 +4014,26 @@ function normalizeOCRText(text) {
     /\d{1,2}:\d{2}/,
     /[®©]/,
     /^\s*[\[<].*$/,
+    /^\s*[A-ZА-ЯЁ\s\d]+[)\]<>]\s*$/,
+    /^\s*\d+(?:\s+\d+)+\s*$/,
+    /^\s*\d+\s*$/,
   ];
-  t = t.split('\n').map(line => {
-    for (const re of uiPatterns) if (re.test(line)) return '';
-    if (isSectionHeading(cleanItemName(line)) && line.trim().length <= 30) return '';
-    return line;
-  }).filter(l => l.trim().length > 0).join('\n');
+  const outLines = [];
+  let prevEmpty = false;
+  for (const line of t.split('\n')) {
+    let keep = line.replace(/^\s*\|+/, '').trim();
+    for (const re of uiPatterns) if (re.test(line)) { keep = ''; break; }
+    if (isSectionHeading(cleanItemName(line)) && line.trim().length <= 30) keep = '';
+    if (keep && isDishDishHeader(line)) keep = '';
+    if (keep === '') {
+      if (!prevEmpty) outLines.push('');
+      prevEmpty = true;
+    } else {
+      outLines.push(keep);
+      prevEmpty = false;
+    }
+  }
+  t = outLines.join('\n').trim();
   t = t.replace(/(\d{1,3}(?:[.,]\d{1,3})?)\s*[/\\]\s*(\d{1,3})(?![\d.,])/g, (m, a, b) => {
     const val = parseFloat(a.replace(',', '.')) / parseFloat(b);
     return val.toFixed(3).replace(/\.?0+$/, '');
@@ -4018,7 +4044,10 @@ function normalizeOCRText(text) {
     .replace(/(^|[^a-zA-Zа-яёЁ0-9])[Бб][Оо0][Гг](?![a-zA-Zа-яёЁ0-9])/g, '$160г')
     .replace(ocrZeroRe, (m, digit, unit) => digit + '0' + unit.toLowerCase())
     .replace(ocrDigit2Re, (m, before, z, o, unit) => before + '30' + unit.toLowerCase())
-    .replace(ocrDigitRe, '$13$3')
+    .replace(ocrDigitRe, (m, before, digit, unit) => before + (digit.toLowerCase() === 'а' ? '4' : '3') + unit.toLowerCase())
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])дшт(?![a-zA-Zа-яёЁ0-9])/gi, '$14 шт')
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])Солы?перец(?![a-zA-Zа-яёЁ0-9])/gi, '$1Соль перец')
+    .replace(/(^|[^a-zA-Zа-яёЁ0-9])Перец[.,]?\s*соль(?![a-zA-Zа-яёЁ0-9])/gi, '$1перец соль')
     .replace(/[ \xA0]{2,}/g, ' ')
     .trim();
   return t;
@@ -4037,9 +4066,27 @@ function parseTTKPlainText(text) {
   } else if (blocks.length > 1) {
     blocks = mergeHeadingBlocks(blocks);
   }
+  blocks = mergeContinuationBlocks(blocks);
   blocks = mergeDescriptionBlocks(blocks);
 
   return postProcessParsedItems(processTTKBlocks(blocks));
+}
+
+function mergeContinuationBlocks(blocks) {
+  const merged = [];
+  for (const block of blocks) {
+    const firstLine = (block.split('\n')[0] || '').trim();
+    const cleaned = cleanItemName(firstLine);
+    const lastLine = merged.length ? merged[merged.length - 1].split('\n').pop().trim() : '';
+    const isIngredientLike = isLikelyComponent(firstLine) || (isLikelyIngredientName(cleaned) && !isLikelyDishName(cleaned));
+    const isNoteContinuation = merged.length && isContinuationNote(firstLine) && (isLikelyComponent(lastLine) || isContinuationNote(lastLine)) && /(?:\s|^)(как|на|по|для|в|с|из|под|над|перед|после|при|про|к|от|до|без|за|об|у|и|а|но|или|со|во|о|не|также|ещё|еще|тоже|так|[,:;])\s*$/i.test(lastLine);
+    if (merged.length && (isIngredientLike || isNoteContinuation) && !isDescriptionHeader(firstLine) && !isLabelPrefixedDishName(firstLine) && (!hasStrongDishWord(cleaned) || isNoteContinuation)) {
+      merged[merged.length - 1] = merged[merged.length - 1] + '\n' + block;
+    } else {
+      merged.push(block);
+    }
+  }
+  return merged;
 }
 
 function mergeDescriptionBlocks(blocks) {
@@ -4106,7 +4153,12 @@ function postProcessParsedItems(items) {
     });
     item.correct = correct;
     const name = (item.name || '').trim();
-    const desc = (item.description || '').trim();
+    let desc = (item.description || '').trim();
+    if (desc) {
+      const descHeaderRe = /^(?:технология\s*приготовления|приготовление|способ\s*приготовления|готовка|описание)[\s:—–-]*$/i;
+      desc = desc.split('\n').filter(l => !descHeaderRe.test(l.trim())).join('\n').trim();
+    }
+    item.description = desc;
     if (correct.length === 1 && name && correct[0].ingredient && name.toLowerCase() === correct[0].ingredient.trim().toLowerCase() && !desc && out.length) {
       const prev = out[out.length - 1];
       prev.correct = prev.correct.concat(correct);
@@ -4124,7 +4176,7 @@ function parseTTKTableText(text) {
   if (!lines.length) return [];
 
   const headerRe = /^(?:ингредиент|кол[-\s]?во|количество|вес|состав|наименование|продукт|ед\.?\s*изм|грамм|шт|мл|единица)$/i;
-  const commonSingleDish = new Set(['оладьи','сырники','борщ','салат','суп','омлет','гречка','рис','каша','мюсли','бриошь','бургер','чизкейк','морс','кисель','компот','смузи','пельмени','макароны','паштет','рулет','котлет','медальон','салями','пепперони','бекон','лимон','лайм','пицца','паста','лаваш','шаурма','плов','курица','рыба','мясо']);
+  const commonSingleDish = new Set(['оладьи','сырники','борщ','салат','суп','омлет','гречка','рис','каша','мюсли','бургер','чизкейк','морс','кисель','компот','смузи','пельмени','макароны','паштет','рулет','котлет','медальон','салями','пепперони','бекон','лимон','лайм','пицца','паста','лаваш','шаурма','плов','курица','рыба','мясо']);
 
   function isStrongDishTitle(l) {
     if (headerRe.test(l)) return false;
@@ -4137,7 +4189,7 @@ function parseTTKTableText(text) {
     if (words.length >= 2) {
       // Require at least one clearly dish-related word or a preposition; otherwise it is likely an ingredient phrase.
       const preps = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли','со','во','с','о']);
-      const dishWords = new Set([...commonSingleDish, 'сэндвич','салат','суп','бургер','пицца','паста','ролл','тартин','кремчиз','грильчиз','завтрак','завтраки','бриошь','мортаделла','страчателла','прошутто','паштет','рулет','котлет','медальон','салями','пепперони']);
+      const dishWords = new Set([...commonSingleDish, 'сэндвич','салат','суп','бургер','пицца','паста','ролл','кремчиз','грильчиз','завтрак','завтраки','мортаделла','страчателла','прошутто','паштет','рулет','котлет','медальон','салями','пепперони']);
       const hasDishMarker = words.some(w => dishWords.has(w.toLowerCase()) || preps.has(w.toLowerCase()));
       if (!hasDishMarker) return false;
       return true;
@@ -4272,6 +4324,7 @@ function parseTTKOCRText(text) {
   } else if (blocks.length > 1) {
     blocks = mergeHeadingBlocks(blocks);
   }
+  blocks = mergeContinuationBlocks(blocks);
   blocks = mergeDescriptionBlocks(blocks);
 
   const items = postProcessParsedItems(processTTKBlocks(blocks));
@@ -4288,13 +4341,17 @@ function mergeHeadingBlocks(blocks) {
     }
     const block = blocks[i];
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-    const isHeading = lines.length === 1 && /[:\-|–—]$/.test(lines[0]) && !/^[-•–—*‣⁃◦\d[\]()]/.test(lines[0]);
-    if (isHeading && i + 1 < blocks.length) {
-      const nextLines = blocks[i + 1].split('\n').map(l => l.trim()).filter(Boolean);
-      if (nextLines.length && /^[-•–—*‣⁃◦\d[\]()]+/.test(nextLines[0])) {
-        merged.push(block + '\n' + blocks[i + 1]);
-        skipNext = true;
-        continue;
+    if (lines.length === 1) {
+      const cleaned = cleanItemName(lines[0]);
+      const isDishTitle = isLikelyDishName(cleaned) && (hasStrongDishWord(cleaned) || !isLikelyIngredientName(cleaned) || isLabelPrefixedDishName(lines[0]) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d-]*:$/.test(lines[0]));
+      const isOldHeading = /[:\-|–—]$/.test(lines[0]) && !/^[-•–—*‣⁃◦\d[\]()]+/.test(lines[0]);
+      if ((isDishTitle || isOldHeading) && i + 1 < blocks.length) {
+        const nextLines = blocks[i + 1].split('\n').map(l => l.trim()).filter(Boolean);
+        if (nextLines.length && !isDescriptionHeader(nextLines[0])) {
+          merged.push(block + '\n' + blocks[i + 1]);
+          skipNext = true;
+          continue;
+        }
       }
     }
     merged.push(block);
@@ -4321,10 +4378,13 @@ function isLikelyComponent(line) {
   const measureRe = new RegExp('^(.*?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(' + measureWords + ')(?![a-zA-Zа-яёЁ0-9])', 'i');
   const measureMatch = s.match(measureRe);
   if (measureMatch && isLikelyIngredientName(cleanItemName(measureMatch[1]))) return true;
+  // bare measure lines like "1 щепотка" (OCR lost the ingredient name)
+  const measureOnlyRe = new RegExp('^\\d+(?:[.,]\\d+)?\\s*(' + measureWords + ')\\s*$', 'i');
+  if (measureOnlyRe.test(s)) return true;
   // ingredient lines like "Банан: половинка" or "Сметана: 30г" (not a dish heading)
   if (/:\s+/.test(s)) {
     const parts = s.split(/:\s+/, 2);
-    if (parts[1] && !/:/.test(parts[1]) && !isDescriptionHeader(parts[0]) && !isLikelyDishName(cleanItemName(parts[1]))) return true;
+    if (parts[1] && !/:/.test(parts[1]) && !isDescriptionHeader(parts[0]) && !isLikelyDishName(cleanItemName(parts[1])) && isLikelyIngredientName(cleanItemName(parts[0]))) return true;
   }
   return false;
 }
@@ -4358,7 +4418,9 @@ function maybeSplitBlocks(lines) {
   } else {
     function isSectionHeader(s) {
       if (isDescriptionHeader(s)) return false;
-      return /^[A-ZА-ЯЁ\s\d]+$/.test(s) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(s);
+      const t = (s || '').trim();
+      if (!/[A-ZА-ЯЁ]/.test(t)) return false;
+      return /^[A-ZА-ЯЁ\s\d]+$/.test(t) || /^[A-ZА-ЯЁ][A-ZА-ЯЁ\s\d]*:$/.test(t);
     }
     const weightUnitRe = /\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|мл|миллилитров|шт|штук|штуки|л|кг|кгр|мг)(?![a-zA-Zа-яёЁ0-9])/i;
     function blockHasComponent(arr) {
@@ -4370,21 +4432,29 @@ function maybeSplitBlocks(lines) {
       const cleaned = cleanItemName(line);
       const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
       const nextIsComponent = nextLine && isLikelyComponent(nextLine);
-      const isDishHeader = !isLikelyComponent(line) && !isLikelyNote(cleaned) && !isSectionHeading(cleaned) && (isSectionHeader(line) || isLikelyDishName(cleaned) || isLabelPrefixedDishName(line));
+      const words = cleaned.split(/\s+/).filter(Boolean);
+      const isDishHeader = !isLikelyComponent(line) && !isLikelyNote(cleaned) && !isSectionHeading(cleaned) && (isSectionHeader(line) || isLabelPrefixedDishName(line) || (isLikelyDishName(cleaned) && hasStrongDishWord(cleaned)));
       if (isDishHeader) {
+        const isSingleIng = isLikelyIngredientName(cleaned) && words.length === 1;
         // split on a likely dish name that is followed by a component line (new dish block)
         if (nextIsComponent) {
+          // keep a single ambiguous ingredient word (e.g. "Салат") inside an ongoing ingredient list
+          if (isSingleIng && blockHasComponent(current) && !isLabelPrefixedDishName(line)) {
+            current.push(line);
+            continue;
+          }
           blocks.push(current.join('\n'));
           current = [line];
           continue;
         }
-        // don't split on an ingredient-looking word when the current block already has real components (multi-column OCR)
-        if (isLikelyIngredientName(cleaned) && blockHasComponent(current)) {
+        // don't split on an ingredient-looking word when the current block already has real components,
+        // unless it is a strong multi-word dish title
+        if (isLikelyIngredientName(cleaned) && blockHasComponent(current) && (words.length === 1 || !hasDishWord(cleaned))) {
           current.push(line);
           continue;
         }
-        // don't split on an ingredient-looking word that is followed by a description/process header (multi-column OCR)
-        if (isLikelyIngredientName(cleaned) && i + 1 < lines.length && isDescriptionHeader(lines[i + 1])) {
+        // don't split on an ingredient-looking word that is followed by a description/process header
+        if (isLikelyIngredientName(cleaned) && i + 1 < lines.length && isDescriptionHeader(lines[i + 1]) && (words.length === 1 || !hasDishWord(cleaned))) {
           current.push(line);
           continue;
         }
@@ -4414,7 +4484,7 @@ function hasInstructionWords(s) {
   const words = (s || '').toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return false;
   const verbEndings = /(ем|им|ет|ит|ут|ют|ешь|ишь|ете|ите|ать|ять|еть|ить|уть|ыть|овать|евать|авать|ывать|ивать|аться|еться|иться|уться|ыться|оваться|еваться|аваться|ываться|иваться)$/;
-  const nonInstructionNouns = new Set(['омлет','паштет','рулет','котлет','медальон','бриошь','бургер','чизкейк','морс','кисель','компот','смузи','лайм','лимон','бекон','салями','пепперони','салат','суп','борщ','сирт','оладьи','сырники','пельмени','макароны','гречка','рис','каша','мюсли']);
+  const nonInstructionNouns = new Set(['омлет','паштет','рулет','котлет','медальон','бургер','чизкейк','морс','кисель','компот','смузи','лайм','лимон','бекон','салями','пепперони','салат','суп','борщ','сирт','оладьи','сырники','пельмени','макароны','гречка','рис','каша','мюсли']);
   const prepositions = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли']);
   function isVerb(w) {
     const lw = w.toLowerCase();
@@ -4439,6 +4509,19 @@ function isLabelPrefixedDishName(line) {
   return rest.length >= 2 && !/\d/.test(rest);
 }
 
+const COMMON_DISH_WORDS = new Set(['оладьи','оладья','сырники','борщ','суп','солянка','щи','окрошка','бульон','омлет','яичница','гречка','рис','каша','мюсли','бургер','чизкейк','морс','кисель','компот','смузи','сок','лимонад','пельмени','макароны','паштет','рулет','котлет','котлета','биточек','тефтели','медальон','салями','пепперони','бекон','ветчина','колбаса','сервелат','сосиска','сарделька','язык','печень','сердце','пицца','паста','лаваш','шаурма','донер','кебаб','гирос','тако','буррито','кесадилья','плов','курица','индейка','утка','гусь','кролик','свинина','говядина','баранина','телятина','мясо','рыба','семга','лосось','форель','скумбрия','сельдь','тунец','треска','минтай','кета','горбуша','икра','краб','креветки','мидии','кальмар','осьминог','раки','сэндвич','ролл','суши','сашими','гунканы','рамэн','поке','боул','тарт','кремчиз','грильчиз','завтрак','завтраки','обед','ужин','ланч','мортаделла','страчателла','прошутто','блин','блины','блинчики','сыр','хлеб','кекс','пирог','торт','печенье','вафли','вафля','пончик','круассан','пирожное','десерт','шницель','шашлык','люля','фрикадельки','спагетти','феттучини','лазанья','ризотто','жюльен','крем','соус','пюре','жаркое','гуляш','салат','закуска','гарнир','напиток','коктейль','чай','кофе','сироп','варенье','мёд','мед','зефир','пастила','мармелад','конфета','шоколад']);
+const DISH_PREPOSITIONS = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли','со','во','с','о']);
+
+function hasDishWord(s) {
+  return (s || '').split(/\s+/).filter(Boolean).some(w => COMMON_DISH_WORDS.has(w.toLowerCase()));
+}
+
+const GENERIC_FOOD_WORDS = new Set(['сок','морс','компот','кисель','лимонад','чай','кофе','какао','вода','молоко','сливки','сметана','йогурт','кефир','творог','сыр','масло','сахар','соль','перец','мука','мёд','мед','яйцо','яйца','лимон','лайм','апельсин','яблоко','банан','груша','виноград','клубника','малина','черника','голубика','облепиха','вишня','черри','томат','огурец','перец','лук','чеснок','морковь','свекла','капуста','картофель','тыква','кабачок','баклажан','грибы','шампиньоны']);
+
+function hasStrongDishWord(s) {
+  return (s || '').split(/\s+/).filter(Boolean).some(w => COMMON_DISH_WORDS.has(w.toLowerCase()) && !GENERIC_FOOD_WORDS.has(w.toLowerCase()));
+}
+
 function isLikelyDishName(line) {
   const s = cleanItemName(line || '');
   if (!s || s.length < 2 || s.length > 80) return false;
@@ -4451,22 +4534,13 @@ function isLikelyDishName(line) {
   const first = s.charAt(0);
   if (!/[A-ZА-ЯЁ]/.test(first) && s !== s.toUpperCase()) return false;
   const words = s.split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
   // reject noise like "ЕООД ых": a long all-caps word mixed with lowercase
   if (words.some(w => w.length > 3 && w === w.toUpperCase()) && words.some(w => w !== w.toUpperCase())) return false;
-  const shortPreps = new Set(['а','б','в','и','к','о','с','у','я','м','н','р','я']);
-  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length === 1 && shortPreps.has(words[0].toLowerCase())) return false;
-  if (words[0] && words[0] === words[0].toUpperCase() && words[0].length <= 3) {
-    if (words.length === 1) return false;
-    const rest = words.slice(1).join(' ');
-    if (!isLikelyDishName(rest) && !isLikelyIngredientName(rest)) return false;
-  }
-  // reject ingredient-prep phrases that OCR put on their own line (e.g. "Грецкий орех крошка")
-  const last = words[words.length - 1].toLowerCase();
-  const exactEndings = new Set(['г','гр','мл','шт','штук','штуки','кг','л','мг','грамм','граммов','миллилитров']);
-  const suffixEndings = ['крошка','крошки','ломтик','ломтики','щепотка','щепотки','зубчик','зубчики','стручок','стручки','долька','дольки','половинка','половинки','кусочек','кусочки','порция','порции','замороженная','замороженный','замороженные','вяленые','вяленый','маринованные','консервированные','слайсы','свежемороженые'];
-  if (exactEndings.has(last) || suffixEndings.some(e => last.endsWith(e))) return false;
-  if (/(?:\b|^)(?:п\/ф|пф|с\/с|с\/м|с\/о)(?:\b|$)/i.test(s)) return false;
-  return !hasInstructionWords(s);
+  // single-word titles must be known dish words
+  if (words.length === 1) return COMMON_DISH_WORDS.has(words[0].toLowerCase());
+  // multi-word titles need a known dish word or a preposition (for "Тесто для оладьев")
+  return words.some(w => COMMON_DISH_WORDS.has(w.toLowerCase()) || DISH_PREPOSITIONS.has(w.toLowerCase())) && !hasInstructionWords(s);
 }
 
 function isLikelyIngredientName(line) {
@@ -4502,6 +4576,17 @@ function isLikelyNote(s) {
   if (startNoteWords.has(words[0])) return true;
   if (words.some(w => anyNoteWords.has(w))) return true;
   return hasInstructionWords(s);
+}
+
+function isContinuationNote(s) {
+  if (!s) return false;
+  const words = (s || '').toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  const startNoteWords = new Set(['сверху','снизу','внутрь','внутри','вне','для','по','как','фото','рисунок','пример','примерно']);
+  const anyNoteWords = new Set(['украшение','украсить','посыпать','присыпать','разрезать','запечь','половина','треть','четверть','ломтик','кусочек','щепотка','сверху','снизу']);
+  if (startNoteWords.has(words[0])) return true;
+  if (words.some(w => anyNoteWords.has(w))) return true;
+  return false;
 }
 
 function isAdjectiveOnly(word) {
@@ -4568,6 +4653,9 @@ function parseItemBlock(block) {
     if (isLikelyComponent(line) || isLikelyIngredientName(cleanItemName(line))) {
       compLines.push(line);
       collecting = true;
+    } else if (collecting && !inDescription && isContinuationNote(line)) {
+      // continuation note for the previous ingredient line (e.g. note split across lines)
+      compLines[compLines.length - 1] = (compLines[compLines.length - 1] + ' ' + line).trim();
     } else if (collecting) {
       descLines.push(line);
       if (hasInstructionWords(line)) inDescription = true;
@@ -4580,7 +4668,14 @@ function parseItemBlock(block) {
   let components = split.components;
 
   if (!components.length && compLines.length) {
-    const extracted = compLines.map(extractComponents).reduce((acc, ex) => {
+    const extracted = compLines.map(line => {
+      const ex = extractComponents(line);
+      if (ex.tokens && ex.tokens.length) return ex;
+      // colon/weightless lines that extractComponents routed to description may still be ingredients
+      const comp = parseComponentToken(line);
+      if (comp && comp.ingredient) return { tokens: [comp], description: '' };
+      return ex;
+    }).reduce((acc, ex) => {
       if (ex.tokens && ex.tokens.length) {
         acc.tokens.push(...ex.tokens);
         if (ex.description) acc.description.push(ex.description);
@@ -4645,28 +4740,61 @@ function splitNameAndComponents(line, allowNoComponents) {
   return { name: cleanItemName(line), components: [] };
 }
 
+function isConcreteIngredientName(s) {
+  if (!isLikelyIngredientName(s)) return false;
+  const words = (s || '').split(/\s+/).filter(Boolean);
+  const markers = new Set(['п/ф','пф','с/с','с/м','с/о']);
+  const prepositions = new Set(['а','б','в','на','по','для','из','к','от','перед','после','при','про','без','до','за','над','под','об','у','и','но','или','чтобы','так','как','если','когда','где','затем','потом','далее','еще','ещё','же','бы','ли','со','во','с','о']);
+  const nonStandalone = new Set(['лист','листья','крошка','стружка','смесь','салата','филе','кусочек','ломтик','долька','половинка','зубчик','стручок','пучок','пластинка','четвертинка','горошина','щепотка','капля']);
+  return words.some(w => {
+    const lw = w.toLowerCase();
+    if (markers.has(lw) || prepositions.has(lw)) return false;
+    if (isAdjectiveOnly(w)) return false;
+    if (nonStandalone.has(lw) && words.length === 1) return false;
+    return true;
+  });
+}
+
 function findIngredientInPrefix(prefix) {
   const segments = (prefix || '').split(/[.,;|]\s+/).map(s => s.trim()).filter(Boolean);
   const target = segments.length ? segments[segments.length - 1] : '';
   const beforeSegments = segments.slice(0, -1).join(', ');
+  const extras = (beforeSegments ? beforeSegments.split(/[.,;|]\s+/) : [])
+    .map(s => cleanItemName(s.trim())).filter(s => isConcreteIngredientName(s));
   const words = cleanItemName(target).split(/\s+/).filter(Boolean);
   if (!words.length) return null;
   const prepositions = new Set(['в','на','с','по','из','к','от','для','при','про','без','до','за','над','под','об','у','и','но','или','со','во']);
   for (let start = words.length - 1; start >= 0; start--) {
     const suffix = words.slice(start).join(' ');
-    if (!isLikelyIngredientName(suffix)) continue;
+    if (!isConcreteIngredientName(suffix)) continue;
     const leftover = words.slice(0, start).join(' ');
-    if (!leftover) return { name: suffix, leftover: beforeSegments, type: 'none' };
-    const leftoverWords = leftover.split(/\s+/).filter(Boolean);
-    const allModifiers = leftoverWords.every(w => isAdjectiveOnly(w) || prepositions.has(w.toLowerCase()));
-    if (allModifiers) {
-      const name = leftover + ' ' + suffix;
-      return { name: name.trim(), leftover: beforeSegments, type: 'none' };
+    if (!leftover) {
+      if (!beforeSegments) return { name: suffix, leftover: '', type: 'none' };
+      if (hasInstructionWords(beforeSegments) || isLikelyNote(beforeSegments)) return { name: suffix, leftover: beforeSegments, type: hasInstructionWords(beforeSegments) ? 'instruction' : 'note' };
+      const full = (beforeSegments + ' ' + suffix).trim();
+      if (isConcreteIngredientName(full) && !hasInstructionWords(full) && !isLikelyNote(full)) return { name: full, leftover: '', type: 'none' };
+      return { name: suffix, leftover: beforeSegments, type: 'note' };
     }
     if (isLikelyNote(leftover) || hasInstructionWords(leftover)) {
       return { name: suffix, leftover: (beforeSegments ? beforeSegments + ' ' : '') + leftover, type: hasInstructionWords(leftover) ? 'instruction' : 'note' };
     }
-    return { name: suffix, leftover: (beforeSegments ? beforeSegments + ' ' : '') + leftover, type: 'note' };
+    const fullName = (beforeSegments ? beforeSegments + ' ' : '') + (leftover + ' ' + suffix).trim();
+    const localName = (leftover + ' ' + suffix).trim();
+    const leftoverWords = leftover.split(/\s+/).filter(Boolean);
+    if (isConcreteIngredientName(localName) && !hasInstructionWords(localName) && !isLikelyNote(localName) && !hasDishWord(leftover)) {
+      if (leftoverWords.length === 1 && isConcreteIngredientName(leftover)) {
+        const extra = cleanItemName(leftover);
+        const newExtras = (extras || []).slice();
+        if (extra) newExtras.push(extra);
+        return { name: suffix, extras: newExtras.length ? newExtras : undefined, type: 'none' };
+      }
+      return { name: localName, extras: extras.length ? extras : undefined, type: 'none' };
+    }
+    const allModifiers = leftoverWords.every(w => isAdjectiveOnly(w) || prepositions.has(w.toLowerCase()));
+    if (allModifiers) {
+      return { name: localName, extras: extras.length ? extras : undefined, type: 'none' };
+    }
+    return { name: suffix, leftover: (beforeSegments ? beforeSegments + ' ' : '') + leftover, type: 'note', extras: extras.length ? extras : undefined };
   }
   return null;
 }
@@ -4714,6 +4842,7 @@ function extractComponents(text) {
     let isCountUnit = /^(шт|штук|штуки|pcs|pc)$/i.test(unit);
     const parsed = findIngredientInPrefix(rawName);
     if (parsed && parsed.name) {
+      if (parsed.extras) for (const ex of parsed.extras) tokens.push({ ingredient: ex, grams: 0, isCount: false });
       let ingredient = parsed.name;
       if (parsed.type === 'note' && parsed.leftover) {
         ingredient += ' (' + parsed.leftover + ')';
@@ -4728,8 +4857,9 @@ function extractComponents(text) {
       tokens.push({ ingredient, grams: isNaN(grams) ? 0 : grams, isCount: isCountUnit });
     } else if (rawName && rawName.trim() && (hasUnit || isEnd)) {
       const cleaned = cleanItemName(rawName);
-      if (cleaned && hasInstructionWords(cleaned)) descriptionFrags.push(cleaned);
-      else if (cleaned && isLikelyNote(cleaned)) descriptionFrags.push(cleaned);
+      const fullInstr = (cleaned + ' ' + match[0]).trim();
+      if (cleaned && hasInstructionWords(cleaned)) descriptionFrags.push(fullInstr);
+      else if (cleaned && isLikelyNote(cleaned)) descriptionFrags.push(fullInstr);
     }
     lastIndex = re.lastIndex;
   }
@@ -4760,9 +4890,9 @@ function cleanItemName(str) {
   let s = str.trim();
   s = s.replace(/^(?:блюдо|название|наименование|позиция|товар|dish|name|title)[\s:—–-]+/i, '').trim();
   s = s.replace(/п\\ф/gi, 'п/ф').trim();
-  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+=!?_"'‘’‚„“”‹›<>]+\s*/, '').trim();
+  s = s.replace(/^[-•–—*‣⁃◦\d.,;|)\]/+=!?_`"'‘’‚„“”‹›<>]+\s*/, '').trim();
   s = s.replace(/\s+\d+(?:[.,]\d+)?\s*(?:г|гр|грамм|грам|гр\.|мл|миллилитров|мл\.|шт|штук|штуки|л|кг|кгр|мг|g|gr|gram|grams|ml|pcs|pc)\s*[\).]*$/i, '').trim();
-  s = s.replace(/[-.,:;|–—/_+=!?"'‘’‚„“”‹›<>()]+\s*$/, '').trim();
+  s = s.replace(/[-.,:;|–—/_+=!?`"'‘’‚„“”‹›<>()]+\s*$/, '').trim();
   s = s.replace(/_/g, ' ').trim();
   s = s.replace(/(?<![A-Za-zА-Яа-яЁё])[Зз][A-ZА-ЯЁ]{1,5}(?![A-Za-zА-Яа-яЁё])/g, '').trim();
   s = s.replace(/\s+/g, ' ').trim();
@@ -4827,6 +4957,13 @@ function parseComponentToken(str) {
     const grams = parseFloat(trailingMatch[2].replace(',', '.'));
     const isCount = countUnits.test(trailingMatch[3]);
     return { ingredient, grams: isNaN(grams) ? 0 : grams, isCount };
+  }
+
+  // bare measure lines like "1 щепотка"
+  const measureWords2 = 'щепотка|щепотки|ложка|ложки|ложечка|чайная|столовая|стакан|чашка|горсть|горсти|пучок|пучки|зубчик|зубчика|стручок|стручка|капля|капли|кусочек|кусочка|ломтик|ломтика|пластинка|пластинки|долька|дольки|половинка|половинки|четвертинка|четвертинки|пучочек|горошина|горошины|кружка|банка|пакет|пакетик';
+  const measureOnlyMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + measureWords2 + ')\\s*$', 'i'));
+  if (measureOnlyMatch) {
+    return { ingredient: measureOnlyMatch[1] + ' ' + measureOnlyMatch[2].toLowerCase(), grams: 0, isCount: false };
   }
 
   const leadingMatch = s.match(new RegExp('^(\\d+(?:[.,]\\d+)?)\\s*(' + units + ')\\s*[-–—:]\\s*(.+)$', 'i'));
