@@ -863,58 +863,123 @@ function showStaffStats() {
 
 function renderAuthOptions() {
   app.innerHTML = `
-    <div class="platform-screen landing-layout">
-      <div class="landing-hero">
-        <div class="brand">Cognitio</div>
-        <h1>Знания, которые создают качество сервиса</h1>
-        <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
-        <div class="landing-cta">
-          <button class="onboarding-btn" style="flex:1;max-width:220px;" onclick="goToScreen('roleSelect', true)">Начать бесплатно</button>
-          <button class="stats-btn" style="flex:1;max-width:220px;" onclick="goToScreen('roleSelect', true)">Смотреть демо</button>
+    <div class="platform-screen landing-layout landing-v1">
+      <nav class="landing-nav">
+        <div class="landing-nav-brand">Cognitio</div>
+        <div class="landing-nav-links">
+          <button class="landing-nav-link" onclick="goToScreen('authOptions', true)">Продукт</button>
+          <button class="landing-nav-link" onclick="goToScreen('roleSelect', true)">Решения</button>
+          <button class="landing-nav-link" onclick="goToScreen('authOptions', true)">Тарифы</button>
+          <button class="landing-nav-link" onclick="goToScreen('authOptions', true)">О нас</button>
         </div>
-        <div class="landing-logos">
-          <span class="landing-logo">Cofix</span>
-          <span class="landing-logo">Teremok</span>
-          <span class="landing-logo">Додо</span>
-          <span class="landing-logo">Вкусно — и точка</span>
+        <div class="landing-nav-actions">
+          <button class="landing-nav-link" onclick="goToScreen('login', true)">Войти</button>
+          <button class="landing-nav-cta" onclick="goToScreen('roleSelect', true)">Попробовать бесплатно</button>
         </div>
-      </div>
-      <div class="landing-phones">
-        <div class="phone-mockup phone-1">
-          <div class="phone-screen">
-            <div class="phone-notch"></div>
-            <div class="phone-title">УРОК 1</div>
-            <div class="phone-dish">Какие ингредиенты входят в состав Цезарь с курицей?</div>
-            <div class="phone-options">
-              <div class="phone-option">Куриное филе</div>
-              <div class="phone-option">Салат романо</div>
-              <div class="phone-option">Соус цезарь</div>
-              <div class="phone-option">Пармезан</div>
+      </nav>
+      <div class="landing-main">
+        <div class="landing-hero">
+          <div class="brand">Обучение в формате Duolingo для бизнеса</div>
+          <div class="hero-brain-wrap">
+            <img src="img/hero-brain.png" class="hero-brain" alt="">
+            <h1>Знания, которые создают <span class="hero-gold">качество</span> сервиса</h1>
+          </div>
+          <p>Обучайте сотрудников меню заведения за 10 минут в день. ТТК, тесты, прогресс.</p>
+          <div class="landing-cta">
+            <button class="landing-btn-primary" onclick="goToScreen('roleSelect', true)">
+              <span>Попробовать бесплатно</span>
+              <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="landing-btn-secondary" onclick="goToScreen('roleSelect', true)">
+              <svg class="btn-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Смотреть демо</span>
+            </button>
+          </div>
+          <div class="landing-logos-label">Доверяют лидеры индустрии</div>
+          <div class="landing-logos">
+            <span class="landing-logo">Cofix</span>
+            <span class="landing-logo">Teremok</span>
+            <span class="landing-logo">Додо</span>
+            <span class="landing-logo">Вкусно — и точка</span>
+          </div>
+        </div>
+        <div class="landing-phones">
+          <div class="phone-mockup phone-1">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="phone-title">УРОК 1</div>
+              <div class="phone-dish">Какие ингредиенты входят в состав Цезарь с курицей?</div>
+              <div class="phone-options">
+                <div class="phone-option">Куриное филе</div>
+                <div class="phone-option">Салат романо</div>
+                <div class="phone-option">Соус цезарь</div>
+                <div class="phone-option">Пармезан</div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-mockup phone-2">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="phone-title">ВАШ ПРОГРЕСС</div>
+              <div class="phone-xp">675 XP</div>
+              <div class="phone-level">Уровень 12</div>
+              <div class="phone-progress">
+                <div class="phone-progress-label">Цель дня</div>
+                <div class="phone-progress-bar"><div class="phone-progress-fill" style="width:67%"></div></div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="phone-mockup phone-2">
-          <div class="phone-screen">
-            <div class="phone-notch"></div>
-            <div class="phone-title">ВАШ ПРОГРЕСС</div>
-            <div class="phone-xp">675 XP</div>
-            <div class="phone-level">Уровень 12</div>
-            <div class="phone-progress">
-              <div class="phone-progress-label">Цель дня</div>
-              <div class="phone-progress-bar"><div class="phone-progress-fill" style="width:67%"></div></div>
+        <div class="landing-auth">
+          <div class="auth-panel">
+            <div class="auth-header">
+              <div class="auth-brain-wrap"><img src="img/hero-brain.png" class="auth-brain" alt=""></div>
+              <div class="auth-brand">Cognitio</div>
             </div>
+            <div class="auth-tagline">Знания, которые создают качество сервиса</div>
+            <div class="auth-desc">Обучайте сотрудников меню заведения за 10 минут в день.</div>
+            <button class="auth-login-btn" onclick="goToScreen('login', true)">
+              <span>Войти</span>
+              <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="auth-register-btn" onclick="goToScreen('roleSelect', true)">Регистрация</button>
+            <div class="auth-divider"><span>или продолжить с</span></div>
+            <div class="auth-socials">
+              <button class="auth-social" aria-label="Google" onclick="goToScreen('roleSelect', true)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2h-1.5c-3.5 0-6.5 2.5-7.3 6"></path><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10"></path></svg>
+              </button>
+              <button class="auth-social" aria-label="Apple" onclick="goToScreen('roleSelect', true)">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.7 8.1c-.9-.8-2.2-1.1-3.4-.7-.7.2-1.3.7-1.7 1.3-.5.8-.5 1.8-.1 2.6.2.4.5.8.9 1.1-1 1.6-2.5 2.6-4.3 2.6-1 0-2-.3-2.8-.9-1-.7-1.6-1.8-1.6-3 0-1.8 1.2-3.4 3-4 .6-.2 1.2-.3 1.8-.2.7.1 1.3.4 1.8.8l.2.2c.5-.8 1.2-1.4 2.1-1.8.9-.4 2-.5 3-.2 1.2.3 2.2 1.1 2.8 2.2-.3.2-.6.5-.9.7-.6.5-1.1 1.1-1.4 1.8-.4.9-.4 1.9 0 2.8.3.7.8 1.3 1.4 1.8.3.2.6.4.9.6-.4 1.1-1.1 2-2.1 2.7-1.2.9-2.8 1.4-4.3 1.1-.8-.2-1.5-.5-2.1-1l-.2-.2c-.6.7-1.3 1.2-2.2 1.5-.8.3-1.8.3-2.6-.1 1.3-1.2 2.1-2.9 2.1-4.7 0-1.9-1-3.6-2.6-4.5.3-1.3 1-2.4 2.1-3.1 1-.7 2.3-1 3.5-.7.6.1 1.1.4 1.6.7z"></path></svg>
+              </button>
+              <button class="auth-social" aria-label="Email" onclick="goToScreen('roleSelect', true)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><polyline points="2 7 12 13 22 7"></polyline></svg>
+              </button>
+            </div>
+            <div class="auth-privacy">Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</div>
+            <button class="link-btn auth-forgot" onclick="goToScreen('forgotPassword', { login: '' })">Забыли пароль?</button>
           </div>
         </div>
       </div>
-      <div class="landing-auth">
-        <div class="auth-panel">
-          <div class="platform-title">Cognitio</div>
-          <div class="platform-subtitle">Войдите или зарегистрируйтесь</div>
-          <button class="onboarding-btn" style="width:100%;margin-bottom:10px;" onclick="goToScreen('login', true)">Войти</button>
-          <button class="stats-btn" style="width:100%;margin-bottom:16px;" onclick="goToScreen('roleSelect', true)">Регистрация</button>
-          <button class="onboarding-btn" style="width:100%;margin-top:4px;" onclick="goToScreen('roleSelect', true)">Продолжить с Email</button>
-          <div class="auth-privacy">Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</div>
-          <button class="link-btn" style="margin-top:16px;" onclick="goToScreen('forgotPassword', { login: '' })">Забыли пароль?</button>
+      <div class="landing-features">
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+          <div class="feature-title">5 минут в день</div>
+          <div class="feature-desc">Короткие занятия, которые легко вписать в смену.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1M6.343 4.343l.707.707M17.657 4.343l-.707.707M4 12h1M19 12h1M12 21c-3.866 0-7-3.134-7-7a7 7 0 0 1 7-7 7 7 0 0 1 7 7c0 3.866-3.134 7-7 7z"></path></svg></div>
+          <div class="feature-title">Запоминается надолго</div>
+          <div class="feature-desc">Интервальные повторения и практика закрепляют знания.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div>
+          <div class="feature-title">Контроль и аналитика</div>
+          <div class="feature-desc">Отслеживайте прогресс каждого сотрудника и всей команды.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></div>
+          <div class="feature-title">Мотивация сотрудников</div>
+          <div class="feature-desc">XP, уровни, достижения и лидерборды вовлекают в обучение.</div>
         </div>
       </div>
     </div>
