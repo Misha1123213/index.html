@@ -1,8 +1,9 @@
-const CACHE_NAME = 'cognitio-v38';
+const CACHE_NAME = 'cognitio-v40';
 const ASSETS = [
   './',
   './index.html',
   './platform.js',
+  './russian_food_forms.js',
   './minimal.css',
   './supabase_config.js',
   './manifest.json',
